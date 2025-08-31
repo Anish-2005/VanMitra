@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState, useEffect } from "react";
+import { STATES, DEFAULT_STATE, DEFAULT_DISTRICT } from '../../lib/regions';
 import { motion } from "framer-motion";
 import { MapPin, Database, Target, Satellite, ArrowRight } from "lucide-react";
 import { Leaf, Trees, Sprout, Droplets } from "lucide-react";
@@ -31,8 +32,8 @@ export default function Dashboard() {
     return Math.abs(Math.sin(i * 12.9898 + salt * 78.233) * 43758.5453) % 1;
   };
 
-  const [stateFilter, setStateFilter] = useState<string>("West Bengal");
-  const [districtFilter, setDistrictFilter] = useState<string>("East Sundarbans");
+  const [stateFilter, setStateFilter] = useState<string>(DEFAULT_STATE);
+  const [districtFilter, setDistrictFilter] = useState<string>(DEFAULT_DISTRICT);
   const [villageQuery, setVillageQuery] = useState<string>("");
 
   const [recommendations, setRecommendations] = useState<any[]>([]);
@@ -61,6 +62,7 @@ export default function Dashboard() {
   }, [recommendations, stateFilter, districtFilter, villageQuery]);
 
   const [selected, setSelected] = useState<any | null>(null);
+  const stateCenter = STATES.find(s => s.name === stateFilter)?.center ?? [88.8, 21.9];
 
   function downloadCSV(rows: any[]) {
     if (!rows || rows.length === 0) return;
@@ -153,8 +155,8 @@ export default function Dashboard() {
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
                           <div className="text-sm text-green-700 mb-2">Map preview - interactive map goes here</div>
-                          <div className="h-56 bg-green-50 rounded-md border border-dashed border-green-100 overflow-hidden">
-                            <MapPreview />
+                            <div className="h-56 bg-green-50 rounded-md border border-dashed border-green-100 overflow-hidden">
+                            <MapPreview center={stateCenter as [number, number]} zoom={6.5} />
                           </div>
                         </div>
                         <div className="w-44 flex flex-col items-end">
@@ -227,17 +229,14 @@ export default function Dashboard() {
                 <div>
                   <label className="block text-sm text-green-700">State</label>
                   <select value={stateFilter} onChange={(e) => setStateFilter(e.target.value)} className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50">
-                    <option>West Bengal</option>
-                    <option>Bihar</option>
+                    {STATES.map(s => <option key={s.code} value={s.name}>{s.name}</option>)}
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-sm text-green-700">District</label>
                   <select value={districtFilter} onChange={(e) => setDistrictFilter(e.target.value)} className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50">
-                    <option>East Sundarbans</option>
-                    <option>North 24 Parganas</option>
-                    <option>Patna</option>
+                    {(STATES.find(s => s.name === stateFilter)?.districts || []).map(d => <option key={d} value={d}>{d}</option>)}
                   </select>
                 </div>
 
@@ -247,7 +246,7 @@ export default function Dashboard() {
                 </div>
 
                 <div className="mt-2">
-                  <button onClick={() => { setVillageQuery(""); setDistrictFilter("East Sundarbans"); setStateFilter("West Bengal"); }} className="w-full inline-flex items-center justify-center gap-2 bg-green-700 text-white px-4 py-2 rounded-md shadow-md hover:bg-green-600 transition-colors">Reset Filters</button>
+                  <button onClick={() => { setVillageQuery(""); setDistrictFilter(DEFAULT_DISTRICT); setStateFilter(DEFAULT_STATE); }} className="w-full inline-flex items-center justify-center gap-2 bg-green-700 text-white px-4 py-2 rounded-md shadow-md hover:bg-green-600 transition-colors">Reset Filters</button>
                 </div>
               </div>
             </div>
