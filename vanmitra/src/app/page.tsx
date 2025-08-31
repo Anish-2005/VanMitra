@@ -1,12 +1,18 @@
 "use client";
 
-import { motion } from "framer-motion";
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+// Framer-motion's JSX generics sometimes conflict with the project's TS setup.
+// Create lightweight aliases cast to any so we can use className/onClick without type errors.
+const MDiv: any = motion.div;
+const MBackdrop: any = motion.div;
+const MAside: any = motion.aside;
 import DecorativeBackground from "@/components/DecorativeBackground";
 import { 
   ArrowRight, Leaf, MapPin, Server, Database, Layers, 
   Cloud, Cpu, BookOpen, Clock, Check, Users, 
   Shield, BarChart3, Target, Satellite, Map, 
-  Trees, Mountain, Droplets, Sprout 
+  Trees, Mountain, Droplets, Sprout, Menu, X 
 } from "lucide-react";
 
 export default function Home() {
@@ -15,6 +21,8 @@ export default function Home() {
     // produces a value in [0, 1) deterministically for a given i and salt
     return Math.abs(Math.sin(i * 12.9898 + salt * 78.233) * 43758.5453) % 1;
   };
+
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-100 text-green-900 relative overflow-hidden">
@@ -64,10 +72,11 @@ export default function Home() {
             <p className="text-xs text-green-700">Forest Rights & Asset Mapping Platform</p>
           </div>
         </div>
-        <nav className="flex items-center gap-6">
+        {/* desktop nav */}
+        <nav className="hidden md:flex items-center gap-6">
           <a className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors" href="/atlas">Atlas</a>
           <a className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors" href="/dss">DSS</a>
-           <a className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors" href="/public">Public Data</a>
+          <a className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors" href="/public">Public Data</a>
           <a className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors" href="#tech">Technology</a>
           <a className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors" href="#roadmap">Roadmap</a>
           <a className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors" href="/dashboard">Dashboard</a>
@@ -75,7 +84,56 @@ export default function Home() {
             Sign in
           </button>
         </nav>
+
+        {/* mobile nav toggle */}
+        <div className="md:hidden">
+          <button onClick={() => setMobileOpen((s) => !s)} aria-label="Toggle menu" className="p-2 rounded-md bg-white/10">
+            {mobileOpen ? <X className="text-green-800" /> : <Menu className="text-green-800" />}
+          </button>
+        </div>
       </header>
+
+      {/* Mobile menu panel with animation */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <MDiv className="md:hidden fixed inset-0 z-40" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            {/* backdrop */}
+            <MBackdrop className="absolute inset-0 bg-black/30" onClick={() => setMobileOpen(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
+
+            {/* sliding panel */}
+            <MAside
+              className="absolute top-0 right-0 w-11/12 max-w-sm bg-white h-full shadow-xl p-6"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-md bg-green-600 flex items-center justify-center"><Leaf className="text-white" /></div>
+                  <div>
+                    <div className="font-semibold text-green-900">VanMitra</div>
+                    <div className="text-xs text-green-700">Forest Rights Platform</div>
+                  </div>
+                </div>
+                <button onClick={() => setMobileOpen(false)} aria-label="Close menu" className="p-2 rounded-md"><X /></button>
+              </div>
+
+              <nav className="flex flex-col gap-4 text-green-800">
+                <a href="/atlas" onClick={() => setMobileOpen(false)} className="font-medium">Atlas</a>
+                <a href="/dss" onClick={() => setMobileOpen(false)} className="font-medium">DSS</a>
+                <a href="/public" onClick={() => setMobileOpen(false)} className="font-medium">Public Data</a>
+                <a href="#tech" onClick={() => setMobileOpen(false)} className="font-medium">Technology</a>
+                <a href="#roadmap" onClick={() => setMobileOpen(false)} className="font-medium">Roadmap</a>
+                <a href="/dashboard" onClick={() => setMobileOpen(false)} className="font-medium">Dashboard</a>
+                <div className="mt-4">
+                  <button className="w-full inline-flex items-center justify-center gap-2 bg-green-700 text-white px-4 py-2 rounded-md">Sign in</button>
+                </div>
+              </nav>
+            </MAside>
+          </MDiv>
+        )}
+      </AnimatePresence>
 
       <main className="relative z-10 max-w-7xl mx-auto px-6 py-16">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
