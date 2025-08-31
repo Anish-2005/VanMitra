@@ -2,20 +2,22 @@
 
 import React from "react";
 import { Users, MapPin } from "lucide-react";
+import DecorativeBackground from "@/components/DecorativeBackground";
 import Link from "next/link";
 import MapPreview from "../../components/MapPreview";
 
 export default function PublicPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-100 text-green-900 relative overflow-hidden">
+      <DecorativeBackground count={5} />
       <header className="relative z-10 max-w-7xl mx-auto px-6 pt-8 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-lg bg-green-600 flex items-center justify-center border border-green-700 shadow-md">
             <Users className="text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold tracking-tight text-green-900">Public FRA View</h1>
-            <p className="text-xs text-green-700">Public atlas (no PII)</p>
+            <h1 className="text-lg font-bold tracking-tight text-green-900">Public VanMitra View</h1>
+            <p className="text-xs text-green-700">Public map (no PII)</p>
           </div>
         </div>
         <nav className="flex items-center gap-4">

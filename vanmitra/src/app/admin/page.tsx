@@ -3,10 +3,12 @@
 import React from "react";
 import { Server, UploadCloud, Check } from "lucide-react";
 import Link from "next/link";
+import DecorativeBackground from "@/components/DecorativeBackground";
 
 export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-100 text-green-900 relative overflow-hidden">
+      <DecorativeBackground count={5} />
       <header className="relative z-10 max-w-7xl mx-auto px-6 pt-8 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-lg bg-green-600 flex items-center justify-center border border-green-700 shadow-md">
@@ -30,12 +32,12 @@ export default function AdminPage() {
               <div className="mt-4">
                 <label className="block text-sm text-green-700">Select file</label>
                 <input type="file" className="mt-2" />
-+                <div className="mt-4 text-sm text-green-700">Accepted: PDF, TIFF. OCR and NER will run after upload.</div>
+                <div className="mt-4 text-sm text-green-700">Accepted: PDF, TIFF. OCR and NER will run after upload.</div>
               </div>
 
               <div className="mt-6">
                 <button className="inline-flex items-center gap-2 bg-green-700 text-white px-4 py-2 rounded-md">Upload <UploadCloud size={16} /></button>
-+                <button className="ml-3 inline-flex items-center gap-2 border border-green-200 px-4 py-2 rounded-md">Verify <Check size={16} /></button>
+                <button className="ml-3 inline-flex items-center gap-2 border border-green-200 px-4 py-2 rounded-md">Verify <Check size={16} /></button>
               </div>
             </div>
 

@@ -4,6 +4,7 @@ import React, { useMemo, useState } from "react";
 import { STATES, DEFAULT_STATE, DEFAULT_DISTRICT } from '../../lib/regions';
 import { motion } from "framer-motion";
 import { MapPin, Layers, Globe, ArrowRight } from "lucide-react";
+import DecorativeBackground from "@/components/DecorativeBackground";
 import Link from "next/link";
 import MapPreview from "../../components/MapPreview";
 import Modal from "../../components/Modal";
@@ -30,23 +31,7 @@ export default function AtlasPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-100 text-green-900 relative overflow-hidden">
-      {/* background decor */}
-      {[...Array(6)].map((_, i) => {
-        const r1 = seeded(i, 1);
-        const r2 = seeded(i, 2);
-        const top = `${(r2 * 80 + 10).toFixed(6)}%`;
-        const left = `${(r1 * 90 + 5).toFixed(6)}%`;
-        const size = 32 + Math.floor(r1 * 60);
-        return (
-          <div key={i} className="pointer-events-none absolute opacity-12" style={{ top, left }}>
-            <motion.div initial={{ y: 6 }} animate={{ y: -6 }} transition={{ duration: 8 + r1 * 4, repeat: Infinity, repeatType: "reverse" }}>
-              <div style={{ width: size, height: size }}>
-                <MapPin size={size} className="text-green-600" />
-              </div>
-            </motion.div>
-          </div>
-        );
-      })}
+      <DecorativeBackground count={6} />
 
       <header className="relative z-10 max-w-7xl mx-auto px-6 pt-8 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -54,7 +39,7 @@ export default function AtlasPage() {
             <Layers className="text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold tracking-tight text-green-900">FRA Atlas</h1>
+            <h1 className="text-lg font-bold tracking-tight text-green-900">VanMitra</h1>
             <p className="text-xs text-green-700">Interactive Map & Layers</p>
           </div>
         </div>

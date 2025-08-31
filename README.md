@@ -1,7 +1,7 @@
 
 # VanMitra — Frontend
 
-This repository contains a Next.js prototype frontend for the VanMitra FRA Atlas & DSS.
+This repository contains a Next.js prototype frontend for VanMitra (Atlas & DSS).
 
 Local quickstart (PowerShell):
 
@@ -13,7 +13,7 @@ npm run dev
 
 Available pages
 - `/` — Dashboard
-- `/map` — Interactive FRA Atlas (MapLibre)
+- `/map` — Interactive VanMitra map (MapLibre)
 - `/dss` — Decision Support
 - `/admin` — Admin tools (placeholder)
 - `/public` — Public view (sanitized)

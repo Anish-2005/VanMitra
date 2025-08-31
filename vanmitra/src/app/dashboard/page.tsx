@@ -4,7 +4,7 @@ import React, { useMemo, useState, useEffect } from "react";
 import { STATES, DEFAULT_STATE, DEFAULT_DISTRICT } from '../../lib/regions';
 import { motion } from "framer-motion";
 import { MapPin, Database, Target, Satellite, ArrowRight } from "lucide-react";
-import { Leaf, Trees, Sprout, Droplets } from "lucide-react";
+import DecorativeBackground from "@/components/DecorativeBackground";
 import Link from "next/link";
 import MapPreview from "../../components/MapPreview";
 
@@ -94,37 +94,14 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-100 text-green-900 relative overflow-hidden">
-      {/* Decorative floating elements (background) */}
-      {[...Array(8)].map((_, i) => {
-        const r1 = seeded(i, 1);
-        const r2 = seeded(i, 2);
-        const top = `${(r2 * 80 + 10).toFixed(6)}%`;
-        const left = `${(r1 * 90 + 5).toFixed(6)}%`;
-        const size = 40 + Math.floor(r1 * 80);
-        const icons = [Leaf, Trees, Sprout, Droplets];
-        const Icon = icons[i % icons.length];
-
-        return (
-          <div key={i} className="pointer-events-none absolute opacity-20" style={{ top, left }}>
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 0.2, y: -10 }}
-              transition={{ duration: 6 + r1 * 4, repeat: Infinity, repeatType: "reverse" }}
-            >
-              <div style={{ width: size, height: size }}>
-                <Icon size={size} className="text-green-600" />
-              </div>
-            </motion.div>
-          </div>
-        );
-      })}
+      <DecorativeBackground count={8} />
       <header className="relative z-10 max-w-7xl mx-auto px-6 pt-8 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-lg bg-green-600 flex items-center justify-center border border-green-700 shadow-md">
             <MapPin className="text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold tracking-tight text-green-900">FRA Atlas — Dashboard</h1>
+            <h1 className="text-lg font-bold tracking-tight text-green-900">VanMitra — Dashboard</h1>
             <p className="text-xs text-green-700">Overview & Recommendations</p>
           </div>
         </div>

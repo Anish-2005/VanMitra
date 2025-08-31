@@ -4,6 +4,7 @@ import React, { useState, useMemo } from "react";
 import { STATES, DEFAULT_STATE, DEFAULT_DISTRICT } from '../../lib/regions';
 import { motion } from "framer-motion";
 import { Target, BookOpen, ArrowRight } from "lucide-react";
+import DecorativeBackground from "@/components/DecorativeBackground";
 import Link from "next/link";
 import MapPreview from "../../components/MapPreview";
 
@@ -18,12 +19,7 @@ export default function DSSPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-100 text-green-900 relative overflow-hidden">
-      {/* background decor */}
-      <div className="pointer-events-none absolute left-8 top-10 opacity-10">
-        <motion.div initial={{ y: 8 }} animate={{ y: -8 }} transition={{ duration: 6, repeat: Infinity }}>
-          <Target size={96} className="text-green-600" />
-        </motion.div>
-      </div>
+      <DecorativeBackground count={6} />
 
       <header className="relative z-10 max-w-7xl mx-auto px-6 pt-8 flex items-center justify-between">
         <div className="flex items-center gap-3">

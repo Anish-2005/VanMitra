@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import DecorativeBackground from "@/components/DecorativeBackground";
 import { 
   ArrowRight, Leaf, MapPin, Server, Database, Layers, 
   Cloud, Cpu, BookOpen, Clock, Check, Users, 
@@ -17,19 +18,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-100 text-green-900 relative overflow-hidden">
-      {/* Decorative elements */}
-      <div className="absolute top-10 right-10 opacity-20">
-        <Trees size={120} className="text-green-600 rotate-12" />
-      </div>
-      <div className="absolute bottom-20 left-5 opacity-15">
-        <Mountain size={150} className="text-green-700" />
-      </div>
-      <div className="absolute top-1/3 left-10 opacity-10">
-        <Sprout size={100} className="text-green-500" />
-      </div>
-      <div className="absolute bottom-40 right-20 opacity-20">
-        <Droplets size={80} className="text-blue-400" />
-      </div>
+      <DecorativeBackground count={8} />
 
       {/* Floating leaves */}
       {[...Array(8)].map((_, i) => {
@@ -71,13 +60,14 @@ export default function Home() {
             <Leaf className="text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold tracking-tight text-green-900">FRA Atlas</h1>
+            <h1 className="text-lg font-bold tracking-tight text-green-900">VanMitra</h1>
             <p className="text-xs text-green-700">Forest Rights & Asset Mapping Platform</p>
           </div>
         </div>
         <nav className="flex items-center gap-6">
-          <a className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors" href="#atlas">Atlas</a>
-          <a className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors" href="#dss">DSS</a>
+          <a className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors" href="/atlas">Atlas</a>
+          <a className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors" href="/dss">DSS</a>
+           <a className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors" href="/public">Public Data</a>
           <a className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors" href="#tech">Technology</a>
           <a className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors" href="#roadmap">Roadmap</a>
           <a className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors" href="/dashboard">Dashboard</a>
@@ -154,7 +144,7 @@ export default function Home() {
               <h3 className="text-xl font-semibold text-green-900 flex items-center gap-2"><Target size={20} className="text-green-600" /> What We Do</h3>
               <ul className="mt-4 space-y-3 text-green-800">
                 <li className="flex items-start gap-2"><div className="h-2 w-2 rounded-full bg-green-600 mt-2 flex-shrink-0"></div>Digitize and standardize legacy FRA data and integrate shapefiles</li>
-                <li className="flex items-start gap-2"><div className="h-2 w-2 rounded-full bg-green-600 mt-2 flex-shrink-0"></div>Build an FRA Atlas using AI + satellite imagery for potential and granted areas</li>
+                <li className="flex items-start gap-2"><div className="h-2 w-2 rounded-full bg-green-600 mt-2 flex-shrink-0"></div>Build VanMitra using AI + satellite imagery for potential and granted areas</li>
                 <li className="flex items-start gap-2"><div className="h-2 w-2 rounded-full bg-green-600 mt-2 flex-shrink-0"></div>Provide web-based GIS tools to visualise and manage spatial & socio-economic data</li>
                 <li className="flex items-start gap-2"><div className="h-2 w-2 rounded-full bg-green-600 mt-2 flex-shrink-0"></div>Map capital and social assets with remote sensing & ML and enable human-in-loop QA</li>
                 <li className="flex items-start gap-2"><div className="h-2 w-2 rounded-full bg-green-600 mt-2 flex-shrink-0"></div>Deliver a DSS that layers CSS schemes to prioritise targeted interventions</li>
@@ -278,7 +268,7 @@ export default function Home() {
             <div className="p-4 bg-white rounded-xl shadow-md border border-green-100 flex items-start gap-4">
               <div className="p-2 bg-green-600 text-white rounded-full flex-shrink-0"><Map size={18} /></div>
               <div>
-                <div className="font-semibold text-green-900">Phase 2 — FRA Atlas MVP (4–6 weeks)</div>
+                <div className="font-semibold text-green-900">Phase 2 — VanMitra MVP (4–6 weeks)</div>
                 <div className="text-green-800 mt-1">Vector tiles, STAC layers, filters and progress dashboards with WebGIS integration.</div>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <span className="text-xs px-2 py-1 bg-teal-100 text-teal-800 rounded-full">Vector Tiles</span>
@@ -359,7 +349,7 @@ export default function Home() {
             <div className="h-8 w-8 rounded-lg bg-green-600 flex items-center justify-center border border-green-700">
               <Leaf className="text-white" size={16} />
             </div>
-            <div className="text-sm text-green-700">© {new Date().getFullYear()} FRA Atlas — For tribal land rights</div>
+            <div className="text-sm text-green-700">© {new Date().getFullYear()} VanMitra — For tribal land rights</div>
           </div>
           <div className="flex items-center gap-4">
             <a className="text-green-700 hover:text-green-600 transition-colors text-sm" href="#privacy">Privacy</a>
