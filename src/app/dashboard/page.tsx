@@ -6,11 +6,14 @@ import { motion } from "framer-motion";
 import { MapPin, Database, Target, Satellite, ArrowRight } from "lucide-react";
 import DecorativeBackground from "@/components/DecorativeBackground";
 import Link from "next/link";
-import MapPreview from "../../components/MapPreview";
+import WebGIS from "../../components/WebGIS";
+import LayerManager from "../../components/LayerManager";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/components/AuthProvider";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { GISLayer, GISMarker } from "../../components/WebGIS";
+import { createGeoJSONPoint, exportToGeoJSON } from "../../lib/gis-utils";
 
 function Sparkline({ data, width = 160, height = 40 }: { data: number[]; width?: number; height?: number }) {
   const max = Math.max(...data, 1);
@@ -70,6 +73,87 @@ export default function Dashboard() {
   const filtered = useMemo(() => {
     return recommendations.filter((r) => r.state === stateFilter && r.district === districtFilter && r.village.toLowerCase().includes(villageQuery.toLowerCase()));
   }, [recommendations, stateFilter, districtFilter, villageQuery]);
+
+  const [layers, setLayers] = useState<GISLayer[]>([
+    {
+      id: 'priority-villages',
+      name: 'Priority Villages',
+      type: 'geojson',
+      visible: true,
+      style: {
+        fillColor: '#dc2626',
+        strokeColor: '#b91c1c',
+        strokeWidth: 2,
+        opacity: 0.8
+      },
+      data: {
+        type: 'FeatureCollection',
+        features: [
+          createGeoJSONPoint(88.8, 21.9, { name: 'Village A', priority: 'High', population: 1200 }),
+          createGeoJSONPoint(88.6, 21.7, { name: 'Village B', priority: 'Medium', population: 800 }),
+          createGeoJSONPoint(88.9, 21.8, { name: 'Village C', priority: 'Low', population: 600 })
+        ]
+      }
+    },
+    {
+      id: 'fra-claims-dashboard',
+      name: 'FRA Claims',
+      type: 'geojson',
+      visible: true,
+      style: {
+        fillColor: '#16a34a',
+        strokeColor: '#15803d',
+        strokeWidth: 1,
+        opacity: 0.7
+      }
+    },
+    {
+      id: 'infrastructure',
+      name: 'Infrastructure',
+      type: 'geojson',
+      visible: false,
+      style: {
+        fillColor: '#7c3aed',
+        strokeColor: '#6d28d9',
+        strokeWidth: 2,
+        opacity: 0.6
+      }
+    }
+  ]);
+
+  const [markers, setMarkers] = useState<GISMarker[]>([
+    { id: 'marker-1', lng: 88.8, lat: 21.9, label: 'A', color: '#dc2626', popup: '<b>High Priority Village</b><br>Population: 1,200<br>FRA Claims: 45' },
+    { id: 'marker-2', lng: 88.6, lat: 21.7, label: 'B', color: '#f59e0b', popup: '<b>Medium Priority Village</b><br>Population: 800<br>FRA Claims: 23' },
+    { id: 'marker-3', lng: 88.9, lat: 21.8, label: 'C', color: '#16a34a', popup: '<b>Low Priority Village</b><br>Population: 600<br>FRA Claims: 12' }
+  ]);
+
+  const handleLayerToggle = (layerId: string) => {
+    setLayers(prev => prev.map(layer =>
+      layer.id === layerId ? { ...layer, visible: !layer.visible } : layer
+    ));
+  };
+
+  const handleLayerAdd = (layer: GISLayer) => {
+    setLayers(prev => [...prev, layer]);
+  };
+
+  const handleLayerRemove = (layerId: string) => {
+    setLayers(prev => prev.filter(layer => layer.id !== layerId));
+  };
+
+  const handleLayerUpdate = (layerId: string, updates: Partial<GISLayer>) => {
+    setLayers(prev => prev.map(layer =>
+      layer.id === layerId ? { ...layer, ...updates } : layer
+    ));
+  };
+
+  const handleFeatureClick = (featureInfo: any) => {
+    console.log('Feature clicked:', featureInfo);
+  };
+
+  const handleMapClick = (lngLat: any) => {
+    console.log('Map clicked at:', lngLat);
+  };
 
   const [selected, setSelected] = useState<any | null>(null);
   const stateCenter = STATES.find(s => s.name === stateFilter)?.center ?? [88.8, 21.9];
@@ -144,7 +228,17 @@ export default function Dashboard() {
                         <div className="flex-1">
                           <div className="text-sm text-green-700 mb-2">Map preview - interactive map goes here</div>
                             <div className="h-56 bg-green-50 rounded-md border border-dashed border-green-100 overflow-hidden">
-                            <MapPreview center={stateCenter as [number, number]} zoom={6.5} />
+                            <WebGIS
+                              center={stateCenter as [number, number]}
+                              zoom={6.5}
+                              layers={layers}
+                              markers={markers}
+                              onFeatureClick={handleFeatureClick}
+                              onMapClick={handleMapClick}
+                              enableGeocoder={false}
+                              enableMeasurement={false}
+                              className="w-full h-full"
+                            />
                           </div>
                         </div>
                         <div className="w-44 flex flex-col items-end">
@@ -211,6 +305,16 @@ export default function Dashboard() {
           </section>
 
           <aside className="lg:col-span-5">
+            <div className="mb-6">
+              <LayerManager
+                layers={layers}
+                onLayerToggle={handleLayerToggle}
+                onLayerAdd={handleLayerAdd}
+                onLayerRemove={handleLayerRemove}
+                onLayerUpdate={handleLayerUpdate}
+              />
+            </div>
+
             <div className="p-6 bg-white rounded-xl shadow-md border border-green-100">
               <h4 className="font-semibold text-green-900">Filters</h4>
               <div className="mt-3 space-y-3 text-green-800">

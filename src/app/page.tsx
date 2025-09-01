@@ -11,12 +11,12 @@ import DecorativeBackground from "@/components/DecorativeBackground";
 import { 
   ArrowRight, Leaf, MapPin, Server, Database, Layers, 
   Cloud, Cpu, BookOpen, Clock, Check, Users, 
-  Shield, BarChart3, Target, Satellite, Map, 
-  Trees, Mountain, Droplets, Sprout, Menu, X 
+  Shield, BarChart3, Target, Satellite, Map, Menu, X 
 } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import Link from "next/link";
 
 export default function Home() {
   // deterministic pseudo-random generator based on index + salt
@@ -109,12 +109,12 @@ export default function Home() {
         </div>
         {/* desktop nav */}
         <nav className="hidden md:flex items-center gap-6">
-          <a className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors" href="/atlas">Atlas</a>
-          <a className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors" href="/dss">DSS</a>
-          <a className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors" href="/public">Public Data</a>
+          <Link href="/atlas" className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors">Atlas</Link>
+          <Link href="/dss" className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors">DSS</Link>
+          <Link href="/public" className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors">Public Data</Link>
           <a className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors" href="#tech">Technology</a>
           <a className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors" href="#roadmap">Roadmap</a>
-          <a className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors" href="/dashboard">Dashboard</a>
+          <Link href="/dashboard" className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors">Dashboard</Link>
           {user ? (
             <button onClick={handleLogout} className="ml-4 inline-flex items-center gap-2 bg-green-700 text-white px-4 py-2 rounded-md shadow-md hover:bg-green-600 transition-colors">
               Sign out
@@ -161,12 +161,12 @@ export default function Home() {
               </div>
 
               <nav className="flex flex-col gap-4 text-green-800">
-                <a href="/atlas" onClick={() => setMobileOpen(false)} className="font-medium">Atlas</a>
-                <a href="/dss" onClick={() => setMobileOpen(false)} className="font-medium">DSS</a>
-                <a href="/public" onClick={() => setMobileOpen(false)} className="font-medium">Public Data</a>
+                <Link href="/atlas" onClick={() => setMobileOpen(false)} className="font-medium">Atlas</Link>
+                <Link href="/dss" onClick={() => setMobileOpen(false)} className="font-medium">DSS</Link>
+                <Link href="/public" onClick={() => setMobileOpen(false)} className="font-medium">Public Data</Link>
                 <a href="#tech" onClick={() => setMobileOpen(false)} className="font-medium">Technology</a>
                 <a href="#roadmap" onClick={() => setMobileOpen(false)} className="font-medium">Roadmap</a>
-                <a href="/dashboard" onClick={() => setMobileOpen(false)} className="font-medium">Dashboard</a>
+                <Link href="/dashboard" onClick={() => setMobileOpen(false)} className="font-medium">Dashboard</Link>
                 <div className="mt-4">
                   {user ? (
                     <button onClick={() => { handleLogout(); setMobileOpen(false); }} className="w-full inline-flex items-center justify-center gap-2 bg-green-700 text-white px-4 py-2 rounded-md">Sign out</button>
