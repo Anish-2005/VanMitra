@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { STATES, DEFAULT_STATE, DEFAULT_DISTRICT } from '../../lib/regions';
 import { motion } from "framer-motion";
-import { MapPin, Database, Target, Satellite, ArrowRight } from "lucide-react";
+import { MapPin, Database, Target, Satellite, ArrowRight, TrendingUp, Users, FileText, BarChart3, Activity, Calendar, Download, Filter } from "lucide-react";
 import DecorativeBackground from "@/components/DecorativeBackground";
 import Link from "next/link";
 import WebGIS from "../../components/WebGIS";
@@ -12,7 +12,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/components/AuthProvider";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { GISLayer, GISMarker } from "../../components/WebGIS";
+import { GISLayer, GISMarker, WebGISRef } from "../../components/WebGIS";
 import { createGeoJSONPoint, exportToGeoJSON } from "../../lib/gis-utils";
 
 function Sparkline({ data, width = 160, height = 40 }: { data: number[]; width?: number; height?: number }) {
@@ -34,89 +34,110 @@ function Sparkline({ data, width = 160, height = 40 }: { data: number[]; width?:
 }
 
 export default function Dashboard() {
-  // deterministic pseudo-random generator used for decorative floating items
-  const seeded = (i: number, salt = 1) => {
-    return Math.abs(Math.sin(i * 12.9898 + salt * 78.233) * 43758.5453) % 1;
-  };
-
   const { user } = useAuth();
-
-  const handleLogout = async () => {
-    await signOut(auth);
-  };
+  const [isLoading, setIsLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState<{
+    kpis: any | null;
+    recommendations: any[];
+    fraData: any | null;
+    assetsData: any | null;
+    boundariesData: any | null;
+  }>({
+    kpis: null,
+    recommendations: [],
+    fraData: null,
+    assetsData: null,
+    boundariesData: null
+  });
 
   const [stateFilter, setStateFilter] = useState<string>(DEFAULT_STATE);
   const [districtFilter, setDistrictFilter] = useState<string>(DEFAULT_DISTRICT);
   const [villageQuery, setVillageQuery] = useState<string>("");
 
-  const [recommendations, setRecommendations] = useState<any[]>([]);
-  const [kpiData, setKpiData] = useState<any | null>(null);
-  const [timeSeries, setTimeSeries] = useState<number[]>([]);
-
+  // Fetch all dashboard data
   useEffect(() => {
-    // fetch KPIs
-    fetch("/api/dashboard/kpis")
-      .then((r) => r.json())
-      .then((d) => {
-        setKpiData(d);
-        if (d.timeSeries) setTimeSeries(d.timeSeries);
-      })
-      .catch(() => null);
+    const fetchDashboardData = async () => {
+      try {
+        setIsLoading(true);
 
-    // fetch recommendations
-    fetch("/api/dashboard/recommendations")
-      .then((r) => r.json())
-      .then((d) => setRecommendations(d))
-      .catch(() => setRecommendations([]));
+        // Fetch all data in parallel
+        const [kpisRes, recommendationsRes, fraRes, assetsRes, boundariesRes] = await Promise.allSettled([
+          fetch("/api/dashboard/kpis"),
+          fetch("/api/dashboard/recommendations"),
+          fetch(`/api/atlas/fra?state=${DEFAULT_STATE}&district=${DEFAULT_DISTRICT}`),
+          fetch(`/api/atlas/assets?state=${DEFAULT_STATE}&district=${DEFAULT_DISTRICT}`),
+          fetch(`/api/atlas/boundaries?state=${DEFAULT_STATE}&district=${DEFAULT_DISTRICT}`)
+        ]);
+
+        const kpis = kpisRes.status === 'fulfilled' ? await kpisRes.value.json() : null;
+        const recommendations = recommendationsRes.status === 'fulfilled' ? await recommendationsRes.value.json() : [];
+        const fraData = fraRes.status === 'fulfilled' ? await fraRes.value.json() : null;
+        const assetsData = assetsRes.status === 'fulfilled' ? await assetsRes.value.json() : null;
+        const boundariesData = boundariesRes.status === 'fulfilled' ? await boundariesRes.value.json() : null;
+
+        setDashboardData({
+          kpis,
+          recommendations,
+          fraData,
+          assetsData,
+          boundariesData
+        });
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
   }, []);
 
+  const handleLogout = async () => {
+    await signOut(auth);
+  };
+
   const filtered = useMemo(() => {
-    return recommendations.filter((r) => r.state === stateFilter && r.district === districtFilter && r.village.toLowerCase().includes(villageQuery.toLowerCase()));
-  }, [recommendations, stateFilter, districtFilter, villageQuery]);
+    return dashboardData.recommendations.filter((r: any) => r.state === stateFilter && r.district === districtFilter && r.village.toLowerCase().includes(villageQuery.toLowerCase()));
+  }, [dashboardData.recommendations, stateFilter, districtFilter, villageQuery]);
 
   const [layers, setLayers] = useState<GISLayer[]>([
-    {
-      id: 'priority-villages',
-      name: 'Priority Villages',
-      type: 'geojson',
-      visible: true,
-      style: {
-        fillColor: '#dc2626',
-        strokeColor: '#b91c1c',
-        strokeWidth: 2,
-        opacity: 0.8
-      },
-      data: {
-        type: 'FeatureCollection',
-        features: [
-          createGeoJSONPoint(88.8, 21.9, { name: 'Village A', priority: 'High', population: 1200 }),
-          createGeoJSONPoint(88.6, 21.7, { name: 'Village B', priority: 'Medium', population: 800 }),
-          createGeoJSONPoint(88.9, 21.8, { name: 'Village C', priority: 'Low', population: 600 })
-        ]
-      }
-    },
     {
       id: 'fra-claims-dashboard',
       name: 'FRA Claims',
       type: 'geojson',
+      url: `/api/atlas/fra?state=${DEFAULT_STATE}&district=${DEFAULT_DISTRICT}`,
       visible: true,
       style: {
         fillColor: '#16a34a',
         strokeColor: '#15803d',
-        strokeWidth: 1,
+        strokeWidth: 2,
         opacity: 0.7
       }
     },
     {
-      id: 'infrastructure',
-      name: 'Infrastructure',
+      id: 'village-boundaries-dashboard',
+      name: 'Village Boundaries',
       type: 'geojson',
-      visible: false,
+      url: `/api/atlas/boundaries?state=${DEFAULT_STATE}&district=${DEFAULT_DISTRICT}`,
+      visible: true,
       style: {
-        fillColor: '#7c3aed',
-        strokeColor: '#6d28d9',
+        fillColor: '#fbbf24',
+        strokeColor: '#d97706',
         strokeWidth: 2,
-        opacity: 0.6
+        opacity: 0.5
+      }
+    },
+    {
+      id: 'assets-dashboard',
+      name: 'Asset Maps',
+      type: 'geojson',
+      url: `/api/atlas/assets?state=${DEFAULT_STATE}&district=${DEFAULT_DISTRICT}`,
+      visible: true,
+      style: {
+        fillColor: '#3b82f6',
+        strokeColor: '#1e40af',
+        strokeWidth: 1,
+        opacity: 0.8
       }
     }
   ]);
@@ -151,11 +172,34 @@ export default function Dashboard() {
     console.log('Feature clicked:', featureInfo);
   };
 
+  const handleExportMap = async () => {
+    console.log('Starting map export...');
+    try {
+      // Try the WebGIS export first
+      if (webGISRef.current) {
+        await webGISRef.current.exportMap();
+        return;
+      }
+
+      // Fallback: Simple screenshot approach
+      alert('Map export initiated. Please use your browser\'s screenshot feature (Ctrl+Shift+S) to capture the map.');
+    } catch (error) {
+      // Safe error logging to avoid call stack issues
+      try {
+        console.error('Export failed:', error instanceof Error ? error.message : String(error));
+      } catch (logError) {
+        console.error('Export failed (could not log error details)');
+      }
+      alert('Export failed. Please try refreshing the page or taking a manual screenshot.');
+    }
+  };
+
   const handleMapClick = (lngLat: any) => {
     console.log('Map clicked at:', lngLat);
   };
 
   const [selected, setSelected] = useState<any | null>(null);
+  const webGISRef = useRef<WebGISRef>(null);
   const stateCenter = STATES.find(s => s.name === stateFilter)?.center ?? [88.8, 21.9];
 
   function downloadCSV(rows: any[]) {
@@ -174,17 +218,19 @@ export default function Dashboard() {
   }
 
   const kpis = useMemo(() => {
-    const claims = kpiData?.claims ?? 0;
-    const grants = kpiData?.grants ?? 0;
-    const assets = kpiData?.assets ?? 0;
+    const claims = dashboardData.kpis?.claims ?? 0;
+    const grants = dashboardData.kpis?.grants ?? 0;
+    const assets = dashboardData.kpis?.assets ?? 0;
     const priorityVillages = filtered.length || 0;
     return [
-      { label: "Claims processed", value: claims.toLocaleString(), icon: MapPin },
-      { label: "Grants issued", value: grants.toLocaleString(), icon: Database },
-      { label: "AI assets", value: assets.toLocaleString(), icon: Satellite },
-      { label: "Priority villages", value: priorityVillages.toString(), icon: Target },
+      { label: "Claims processed", value: claims.toLocaleString(), icon: FileText, trend: "+12%", color: "emerald" },
+      { label: "Grants issued", value: grants.toLocaleString(), icon: Database, trend: "+8%", color: "blue" },
+      { label: "AI assets", value: assets.toLocaleString(), icon: Satellite, trend: "+15%", color: "purple" },
+      { label: "Priority villages", value: priorityVillages.toString(), icon: Target, trend: "+5%", color: "orange" },
     ];
-  }, [kpiData, filtered]);
+  }, [dashboardData.kpis, filtered]);
+
+  const timeSeries = dashboardData.kpis?.timeSeries || [120, 180, 240, 300, 220, 260, 310, 380, 420, 480];
 
   return (
     <ProtectedRoute>
@@ -193,20 +239,50 @@ export default function Dashboard() {
       <header className="relative z-10 max-w-7xl mx-auto px-6 pt-8 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-lg bg-green-600 flex items-center justify-center border border-green-700 shadow-md">
-            <MapPin className="text-white" />
+            <BarChart3 className="text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold tracking-tight text-green-900">VanMitra — Dashboard</h1>
-            <p className="text-xs text-green-700">Overview & Recommendations</p>
+            <h1 className="text-lg font-bold tracking-tight text-green-900">VanMitra Dashboard</h1>
+            <p className="text-xs text-green-700">FRA Management & Analytics Platform</p>
           </div>
         </div>
         <nav className="flex items-center gap-4">
           <Link href="/" className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors">Home</Link>
-          <button onClick={handleLogout} className="inline-flex items-center gap-2 bg-green-700 text-white px-4 py-2 rounded-md shadow-md hover:bg-green-600 transition-colors">Sign out</button>
+          <Link href="/atlas" className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors">Atlas</Link>
+          <button onClick={handleLogout} className="inline-flex items-center gap-2 bg-green-700 text-white px-4 py-2 rounded-md shadow-md hover:bg-green-600 transition-colors text-sm">Sign out</button>
         </nav>
       </header>
 
-      <main className="relative z-10 max-w-7xl mx-auto px-6 py-10">
+      <main className="relative z-10 max-w-7xl mx-auto px-6 py-8">
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+              <p className="text-green-700">Loading dashboard data...</p>
+            </div>
+          </div>
+        )}
+
+        {!isLoading && (
+          <>
+            {/* Welcome Section */}
+            <div className="mb-8">
+              <motion.div initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
+                <div className="bg-white rounded-2xl shadow-lg border border-green-200 p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-2xl font-bold text-green-900">Welcome back, {user?.displayName || 'User'}!</h2>
+                      <p className="text-green-700 mt-1">Here's what's happening with FRA claims and village development today.</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm text-green-600">Last updated</div>
+                      <div className="text-lg font-semibold text-green-900">{new Date().toLocaleDateString()}</div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <section className="lg:col-span-7">
             <motion.div initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
@@ -227,8 +303,9 @@ export default function Dashboard() {
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
                           <div className="text-sm text-green-700 mb-2">Map preview - interactive map goes here</div>
-                            <div className="h-56 bg-green-50 rounded-md border border-dashed border-green-100 overflow-hidden">
+                            <div className="h-56 bg-green-50 rounded-md border border-dashed border-green-100 relative overflow-visible">
                             <WebGIS
+                              ref={webGISRef}
                               center={stateCenter as [number, number]}
                               zoom={6.5}
                               layers={layers}
@@ -238,6 +315,9 @@ export default function Dashboard() {
                               enableGeocoder={false}
                               enableMeasurement={false}
                               className="w-full h-full"
+                              showLayerControls={false}
+                              showMeasurementControls={false}
+                              showExportControls={true}
                             />
                           </div>
                         </div>
@@ -347,6 +427,13 @@ export default function Dashboard() {
               <h4 className="font-semibold text-green-900">Quick Actions</h4>
               <div className="mt-3 grid grid-cols-1 gap-3">
                 <Link href="/" className="inline-flex items-center gap-2 bg-green-700 text-white px-4 py-2 rounded-md shadow-sm hover:bg-green-600 transition-colors">Open Atlas <ArrowRight size={14} /></Link>
+                <button
+                  onClick={handleExportMap}
+                  className="inline-flex items-center gap-2 border border-green-200 px-4 py-2 rounded-md hover:bg-green-50 transition-colors"
+                >
+                  <Download size={14} />
+                  Export Map
+                </button>
                 <button className="inline-flex items-center gap-2 border border-green-200 px-4 py-2 rounded-md">Upload Documents</button>
                 <button className="inline-flex items-center gap-2 border border-green-200 px-4 py-2 rounded-md">Run Asset Mapping</button>
               </div>
@@ -358,6 +445,8 @@ export default function Dashboard() {
             </div>
           </aside>
         </div>
+        </>
+        )}
       </main>
       {/* Detail modal for recommendation */}
       {selected && (

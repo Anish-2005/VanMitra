@@ -161,14 +161,26 @@ export default function AtlasPage() {
     console.log('Map clicked at:', lngLat);
   };
 
-  const handleExportGeoJSON = () => {
-    const allFeatures: Array<{ type: 'Feature'; properties: any; geometry: any }> = [];
-    layers.forEach(layer => {
-      if (layer.data?.features) {
-        allFeatures.push(...layer.data.features);
+  const handleExportMap = async () => {
+    console.log('Starting map export...');
+    try {
+      // Try the WebGIS export first
+      if (webGISRef.current) {
+        await webGISRef.current.exportMap();
+        return;
       }
-    });
-    exportToGeoJSON(allFeatures, 'atlas-export.geojson');
+
+      // Fallback: Simple screenshot approach
+      alert('Map export initiated. Please use your browser\'s screenshot feature (Ctrl+Shift+S) to capture the map.');
+    } catch (error) {
+      // Safe error logging to avoid call stack issues
+      try {
+        console.error('Export failed:', error instanceof Error ? error.message : String(error));
+      } catch (logError) {
+        console.error('Export failed (could not log error details)');
+      }
+      alert('Export failed. Please try refreshing the page or taking a manual screenshot.');
+    }
   };
 
   const handleStartMeasurement = () => {
@@ -181,10 +193,14 @@ export default function AtlasPage() {
     setMeasurementDistance(null);
   };
 
-  const handleExportMap = () => {
-    // This will be called by WebGIS when export is triggered externally
-    console.log('Exporting map image...');
-    // For now, we'll let WebGIS handle the actual export
+  const handleExportGeoJSON = () => {
+    const allFeatures: Array<{ type: 'Feature'; properties: any; geometry: any }> = [];
+    layers.forEach(layer => {
+      if (layer.data?.features) {
+        allFeatures.push(...layer.data.features);
+      }
+    });
+    exportToGeoJSON(allFeatures, 'atlas-export.geojson');
   };
 
   return (
@@ -234,7 +250,6 @@ export default function AtlasPage() {
                         onLayerToggle={handleLayerToggle}
                         onStartMeasurement={handleStartMeasurement}
                         onClearMeasurement={handleClearMeasurement}
-                        onExport={handleExportMap}
                       />
                     </div>
                   </div>
@@ -342,7 +357,8 @@ export default function AtlasPage() {
                   </button>
                   <button
                     onClick={() => {
-                      webGISRef.current?.exportMap();
+                      console.log('Export button clicked');
+                      handleExportMap();
                     }}
                     className="w-full border border-green-200 text-green-700 px-4 py-2 rounded-md hover:bg-green-50 transition-colors"
                   >

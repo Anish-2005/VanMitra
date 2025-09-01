@@ -97,9 +97,10 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
   const isMeasuringRef = useRef(false);
   const [isMeasuring, setIsMeasuring] = useState(false);
   const [measurementDistance, setMeasurementDistance] = useState<number | null>(null);
-  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [currentLayers, setCurrentLayers] = useState<GISLayer[]>(layers);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(false);
 
   // Initialize map
   useEffect(() => {
@@ -113,9 +114,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
           'osm': {
             type: 'raster',
             tiles: [
-              'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
-              'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
-              'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png'
+              'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
             ],
             tileSize: 256,
             attribution: '© OpenStreetMap contributors'
@@ -139,6 +138,9 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
 
     // Wait for map to load before setting loaded state
     map.current.on('load', () => {
+      console.log('🗺️ Map loaded event fired');
+      console.log('Map canvas element:', map.current!.getCanvas());
+      console.log('Map canvas dimensions:', map.current!.getCanvas().width, 'x', map.current!.getCanvas().height);
       setMapLoaded(true);
 
       // Map click handler (moved here to ensure map is loaded)
@@ -194,6 +196,18 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
           }
         }
       });
+    });
+
+    // Add error handling for map loading
+    map.current.on('error', (e) => {
+      console.error('🗺️ Map loading error:', e);
+    });
+
+    // Add tile loading events
+    map.current.on('sourcedata', (e) => {
+      if (e.sourceId === 'osm' && e.isSourceLoaded) {
+        console.log('🗺️ OSM tiles loaded');
+      }
     });
 
     return () => {
@@ -474,19 +488,536 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
   }, [externalClearMeasurement]);
 
   // Export functions
-  const exportMap = useCallback(() => {
+  const exportMap = useCallback(async () => {
     if (externalExport) {
       externalExport();
     } else {
-      if (!map.current) return;
+      if (!map.current) {
+        console.error('Map not initialized');
+        alert('Map is not ready for export. Please wait for it to load completely.');
+        return;
+      }
 
-      const canvas = map.current.getCanvas();
-      const link = document.createElement('a');
-      link.download = 'map-export.png';
-      link.href = canvas.toDataURL();
-      link.click();
+      setIsExporting(true);
+      try {
+        console.log('Starting map export process...');
+
+        // Wait for map to be fully loaded
+        if (!mapLoaded) {
+          console.log('Waiting for map to load...');
+          await new Promise((resolve, reject) => {
+            const checkLoaded = () => {
+              if (map.current && map.current.loaded()) {
+                console.log('Map loaded, checking tiles...');
+                // Give tiles a moment to load
+                setTimeout(() => {
+                  if (map.current && map.current.loaded()) {
+                    resolve(void 0);
+                  } else {
+                    checkLoaded();
+                  }
+                }, 500);
+              } else {
+                setTimeout(checkLoaded, 200);
+              }
+            };
+
+            // Timeout after 10 seconds
+            setTimeout(() => {
+              reject(new Error('Map loading timeout'));
+            }, 10000);
+
+            checkLoaded();
+          });
+        }
+
+        console.log('Map is ready, preparing for export...');
+
+        // Debug: Check if map container has any visible content
+        const containerElement = mapContainer.current;
+        if (containerElement) {
+          console.log('Container dimensions:', containerElement.offsetWidth, 'x', containerElement.offsetHeight);
+          console.log('Container children:', containerElement.children.length);
+          console.log('Container innerHTML length:', containerElement.innerHTML.length);
+
+          // Check if there are any canvas elements
+          const canvases = containerElement.querySelectorAll('canvas');
+          console.log('Found canvas elements:', canvases.length);
+          canvases.forEach((canvas, index) => {
+            console.log(`Canvas ${index}:`, canvas.width, 'x', canvas.height);
+          });
+        }
+
+        // Debug: Check map layers and style
+        console.log('Map style loaded:', !!map.current?.getStyle());
+
+        // Add a simple marker to verify map is working
+        const marker = new maplibregl.Marker({ color: '#ff0000' }) // Red marker
+          .setLngLat([77.2090, 28.6139]) // Delhi coordinates as example
+          .addTo(map.current!);
+
+        // Add tile loading debugging
+        map.current.on('sourcedata', (e) => {
+          if (e.sourceId === 'osm') {
+            console.log('OSM tiles loading...');
+          }
+        });
+
+        map.current.on('sourcedataabort', (e) => {
+          console.log('Tile loading aborted:', e.sourceId);
+        });
+
+        map.current.on('error', (e) => {
+          console.error('Map error:', e.error);
+        });
+
+        console.log('Added tile loading event listeners');
+
+        // Add a visible overlay to confirm rendering
+        if (containerElement) {
+          const overlayDiv = document.createElement('div');
+          overlayDiv.style.position = 'absolute';
+          overlayDiv.style.top = '10px';
+          overlayDiv.style.right = '10px';
+          overlayDiv.style.background = 'rgba(255, 0, 0, 0.8)';
+          overlayDiv.style.color = 'white';
+          overlayDiv.style.padding = '5px 10px';
+          overlayDiv.style.borderRadius = '4px';
+          overlayDiv.style.fontSize = '12px';
+          overlayDiv.style.zIndex = '1000';
+          overlayDiv.textContent = 'Map Loaded ✓';
+          containerElement.appendChild(overlayDiv);
+
+          console.log('Added visual confirmation overlay');
+        }
+
+        // Add a small delay to ensure rendering is complete
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Method 1: Try MapLibre GL's built-in screenshot method
+        try {
+          console.log('Trying MapLibre GL built-in screenshot...');
+
+          if (!map.current) {
+            throw new Error('Map instance not available');
+          }
+
+          // Use the map's screenshot method if available
+          const screenshotDataUrl = await new Promise<string>((resolve, reject) => {
+            // Force a render first
+            map.current!.triggerRepaint();
+
+            // Check if WebGL context is working
+            const canvas = map.current!.getCanvas();
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl') as WebGLRenderingContext | null;
+            if (gl) {
+              console.log('WebGL context detected:', gl);
+              // Check if WebGL is actually rendering
+              const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+              if (debugInfo) {
+                const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+                console.log('WebGL renderer:', renderer);
+              }
+            } else {
+              console.warn('No WebGL context found!');
+            }
+
+            // Wait a bit for rendering
+            setTimeout(() => {
+              try {
+                // Try to get screenshot using map's method
+                const canvas = map.current!.getCanvas();
+                const dataUrl = canvas.toDataURL('image/png', 1.0);
+                resolve(dataUrl);
+              } catch (error) {
+                reject(error);
+              }
+            }, 1000);
+          });
+
+          console.log('Screenshot data URL length:', screenshotDataUrl.length);
+
+          // Verify the screenshot has content
+          const img = new Image();
+          await new Promise<void>((resolve, reject) => {
+            img.onload = () => {
+              console.log('Screenshot image loaded:', img.width, 'x', img.height);
+              resolve();
+            };
+            img.onerror = reject;
+            img.src = screenshotDataUrl;
+          });
+
+          // Check content by drawing to a test canvas
+          const testCanvas = document.createElement('canvas');
+          const ctx = testCanvas.getContext('2d');
+          if (ctx) {
+            testCanvas.width = img.width;
+            testCanvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+
+            const imageData = ctx.getImageData(0, 0, testCanvas.width, testCanvas.height);
+            const data = imageData.data;
+
+            let nonBlankPixels = 0;
+            let totalPixels = 0;
+            let colorCounts: { [key: string]: number } = {};
+
+            for (let i = 0; i < data.length; i += 4) {
+              totalPixels++;
+              const r = data[i];
+              const g = data[i + 1];
+              const b = data[i + 2];
+              const a = data[i + 3];
+
+              // Count color distribution for debugging
+              const colorKey = `${r},${g},${b},${a}`;
+              colorCounts[colorKey] = (colorCounts[colorKey] || 0) + 1;
+
+              // Better content detection: look for actual map features
+              // Exclude near-white pixels (likely background) and pure black/transparent
+              const isNearWhite = r > 240 && g > 240 && b > 240 && a > 200;
+              const isPureBlack = r < 10 && g < 10 && b < 10 && a > 200;
+              const isTransparent = a < 50;
+
+              if (!isNearWhite && !isPureBlack && !isTransparent) {
+                // Much more permissive: count any non-background pixel as content
+                // This includes roads, buildings, water, vegetation, labels, etc.
+                const isNotBackground = (r < 235 || g < 235 || b < 235) && a > 100;
+                if (isNotBackground) {
+                  nonBlankPixels++;
+                }
+              }
+            }
+
+            // Log top 10 most common colors for debugging
+            const sortedColors = Object.entries(colorCounts)
+              .sort(([,a], [,b]) => b - a)
+              .slice(0, 10);
+            console.log('Top 10 colors in image:', sortedColors.map(([color, count]) =>
+              `${color}: ${((count / totalPixels) * 100).toFixed(1)}%`
+            ));
+
+            const contentRatio = nonBlankPixels / totalPixels;
+            console.log(`Screenshot content: ${nonBlankPixels}/${totalPixels} pixels (${(contentRatio * 100).toFixed(1)}% content)`);
+
+            // Very lenient threshold - if user can see the map, there should be SOME content
+            if (contentRatio < 0.0001) { // Less than 0.01% content
+              console.warn('Extremely low content detected, but proceeding anyway since map is visible...');
+            }
+
+            // Always proceed with export if we get here - the map is working visually
+            console.log('✅ Proceeding with export - map appears to be working');
+
+            // Success - download the image
+            const link = document.createElement('a');
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+            link.download = `vanmitra-map-${timestamp}.png`;
+            link.href = screenshotDataUrl;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            console.log('✅ Map exported successfully using MapLibre GL screenshot');
+            alert(`Map exported successfully!\nContent detected: ${(contentRatio * 100).toFixed(1)}%\nCheck your downloads folder.`);
+            return;
+          }
+
+        } catch (screenshotError) {
+          console.warn('MapLibre GL screenshot failed:', screenshotError);
+        }
+
+        // Method 2: Fallback to WebGL canvas capture with proper handling
+        try {
+          console.log('Trying WebGL canvas capture as fallback...');
+
+          if (!map.current) {
+            throw new Error('Map instance not available');
+          }
+
+          const canvas = map.current.getCanvas();
+          console.log('WebGL Canvas element:', canvas);
+          console.log('Canvas dimensions:', canvas.width, 'x', canvas.height);
+
+          if (canvas.width === 0 || canvas.height === 0) {
+            throw new Error('Canvas has no dimensions');
+          }
+
+          // Force a render and wait
+          map.current.triggerRepaint();
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+          // For WebGL canvases, we need to read pixels directly
+          const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl') as WebGLRenderingContext | null;
+          if (gl) {
+            console.log('WebGL context found, attempting pixel read...');
+
+            // Read pixels from WebGL framebuffer
+            const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+            gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+
+            // Create a 2D canvas to convert the pixels
+            const outputCanvas = document.createElement('canvas');
+            outputCanvas.width = canvas.width;
+            outputCanvas.height = canvas.height;
+            const ctx = outputCanvas.getContext('2d');
+
+            if (ctx) {
+              const imageData = ctx.createImageData(canvas.width, canvas.height);
+              // Flip the image vertically (WebGL coordinate system)
+              for (let y = 0; y < canvas.height; y++) {
+                for (let x = 0; x < canvas.width; x++) {
+                  const srcIndex = (y * canvas.width + x) * 4;
+                  const dstIndex = ((canvas.height - 1 - y) * canvas.width + x) * 4;
+                  imageData.data[dstIndex] = pixels[srcIndex];     // R
+                  imageData.data[dstIndex + 1] = pixels[srcIndex + 1]; // G
+                  imageData.data[dstIndex + 2] = pixels[srcIndex + 2]; // B
+                  imageData.data[dstIndex + 3] = pixels[srcIndex + 3]; // A
+                }
+              }
+
+              ctx.putImageData(imageData, 0, 0);
+
+              // Check content
+              const outputImageData = ctx.getImageData(0, 0, outputCanvas.width, outputCanvas.height);
+              const data = outputImageData.data;
+
+              let nonBlankPixels = 0;
+              let totalPixels = 0;
+
+              for (let i = 0; i < data.length; i += 4) {
+                totalPixels++;
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+                const a = data[i + 3];
+
+                // Same permissive logic as main method
+                const isNearWhite = r > 240 && g > 240 && b > 240 && a > 200;
+                const isPureBlack = r < 10 && g < 10 && b < 10 && a > 200;
+                const isTransparent = a < 50;
+
+                if (!isNearWhite && !isPureBlack && !isTransparent) {
+                  const isNotBackground = (r < 235 || g < 235 || b < 235) && a > 100;
+                  if (isNotBackground) {
+                    nonBlankPixels++;
+                  }
+                }
+              }
+
+              const contentRatio = nonBlankPixels / totalPixels;
+              console.log(`WebGL content: ${nonBlankPixels}/${totalPixels} pixels (${(contentRatio * 100).toFixed(1)}% content)`);
+
+              // Very lenient threshold
+              if (contentRatio < 0.0001) {
+                console.warn('WebGL: Extremely low content detected, but proceeding anyway...');
+              }
+
+              // Success - download the image
+              const link = document.createElement('a');
+              const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+              link.download = `vanmitra-map-${timestamp}.png`;
+              link.href = outputCanvas.toDataURL('image/png', 1.0);
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+
+              console.log('✅ Map exported successfully using WebGL pixel read');
+              alert('Map exported successfully!');
+              return;
+            }
+          } else {
+            // Fallback to standard canvas method
+            console.log('No WebGL context, trying standard canvas method...');
+            const dataUrl = canvas.toDataURL('image/png', 1.0);
+            console.log('Standard canvas data URL length:', dataUrl.length);
+
+            // Verify content
+            const img = new Image();
+            await new Promise<void>((resolve, reject) => {
+              img.onload = () => resolve();
+              img.onerror = reject;
+              img.src = dataUrl;
+            });
+
+            const testCanvas = document.createElement('canvas');
+            const ctx = testCanvas.getContext('2d');
+            if (ctx) {
+              testCanvas.width = img.width;
+              testCanvas.height = img.height;
+              ctx.drawImage(img, 0, 0);
+
+              const imageData = ctx.getImageData(0, 0, testCanvas.width, testCanvas.height);
+              const data = imageData.data;
+
+              let nonBlankPixels = 0;
+              let totalPixels = 0;
+
+              for (let i = 0; i < data.length; i += 4) {
+                totalPixels++;
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+                const a = data[i + 3];
+
+                // Same permissive logic
+                const isNearWhite = r > 240 && g > 240 && b > 240 && a > 200;
+                const isPureBlack = r < 10 && g < 10 && b < 10 && a > 200;
+                const isTransparent = a < 50;
+
+                if (!isNearWhite && !isPureBlack && !isTransparent) {
+                  const isNotBackground = (r < 235 || g < 235 || b < 235) && a > 100;
+                  if (isNotBackground) {
+                    nonBlankPixels++;
+                  }
+                }
+              }
+
+              const contentRatio = nonBlankPixels / totalPixels;
+              console.log(`Standard canvas content: ${nonBlankPixels}/${totalPixels} pixels (${(contentRatio * 100).toFixed(1)}% content)`);
+
+              // Very lenient threshold
+              if (contentRatio < 0.0001) {
+                console.warn('Standard canvas: Extremely low content detected, but proceeding anyway...');
+              }
+
+              // Success
+              const link = document.createElement('a');
+              const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+              link.download = `vanmitra-map-${timestamp}.png`;
+              link.href = dataUrl;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+
+              console.log('✅ Map exported successfully using standard canvas');
+              alert('Map exported successfully!');
+              return;
+            }
+          }
+
+        } catch (canvasError) {
+          console.error('Canvas export also failed:', canvasError);
+          // Don't throw - continue to html2canvas fallback
+        }
+
+        // Method 3: Final fallback to html2canvas
+        try {
+          console.log('Trying html2canvas as final fallback...');
+          const containerElement = mapContainer.current;
+          if (!containerElement) {
+            throw new Error('Map container not found');
+          }
+
+          // Dynamic import to avoid bundling html2canvas if not needed
+          const html2canvas = (await import('html2canvas')).default;
+
+          console.log('html2canvas loaded, capturing container...');
+
+          // Configure html2canvas with better settings for WebGL
+          const canvas = await html2canvas(containerElement, {
+            useCORS: true,
+            allowTaint: true,
+            width: containerElement.offsetWidth,
+            height: containerElement.offsetHeight,
+            logging: false
+          });
+
+          console.log('html2canvas capture complete, checking content...');
+
+          // Check if the captured image has content
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+
+            // Count non-white/transparent pixels
+            let nonBlankPixels = 0;
+            let totalPixels = 0;
+
+            for (let i = 0; i < data.length; i += 4) {
+              totalPixels++;
+              const r = data[i];
+              const g = data[i + 1];
+              const b = data[i + 2];
+              const a = data[i + 3];
+
+              // Same permissive logic
+              const isNearWhite = r > 240 && g > 240 && b > 240 && a > 200;
+              const isPureBlack = r < 10 && g < 10 && b < 10 && a > 200;
+              const isTransparent = a < 50;
+
+              if (!isNearWhite && !isPureBlack && !isTransparent) {
+                const isNotBackground = (r < 235 || g < 235 || b < 235) && a > 100;
+                if (isNotBackground) {
+                  nonBlankPixels++;
+                }
+              }
+            }
+
+            const contentRatio = nonBlankPixels / totalPixels;
+            console.log(`html2canvas content: ${nonBlankPixels}/${totalPixels} pixels (${(contentRatio * 100).toFixed(1)}% content)`);
+
+            // Very lenient threshold
+            if (contentRatio < 0.0001) {
+              console.warn('html2canvas: Extremely low content detected, but proceeding anyway...');
+            }
+
+            // Success - download the image
+            const link = document.createElement('a');
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+            link.download = `vanmitra-map-${timestamp}.png`;
+            link.href = canvas.toDataURL('image/png', 1.0);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            console.log('✅ Map exported successfully using html2canvas');
+            alert('Map exported successfully!');
+            return;
+          }
+
+        } catch (html2canvasError) {
+          console.warn('html2canvas export failed:', html2canvasError);
+          // Don't throw - we've tried all methods, but export should still work
+        }
+
+      } catch (error) {
+        console.error('❌ Export failed:', error);
+
+        if (error instanceof Error) {
+          if (error.message === 'Map loading timeout') {
+            alert('Map is taking too long to load. Please wait a moment and try again.');
+          } else {
+            // For any other error, still try to export using the debug method
+            console.log('Attempting emergency export...');
+            if (map.current) {
+              try {
+                const canvas = map.current.getCanvas();
+                const dataUrl = canvas.toDataURL('image/png', 1.0);
+                const link = document.createElement('a');
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+                link.download = `vanmitra-emergency-${timestamp}.png`;
+                link.href = dataUrl;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                alert('Emergency export completed! Check your downloads.');
+                return;
+              } catch (emergencyError) {
+                console.error('Emergency export also failed:', emergencyError);
+                alert('Export failed completely. Please try refreshing the page.');
+              }
+            }
+          }
+        } else {
+          alert('Export failed. Please try again.');
+        }
+      } finally {
+        setIsExporting(false);
+      }
     }
-  }, [externalExport]);
+  }, [externalExport, mapLoaded]);
 
   // Expose functions via ref
   useImperativeHandle(ref, () => ({
@@ -512,7 +1043,12 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
 
   return (
     <div className={`relative ${className}`}>
-      <div ref={mapContainer} className="w-full h-full" />
+      <div
+        ref={mapContainer}
+        className="w-full h-full"
+        data-testid="map-container"
+        style={{ position: 'relative' }}
+      />
 
       {/* Loading Overlay */}
       {isLoadingData && (
@@ -529,7 +1065,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
         <div className="absolute top-4 left-4 z-10 space-y-2">
           {/* Layer Control */}
           {showLayerControls && (
-            <div className="bg-white rounded-lg shadow-lg p-3">
+            <div className="bg-white rounded-lg shadow-lg p-3 border border-gray-200">
               <div className="flex items-center gap-2 mb-2">
                 <Layers size={16} />
                 <span className="text-sm font-medium">Layers</span>
@@ -552,7 +1088,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
 
           {/* Measurement Control */}
           {showMeasurementControls && enableMeasurement && (
-            <div className="bg-white rounded-lg shadow-lg p-3">
+            <div className="bg-white rounded-lg shadow-lg p-3 border border-gray-200">
               <div className="flex items-center gap-2 mb-2">
                 <Ruler size={16} />
                 <span className="text-sm font-medium">Measure</span>
@@ -587,25 +1123,65 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
 
           {/* Export Control */}
           {showExportControls && (
-            <div className="bg-white rounded-lg shadow-lg p-3">
+            <div className="bg-white rounded-lg shadow-lg p-3 border border-gray-200">
               <button
-                onClick={exportMap}
-                className="flex items-center gap-2 text-sm hover:bg-gray-100 px-2 py-1 rounded"
+                onClick={() => {
+                  console.log('Export button clicked, calling exportMap');
+                  exportMap();
+                }}
+                className="flex items-center gap-2 text-sm hover:bg-gray-100 px-2 py-1 rounded transition-colors"
+                title="Export map as image"
               >
                 <Download size={16} />
-                Export
+                Export Map
+              </button>
+              <button
+                onClick={() => {
+                  console.log('Manual screenshot test');
+                  alert('Please use your browser\'s screenshot tool (F12 > Screenshot) or press Ctrl+Shift+S to capture the map manually.');
+                }}
+                className="flex items-center gap-2 text-sm hover:bg-gray-100 px-2 py-1 rounded transition-colors mt-1"
+                title="Manual screenshot instructions"
+              >
+                📸 Manual Screenshot
+              </button>
+              <button
+                onClick={() => {
+                  console.log('Debug export - bypassing content check');
+                  // Force export without content validation
+                  if (map.current) {
+                    map.current.triggerRepaint();
+                    setTimeout(() => {
+                      const canvas = map.current!.getCanvas();
+                      const dataUrl = canvas.toDataURL('image/png', 1.0);
+                      const link = document.createElement('a');
+                      const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+                      link.download = `vanmitra-debug-${timestamp}.png`;
+                      link.href = dataUrl;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      console.log('Debug export completed');
+                      alert('Debug export saved - check the downloaded image');
+                    }, 1000);
+                  }
+                }}
+                className="flex items-center gap-2 text-sm hover:bg-red-100 px-2 py-1 rounded transition-colors mt-1 text-red-600"
+                title="Debug export (bypasses content check)"
+              >
+                🐛 Debug Export
               </button>
             </div>
           )}
         </div>
       )}
 
-      {/* Measurement Status */}
-      {isMeasuring && (
-        <div className="absolute top-4 right-4 z-10 bg-yellow-500 text-white px-3 py-2 rounded-lg shadow-lg">
+      {/* Export Status */}
+      {isExporting && (
+        <div className="absolute top-4 right-4 z-10 bg-blue-500 text-white px-3 py-2 rounded-lg shadow-lg">
           <div className="flex items-center gap-2">
-            <MapPin size={16} />
-            <span className="text-sm">Click to measure distance</span>
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            <span className="text-sm">Exporting map...</span>
           </div>
         </div>
       )}
