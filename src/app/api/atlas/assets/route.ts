@@ -1,5 +1,114 @@
 import { NextResponse } from "next/server";
 
+// Simple in-memory cache for OSM data
+const osmCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes - increased cache duration
+
+// Request queue to prevent concurrent requests to the same endpoint
+const requestQueue = new Map<string, Promise<any>>();
+const REQUEST_TIMEOUT = 30000; // 30 seconds timeout for queued requests
+
+// Pre-cache common mock data for instant loading
+function initializeMockCache() {
+  const commonStates = ['Madhya Pradesh', 'Tripura', 'Odisha', 'Telangana', 'West Bengal'];
+  const commonDistricts = {
+    'Madhya Pradesh': ['Bhopal', 'Indore'],
+    'Tripura': ['West Tripura'],
+    'Odisha': ['Puri'],
+    'Telangana': ['Hyderabad'],
+    'West Bengal': ['Sundarban']
+  };
+
+  commonStates.forEach(state => {
+    const districts = commonDistricts[state as keyof typeof commonDistricts] || [state.split(' ')[0]];
+    districts.forEach(district => {
+      const mockFeatures = generateFallbackData(state, district);
+      const bbox = '74.0,21.0,82.0,26.0'; // Default bbox
+      const cacheKey = `${bbox}_combined`;
+      const geojson = {
+        type: "FeatureCollection",
+        features: mockFeatures.slice(0, 50),
+        metadata: {
+          source: 'Realistic Fallback Data',
+          state,
+          district,
+          bbox,
+          total_features: mockFeatures.length,
+          timestamp: new Date().toISOString()
+        }
+      };
+
+      osmCache.set(cacheKey, { data: geojson, timestamp: Date.now() });
+    });
+  });
+
+  console.log('Pre-cached mock data for common state/district combinations');
+}
+
+// Initialize mock cache on startup
+initializeMockCache();
+
+// Quick OSM fetch with minimal retries and fast timeout
+async function fetchOSMDataQuick(bbox: string, featureType: string): Promise<any> {
+  const cacheKey = `${bbox}_${featureType}`;
+  const now = Date.now();
+
+  // Check cache first
+  const cached = osmCache.get(cacheKey);
+  if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+    return cached.data;
+  }
+
+  const overpassUrl = 'https://overpass-api.de/api/interpreter';
+  const query = `
+    [out:json][timeout:10];
+    (
+      ${featureType}(${bbox});
+    );
+    out body 20;
+    >;
+    out skel qt;
+  `;
+
+  try {
+    // Fast fetch with short timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+    const response = await fetch(overpassUrl, {
+      method: 'POST',
+      body: query,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': 'VanMitra-FRA-Application/1.0'
+      },
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (response.status === 429) {
+      // Single quick retry for rate limiting
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return fetchOSMDataQuick(bbox, featureType);
+    }
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+
+    // Cache the successful response
+    osmCache.set(cacheKey, { data, timestamp: now });
+
+    return data;
+  } catch (error) {
+    // Return null on any error for fast fallback
+    return null;
+  }
+}
+
 // Generate realistic fallback data for different states
 function generateFallbackData(state: string, district: string) {
   const stateCenters: { [key: string]: [number, number] } = {
@@ -89,37 +198,101 @@ function generateFallbackData(state: string, district: string) {
   return features;
 }
 
-// OpenStreetMap Overpass API query for natural water bodies and agricultural features
-async function fetchOSMData(bbox: string, featureType: string) {
-  const overpassUrl = 'https://overpass-api.de/api/interpreter';
-  const query = `
-    [out:json][timeout:25];
-    (
-      ${featureType}(${bbox});
-    );
-    out body;
-    >;
-    out skel qt;
-  `;
+// OpenStreetMap Overpass API query for natural water bodies and agricultural features with retry logic
+async function fetchOSMData(bbox: string, featureType: string, retryCount = 0): Promise<any> {
+  const cacheKey = `${bbox}_${featureType}`;
+  const now = Date.now();
+
+  // Check cache first
+  const cached = osmCache.get(cacheKey);
+  if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+    console.log(`Using cached data for ${featureType}`);
+    return cached.data;
+  }
+
+  // Check if there's already a request in progress for this endpoint
+  const queueKey = cacheKey;
+  if (requestQueue.has(queueKey)) {
+    console.log(`Request already in progress for ${featureType}, waiting...`);
+    try {
+      const result = await Promise.race([
+        requestQueue.get(queueKey),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Request timeout')), REQUEST_TIMEOUT)
+        )
+      ]);
+      return result;
+    } catch (error) {
+      console.log(`Queued request failed for ${featureType}, proceeding with new request`);
+    }
+  }
+
+  // Create a new request promise
+  const requestPromise = (async () => {
+    const maxRetries = 3;
+    const baseDelay = 5000; // 5 second base delay - increased
+
+    const overpassUrl = 'https://overpass-api.de/api/interpreter';
+    const query = `
+      [out:json][timeout:25];
+      (
+        ${featureType}(${bbox});
+      );
+      out body 50;
+      >;
+      out skel qt;
+    `;
+
+    try {
+      const response = await fetch(overpassUrl, {
+        method: 'POST',
+        body: query,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'User-Agent': 'VanMitra-FRA-Application/1.0'
+        }
+      });
+
+      // Handle rate limiting (429)
+      if (response.status === 429) {
+        if (retryCount < maxRetries) {
+          const delay = baseDelay * Math.pow(2, retryCount); // Exponential backoff
+          console.log(`Rate limited (429). Retrying in ${delay}ms... (attempt ${retryCount + 1}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return fetchOSMData(bbox, featureType, retryCount + 1);
+        } else {
+          console.log('Max retries reached for rate limited request, using fallback data');
+          return null;
+        }
+      }
+
+      if (!response.ok) {
+        // For other errors, don't retry
+        console.error(`Overpass API error: ${response.status} ${response.statusText}`);
+        return null;
+      }
+
+      const data = await response.json();
+
+      // Cache the successful response
+      osmCache.set(cacheKey, { data, timestamp: now });
+
+      return data;
+    } catch (error) {
+      console.error(`Error fetching OSM data (attempt ${retryCount + 1}):`, error);
+      return null;
+    }
+  })();
+
+  // Store the promise in the queue
+  requestQueue.set(queueKey, requestPromise);
 
   try {
-    const response = await fetch(overpassUrl, {
-      method: 'POST',
-      body: query,
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`Overpass API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error fetching OSM data:', error);
-    return null;
+    const result = await requestPromise;
+    return result;
+  } finally {
+    // Clean up the queue after the request completes
+    requestQueue.delete(queueKey);
   }
 }
 
@@ -181,6 +354,8 @@ export async function GET(request: Request) {
   const state = searchParams.get('state') || 'Madhya Pradesh';
   const district = searchParams.get('district') || 'Bhopal';
 
+  console.log(`Assets API called for ${state}, ${district}`);
+
   // Define bounding boxes for different states (approximate)
   const stateBounds: { [key: string]: string } = {
     'Madhya Pradesh': '74.0,21.0,82.0,26.0',
@@ -192,61 +367,92 @@ export async function GET(request: Request) {
 
   const bbox = stateBounds[state] || stateBounds['Madhya Pradesh'];
 
+  // Check cache first for immediate response
+  const cacheKey = `${bbox}_combined`;
+  const cached = osmCache.get(cacheKey);
+  if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+    console.log('Using cached combined data');
+    return NextResponse.json(cached.data);
+  }
+
   try {
-    // Fetch different types of features from OSM
-    const fetchPromises = [
-      fetchOSMData(bbox, 'node["natural"="water"];way["natural"="water"];node["waterway"];way["waterway"]'),
-      fetchOSMData(bbox, 'way["landuse"="farmland"];way["landuse"="farm"]'),
-      fetchOSMData(bbox, 'node["man_made"="water_well"];node["amenity"="drinking_water"]')
+    // Try to get OSM data quickly, but don't wait too long
+    const features: any[] = [];
+    let hasOSMData = false;
+
+    // Quick OSM fetch with minimal delay and single retry
+    console.log('Quick OSM fetch attempt...');
+
+    const osmPromises = [
+      fetchOSMDataQuick(bbox, 'node["natural"="water"];way["natural"="water"];node["waterway"];way["waterway"]'),
+      fetchOSMDataQuick(bbox, 'way["landuse"="farmland"];way["landuse"="farm"]'),
+      fetchOSMDataQuick(bbox, 'node["man_made"="water_well"];node["amenity"="drinking_water"]')
     ];
 
-    const results = await Promise.allSettled(fetchPromises);
-    const [waterResult, farmlandResult, wellResult] = results;
+    // Wait for all OSM requests with a short timeout
+    const osmResults = await Promise.allSettled(osmPromises);
 
-    const features = [];
+    osmResults.forEach((result, index) => {
+      if (result.status === 'fulfilled' && result.value) {
+        const geoJsonFeatures = convertOSMToGeoJSON(result.value, state, district);
+        if (geoJsonFeatures.length > 0) {
+          features.push(...geoJsonFeatures);
+          hasOSMData = true;
+          console.log(`Added ${geoJsonFeatures.length} features from OSM query ${index + 1}`);
+        }
+      }
+    });
 
-    // Process water data
-    if (waterResult.status === 'fulfilled' && waterResult.value) {
-      features.push(...convertOSMToGeoJSON(waterResult.value, state, district));
+    // If we got some OSM data, use it
+    if (hasOSMData && features.length > 0) {
+      console.log(`Using ${features.length} OSM features`);
+      const geojson = {
+        type: "FeatureCollection",
+        features: features.slice(0, 50),
+        metadata: {
+          source: 'OpenStreetMap Overpass API',
+          state,
+          district,
+          bbox,
+          total_features: features.length,
+          timestamp: new Date().toISOString()
+        }
+      };
+
+      // Cache the result
+      osmCache.set(cacheKey, { data: geojson, timestamp: Date.now() });
+      return NextResponse.json(geojson);
     }
 
-    // Process farmland data
-    if (farmlandResult.status === 'fulfilled' && farmlandResult.value) {
-      features.push(...convertOSMToGeoJSON(farmlandResult.value, state, district));
-    }
-
-    // Process well data
-    if (wellResult.status === 'fulfilled' && wellResult.value) {
-      features.push(...convertOSMToGeoJSON(wellResult.value, state, district));
-    }
-
-    // If no real data, provide fallback sample data
-    if (features.length === 0) {
-      features.push(...generateFallbackData(state, district));
-    }
-
+    // If no OSM data or OSM failed, use fast mock data
+    console.log('Using fast mock data');
+    const mockFeatures = generateFallbackData(state, district);
     const geojson = {
       type: "FeatureCollection",
-      features: features.slice(0, 50), // Limit to 50 features for performance
+      features: mockFeatures.slice(0, 50),
       metadata: {
-        source: features.length > 0 && features[0].properties.source !== 'Realistic Fallback Data' ? 'OpenStreetMap Overpass API' : 'Realistic Fallback Data',
+        source: 'Realistic Fallback Data',
         state,
         district,
         bbox,
-        total_features: features.length,
+        total_features: mockFeatures.length,
         timestamp: new Date().toISOString()
       }
     };
 
+    // Cache the mock result too
+    osmCache.set(cacheKey, { data: geojson, timestamp: Date.now() });
     return NextResponse.json(geojson);
+
   } catch (error) {
     console.error('Error in assets API:', error);
 
-    // Fallback to realistic sample data if API fails
-    const features = generateFallbackData(state, district);
+    // Fast fallback to mock data
+    console.log('Fast fallback to mock data due to error');
+    const mockFeatures = generateFallbackData(state, district);
     const geojson = {
       type: "FeatureCollection",
-      features: features.slice(0, 50),
+      features: mockFeatures.slice(0, 50),
       metadata: {
         source: 'Realistic Fallback Data',
         state,

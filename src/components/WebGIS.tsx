@@ -300,7 +300,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
         }
       }
     });
-  }, [currentLayers, mapLoaded]);
+  }, [currentLayers, mapLoaded, layers]);
 
   const addLayerFromSource = (layer: GISLayer, sourceId: string, layerId: string) => {
     if (!map.current) return;

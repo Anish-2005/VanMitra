@@ -57,7 +57,7 @@ export default function AtlasPage() {
     }
   ]);
 
-  const [markers] = useState<GISMarker[]>([
+  const [markers, setMarkers] = useState<GISMarker[]>([
     { id: 'marker-mp', lng: 78.4, lat: 23.2, label: 'MP', color: '#16a34a', popup: '<b>Madhya Pradesh</b><br>FRA Claim IFR-001<br>Area: 15.5 ha' },
     { id: 'marker-tr', lng: 91.2, lat: 23.8, label: 'TR', color: '#dc2626', popup: '<b>Tripura</b><br>FRA Claim CR-001<br>Area: 8.7 ha' },
     { id: 'marker-od', lng: 85.8, lat: 19.8, label: 'OD', color: '#ea580c', popup: '<b>Odisha</b><br>FRA Claim IFR-001<br>Area: 18.9 ha' },
@@ -136,10 +136,6 @@ export default function AtlasPage() {
     ));
   };
 
-  const handleLayerAdd = (layer: GISLayer) => {
-    setLayers(prev => [...prev, layer]);
-  };
-
   const handleLayerRemove = (layerId: string) => {
     setLayers(prev => prev.filter(layer => layer.id !== layerId));
   };
@@ -147,6 +143,12 @@ export default function AtlasPage() {
   const handleLayerUpdate = (layerId: string, updates: Partial<GISLayer>) => {
     setLayers(prev => prev.map(layer =>
       layer.id === layerId ? { ...layer, ...updates } : layer
+    ));
+  };
+
+  const handleMarkerUpdate = (markerId: string, updates: Partial<GISMarker>) => {
+    setMarkers(prev => prev.map(marker =>
+      marker.id === markerId ? { ...marker, ...updates } : marker
     ));
   };
 
@@ -244,10 +246,11 @@ export default function AtlasPage() {
               <div className="mb-6">
                 <LayerManager
                   layers={layers}
+                  markers={markers}
                   onLayerToggle={handleLayerToggle}
-                  onLayerAdd={handleLayerAdd}
                   onLayerRemove={handleLayerRemove}
                   onLayerUpdate={handleLayerUpdate}
+                  onMarkerUpdate={handleMarkerUpdate}
                 />
               </div>
 

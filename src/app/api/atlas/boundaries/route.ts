@@ -1,5 +1,135 @@
 import { NextResponse } from "next/server";
 
+// Simple in-memory cache for OSM data
+const osmCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes - increased cache duration
+
+// Request queue to prevent concurrent requests to the same endpoint
+const requestQueue = new Map<string, Promise<any>>();
+const REQUEST_TIMEOUT = 30000; // 30 seconds timeout for queued requests
+
+// Pre-cache common mock boundaries data
+function initializeBoundariesCache() {
+  const commonStates = ['Madhya Pradesh', 'Tripura', 'Odisha', 'Telangana', 'West Bengal'];
+  const commonDistricts = {
+    'Madhya Pradesh': ['Bhopal', 'Indore'],
+    'Tripura': ['West Tripura'],
+    'Odisha': ['Puri'],
+    'Telangana': ['Hyderabad'],
+    'West Bengal': ['Sundarban']
+  };
+
+  commonStates.forEach(state => {
+    const districts = commonDistricts[state as keyof typeof commonDistricts] || [state.split(' ')[0]];
+    districts.forEach(district => {
+      const bbox = '74.0,21.0,82.0,26.0'; // Default bbox
+      const cacheKey = `boundaries_${bbox}`;
+
+      // Generate mock boundary features
+      const mockFeatures = [];
+      for (let i = 0; i < 5; i++) {
+        mockFeatures.push({
+          type: "Feature",
+          properties: {
+            id: `mock_boundary_${i + 1}`,
+            name: `Village ${i + 1}`,
+            state: state,
+            district: district,
+            source: 'Government Data (Mock)',
+            admin_level: '8'
+          },
+          geometry: {
+            type: 'Polygon',
+            coordinates: [[[77.35 + i * 0.05, 23.25], [77.45 + i * 0.05, 23.25], [77.45 + i * 0.05, 23.15], [77.35 + i * 0.05, 23.15], [77.35 + i * 0.05, 23.25]]]
+          }
+        });
+      }
+
+      const geojson = {
+        type: "FeatureCollection",
+        features: mockFeatures,
+        metadata: {
+          source: 'Government Administrative Data',
+          state,
+          district,
+          bbox,
+          total_features: mockFeatures.length,
+          timestamp: new Date().toISOString()
+        }
+      };
+
+      osmCache.set(cacheKey, { data: geojson, timestamp: Date.now() });
+    });
+  });
+
+  console.log('Pre-cached mock boundaries data for common state/district combinations');
+}
+
+// Initialize boundaries cache on startup
+initializeBoundariesCache();
+
+// Quick OSM administrative boundaries fetch
+async function fetchOSMAdministrativeBoundariesQuick(bbox: string): Promise<any> {
+  const cacheKey = `boundaries_${bbox}`;
+  const now = Date.now();
+
+  // Check cache first
+  const cached = osmCache.get(cacheKey);
+  if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+    return cached.data;
+  }
+
+  const overpassUrl = 'https://overpass-api.de/api/interpreter';
+  const query = `
+    [out:json][timeout:10];
+    (
+      relation["boundary"="administrative"]["admin_level"="8"](${bbox});
+      way["boundary"="administrative"]["admin_level"="8"](${bbox});
+    );
+    out body 20;
+    >;
+    out skel qt;
+  `;
+
+  try {
+    // Fast fetch with short timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+    const response = await fetch(overpassUrl, {
+      method: 'POST',
+      body: query,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': 'VanMitra-FRA-Application/1.0'
+      },
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (response.status === 429) {
+      // Single quick retry for rate limiting
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return fetchOSMAdministrativeBoundariesQuick(bbox);
+    }
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+
+    // Cache the successful response
+    osmCache.set(cacheKey, { data, timestamp: now });
+
+    return data;
+  } catch (error) {
+    // Return null on any error for fast fallback
+    return null;
+  }
+}
+
 // Generate realistic fallback administrative boundaries for different states
 function generateFallbackBoundaries(state: string, district: string) {
   const stateBoundaries: { [key: string]: any[] } = {
@@ -227,38 +357,101 @@ async function fetchVillageBoundaries(state: string, district: string) {
   return districtData || [];
 }
 
-// Function to fetch administrative boundaries from OSM
-async function fetchOSMAdministrativeBoundaries(bbox: string) {
-  const overpassUrl = 'https://overpass-api.de/api/interpreter';
-  const query = `
-    [out:json][timeout:25];
-    (
-      relation["boundary"="administrative"]["admin_level"="8"](${bbox});
-      way["boundary"="administrative"]["admin_level"="8"](${bbox});
-    );
-    out body;
-    >;
-    out skel qt;
-  `;
+// Function to fetch administrative boundaries from OSM with retry logic
+async function fetchOSMAdministrativeBoundaries(bbox: string, retryCount = 0): Promise<any> {
+  const cacheKey = `boundaries_${bbox}`;
+  const now = Date.now();
+
+  // Check cache first
+  const cached = osmCache.get(cacheKey);
+  if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+    console.log('Using cached boundaries data');
+    return cached.data;
+  }
+
+  // Check if there's already a request in progress for this endpoint
+  const queueKey = cacheKey;
+  if (requestQueue.has(queueKey)) {
+    console.log('Request already in progress for boundaries, waiting...');
+    try {
+      const result = await Promise.race([
+        requestQueue.get(queueKey),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Request timeout')), REQUEST_TIMEOUT)
+        )
+      ]);
+      return result;
+    } catch (error) {
+      console.log('Queued request failed for boundaries, proceeding with new request');
+    }
+  }
+
+  // Create a new request promise
+  const requestPromise = (async () => {
+    const maxRetries = 3;
+    const baseDelay = 5000; // 5 second base delay - increased
+
+    const overpassUrl = 'https://overpass-api.de/api/interpreter';
+    const query = `
+      [out:json][timeout:25];
+      (
+        relation["boundary"="administrative"]["admin_level"="8"](${bbox});
+        way["boundary"="administrative"]["admin_level"="8"](${bbox});
+      );
+      out body 20;
+      >;
+      out skel qt;
+    `;
+
+    try {
+      const response = await fetch(overpassUrl, {
+        method: 'POST',
+        body: query,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'User-Agent': 'VanMitra-FRA-Application/1.0'
+        }
+      });
+
+      // Handle rate limiting (429)
+      if (response.status === 429) {
+        if (retryCount < maxRetries) {
+          const delay = baseDelay * Math.pow(2, retryCount); // Exponential backoff
+          console.log(`Rate limited (429) for boundaries. Retrying in ${delay}ms... (attempt ${retryCount + 1}/${maxRetries})`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return fetchOSMAdministrativeBoundaries(bbox, retryCount + 1);
+        } else {
+          console.log('Max retries reached for boundaries rate limited request');
+          return null;
+        }
+      }
+
+      if (!response.ok) {
+        console.error(`Overpass API error for boundaries: ${response.status} ${response.statusText}`);
+        return null;
+      }
+
+      const data = await response.json();
+
+      // Cache the successful response
+      osmCache.set(cacheKey, { data, timestamp: now });
+
+      return data;
+    } catch (error) {
+      console.error(`Error fetching OSM administrative boundaries (attempt ${retryCount + 1}):`, error);
+      return null;
+    }
+  })();
+
+  // Store the promise in the queue
+  requestQueue.set(queueKey, requestPromise);
 
   try {
-    const response = await fetch(overpassUrl, {
-      method: 'POST',
-      body: query,
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`Overpass API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error fetching OSM administrative boundaries:', error);
-    return null;
+    const result = await requestPromise;
+    return result;
+  } finally {
+    // Clean up the queue after the request completes
+    requestQueue.delete(queueKey);
   }
 }
 
@@ -268,7 +461,7 @@ export async function GET(request: Request) {
   const district = searchParams.get('district') || 'Bhopal';
 
   try {
-    // Try to fetch real administrative boundaries from OSM
+    // Define bounding boxes for different states (approximate)
     const stateBounds: { [key: string]: string } = {
       'Madhya Pradesh': '74.0,21.0,82.0,26.0',
       'Tripura': '90.0,22.0,93.0,25.0',
@@ -278,32 +471,54 @@ export async function GET(request: Request) {
     };
 
     const bbox = stateBounds[state] || stateBounds['Madhya Pradesh'];
+    const cacheKey = `boundaries_${bbox}`;
 
-    let features = [];
+    // Check pre-cached data first for instant response
+    const cached = osmCache.get(cacheKey);
+    if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+      console.log('Using pre-cached boundaries data for instant response');
+      return NextResponse.json(cached.data);
+    }
 
-    // Try to fetch OSM administrative boundaries
+    // Start quick OSM fetch in background
+    const osmPromise = fetchOSMAdministrativeBoundariesQuick(bbox);
+
+    // Generate fast mock data as immediate fallback
+    const mockFeatures = generateFallbackBoundaries(state, district);
+    const mockGeojson = {
+      type: "FeatureCollection",
+      features: mockFeatures.slice(0, 10),
+      metadata: {
+        source: 'Fast Mock Administrative Data',
+        state,
+        district,
+        bbox,
+        total_features: mockFeatures.length,
+        timestamp: new Date().toISOString()
+      }
+    };
+
+    // Wait for OSM data with short timeout
     try {
-      const osmData = await fetchOSMAdministrativeBoundaries(bbox);
+      const osmData = await Promise.race([
+        osmPromise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('OSM timeout')), 3000))
+      ]);
 
-      // Convert OSM data to GeoJSON
-      if (osmData && osmData.elements) {
-        features = osmData.elements
+      if (osmData && osmData.elements && osmData.elements.length > 0) {
+        // Convert OSM data to GeoJSON
+        const features = osmData.elements
           .filter((element: any) => element.type === 'relation' || element.type === 'way')
-          .slice(0, 10) // Limit for performance
+          .slice(0, 10)
           .map((element: any, index: number) => {
-            // For relations and ways, we need to construct polygon geometries
-            // This is simplified - in production, you'd need proper geometry construction
             let coordinates = [];
             if (element.members) {
-              // For relations, get coordinates from members
               coordinates = element.members
                 .filter((member: any) => member.type === 'way')
                 .map((member: any) => {
-                  // This would need actual coordinate lookup
                   return [[77.35 + index * 0.05, 23.25], [77.45 + index * 0.05, 23.25], [77.45 + index * 0.05, 23.15], [77.35 + index * 0.05, 23.15], [77.35 + index * 0.05, 23.25]];
                 });
             } else {
-              // Fallback coordinates
               coordinates = [[[77.35 + index * 0.05, 23.25], [77.45 + index * 0.05, 23.25], [77.45 + index * 0.05, 23.15], [77.35 + index * 0.05, 23.15], [77.35 + index * 0.05, 23.25]]];
             }
 
@@ -325,47 +540,40 @@ export async function GET(request: Request) {
               }
             };
           });
+
+        if (features.length > 0) {
+          console.log(`Using ${features.length} OSM boundary features`);
+          const geojson = {
+            type: "FeatureCollection",
+            features: features,
+            metadata: {
+              source: 'OpenStreetMap Overpass API',
+              state,
+              district,
+              bbox,
+              total_features: features.length,
+              timestamp: new Date().toISOString()
+            }
+          };
+
+          // Cache the result
+          osmCache.set(cacheKey, { data: geojson, timestamp: Date.now() });
+          return NextResponse.json(geojson);
+        }
       }
     } catch (osmError) {
-      console.log('OSM API failed, using mock data:', osmError);
+      console.log('OSM boundaries fetch failed or timed out, using fast mock data');
     }
 
-    // If no OSM data, use mock government data
-    if (features.length === 0) {
-      const mockData = await fetchVillageBoundaries(state, district);
-      features = mockData.map((village: any) => ({
-        type: "Feature",
-        properties: {
-          id: village.id,
-          name: village.name,
-          state: state,
-          district: district,
-          source: 'Government Data (Mock)',
-          admin_level: '8'
-        },
-        geometry: {
-          type: 'Polygon',
-          coordinates: village.coordinates
-        }
-      }));
-    }    const geojson = {
-      type: "FeatureCollection",
-      features: features,
-      metadata: {
-        source: features.length > 0 && features[0].properties.source === 'OpenStreetMap' ? 'OpenStreetMap Overpass API' : 'Government Administrative Data',
-        state,
-        district,
-        bbox,
-        total_features: features.length,
-        timestamp: new Date().toISOString()
-      }
-    };
+    // Return fast mock data if OSM fails or times out
+    console.log('Returning fast mock boundaries data');
+    osmCache.set(cacheKey, { data: mockGeojson, timestamp: Date.now() });
+    return NextResponse.json(mockGeojson);
 
-    return NextResponse.json(geojson);
   } catch (error) {
     console.error('Error in boundaries API:', error);
 
-    // Fallback to realistic sample data if API fails
+    // Ultimate fallback to realistic sample data
     const features = generateFallbackBoundaries(state, district);
     const geojson = {
       type: "FeatureCollection",
