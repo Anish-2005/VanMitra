@@ -5,10 +5,12 @@ import { Users, MapPin } from "lucide-react";
 import DecorativeBackground from "@/components/DecorativeBackground";
 import Link from "next/link";
 import MapPreview from "../../components/MapPreview";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 export default function PublicPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-100 text-green-900 relative overflow-hidden">
+    <ProtectedRoute>
+      <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-100 text-green-900 relative overflow-hidden">
       <DecorativeBackground count={5} />
       <header className="relative z-10 max-w-7xl mx-auto px-6 pt-8 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -49,5 +51,6 @@ export default function PublicPage() {
         </div>
       </main>
     </div>
+    </ProtectedRoute>
   );
 }

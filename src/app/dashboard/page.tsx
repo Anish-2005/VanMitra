@@ -7,6 +7,10 @@ import { MapPin, Database, Target, Satellite, ArrowRight } from "lucide-react";
 import DecorativeBackground from "@/components/DecorativeBackground";
 import Link from "next/link";
 import MapPreview from "../../components/MapPreview";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { useAuth } from "@/components/AuthProvider";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 function Sparkline({ data, width = 160, height = 40 }: { data: number[]; width?: number; height?: number }) {
   const max = Math.max(...data, 1);
@@ -30,6 +34,12 @@ export default function Dashboard() {
   // deterministic pseudo-random generator used for decorative floating items
   const seeded = (i: number, salt = 1) => {
     return Math.abs(Math.sin(i * 12.9898 + salt * 78.233) * 43758.5453) % 1;
+  };
+
+  const { user } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut(auth);
   };
 
   const [stateFilter, setStateFilter] = useState<string>(DEFAULT_STATE);
@@ -93,7 +103,8 @@ export default function Dashboard() {
   }, [kpiData, filtered]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-100 text-green-900 relative overflow-hidden">
+    <ProtectedRoute>
+      <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-100 text-green-900 relative overflow-hidden">
       <DecorativeBackground count={8} />
       <header className="relative z-10 max-w-7xl mx-auto px-6 pt-8 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -107,7 +118,7 @@ export default function Dashboard() {
         </div>
         <nav className="flex items-center gap-4">
           <Link href="/" className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors">Home</Link>
-          <button className="inline-flex items-center gap-2 bg-green-700 text-white px-4 py-2 rounded-md shadow-md hover:bg-green-600 transition-colors">Sign out</button>
+          <button onClick={handleLogout} className="inline-flex items-center gap-2 bg-green-700 text-white px-4 py-2 rounded-md shadow-md hover:bg-green-600 transition-colors">Sign out</button>
         </nav>
       </header>
 
@@ -276,5 +287,6 @@ export default function Dashboard() {
         </div>
       )}
     </div>
+    </ProtectedRoute>
   );
 }
