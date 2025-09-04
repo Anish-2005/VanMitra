@@ -407,7 +407,13 @@ export default function AtlasPage() {
         allFeatures.push(...layer.data.features);
       }
     });
-    exportToGeoJSON(allFeatures, 'atlas-export.geojson');
+    if (!allFeatures.length) {
+      pushToast('No features available to export', 'info');
+      return;
+    }
+    const ts = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `vanmitra-atlas-${ts}.geojson`;
+    exportToGeoJSON(allFeatures, filename);
   };
 
   return (

@@ -7,6 +7,7 @@ import Link from "next/link";
 import DecorativeBackground from "@/components/DecorativeBackground";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import WebGIS, { GISLayer, GISMarker } from "@/components/WebGIS";
+import { exportToGeoJSON } from '@/lib/gis-utils';
 // LayerManager removed - use map's built-in controls instead
 
 interface FeatureData {
@@ -50,9 +51,9 @@ export default function FeaturePage({
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
   const [mapZoom, setMapZoom] = useState<number>(12);
   const [isFetchingBoundaries, setIsFetchingBoundaries] = useState(false);
-  const [toasts, setToasts] = useState<{ id: number; message: string; type?: 'info'|'error' }[]>([]);
+  const [toasts, setToasts] = useState<{ id: number; message: string; type?: 'info' | 'error' }[]>([]);
 
-  const pushToast = (message: string, type: 'info'|'error' = 'info') => {
+  const pushToast = (message: string, type: 'info' | 'error' = 'info') => {
     const id = Date.now() + Math.floor(Math.random() * 1000);
     setToasts(prev => [...prev, { id, message, type }]);
     setTimeout(() => {
@@ -91,10 +92,10 @@ export default function FeaturePage({
       setError(null);
       try {
         // Try to fetch claim by id via claims API
-  const params = new URLSearchParams();
-  params.set('id', featureId);
-  const url = `/api/claims?${params.toString()}`;
-  const resp = await fetch(url, { headers: { Accept: 'application/json' } });
+        const params = new URLSearchParams();
+        params.set('id', featureId);
+        const url = `/api/claims?${params.toString()}`;
+        const resp = await fetch(url, { headers: { Accept: 'application/json' } });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const data = await resp.json();
 
@@ -171,7 +172,7 @@ export default function FeaturePage({
         // Create a dedicated layer for this feature so polygons render with fill + outline
         const fc = { type: 'FeatureCollection' as const, features: [featureObj as any] };
         const claimType = String(featureObj.properties?.claim_type ?? '').toUpperCase();
-        const colorMap: Record<string,string> = { IFR: '#16a34a', CR: '#3b82f6', CFR: '#f59e0b' };
+        const colorMap: Record<string, string> = { IFR: '#16a34a', CR: '#3b82f6', CFR: '#f59e0b' };
         const fillColor = colorMap[claimType] ?? '#60a5fa';
 
         setLayers(prev => [
@@ -365,7 +366,7 @@ export default function FeaturePage({
         <header className="relative z-10 max-w-7xl mx-auto px-6 pt-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-md bg-green-600 flex items-center justify-center border border-green-700 shadow-sm">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 6h18M3 12h18M3 18h18" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 6h18M3 12h18M3 18h18" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </div>
             <div>
               <h2 className="text-base font-semibold text-green-900">VanMitra</h2>
@@ -385,7 +386,7 @@ export default function FeaturePage({
               &larr; Back to Atlas
             </Link>
           </nav>
-          
+
           {/* Feature Header */}
           <div className="bg-white rounded-xl shadow-md p-6 mb-6">
             <div className="flex items-start gap-4">
@@ -421,10 +422,10 @@ export default function FeaturePage({
             </div>
 
             <div className="mt-4 flex items-center gap-2">
-              <button onClick={() => {}} className="px-3 py-1 bg-green-700 text-white rounded-md text-sm">Open detail</button>
-              <button onClick={() => {}} className="px-3 py-1 border rounded-md text-sm">Edit</button>
-              <button onClick={() => {}} className="px-3 py-1 border rounded-md text-sm">Report</button>
-              <button onClick={() => {}} className="px-3 py-1 border rounded-md text-sm">Verify</button>
+              <button onClick={() => { }} className="px-3 py-1 bg-green-700 text-white rounded-md text-sm">Open detail</button>
+              <button onClick={() => { }} className="px-3 py-1 border rounded-md text-sm">Edit</button>
+              <button onClick={() => { }} className="px-3 py-1 border rounded-md text-sm">Report</button>
+              <button onClick={() => { }} className="px-3 py-1 border rounded-md text-sm">Verify</button>
             </div>
           </div>
 
@@ -450,26 +451,27 @@ export default function FeaturePage({
                 />
               </div>
 
-              <div className="p-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="p-3 bg-white rounded shadow-sm border">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Ruler size={16} />
-                      <h4 className="font-medium">Measurement</h4>
-                    </div>
-                    <div className="space-y-2">
-                      <button onClick={() => webgisRef.current?.startMeasurement?.()} className="w-full bg-blue-500 text-white px-3 py-2 rounded">Start Measurement</button>
-                      <button onClick={() => webgisRef.current?.clearMeasurement?.()} className="w-full bg-gray-200 text-gray-800 px-3 py-2 rounded">Clear</button>
-                    </div>
-                  </div>
-
+              <div className="p-4 flex justify-center">
+                <div className="max-w-sm w-full">
                   <div className="p-3 bg-white rounded shadow-sm border">
                     <div className="flex items-center gap-2 mb-2">
                       <Download size={16} />
                       <h4 className="font-medium">Export</h4>
                     </div>
                     <div className="space-y-2">
-                      <button onClick={() => { /* export geojson for this feature */ }} className="w-full bg-green-500 text-white px-3 py-2 rounded">Export GeoJSON</button>
+                      <button onClick={() => {
+                        if (!feature) { pushToast('No feature to export', 'info'); return; }
+                        const fc = { type: 'FeatureCollection' as const, features: [feature as any] };
+                        const ts = new Date().toISOString().replace(/[:.]/g, '-');
+                        const filename = `vanmitra-feature-${feature.properties.id ?? 'unknown'}-${ts}.geojson`;
+                        try {
+                          exportToGeoJSON(fc as any, filename);
+                          pushToast('Export started', 'info');
+                        } catch (e) {
+                          console.error('Export failed', e);
+                          pushToast('Export failed', 'error');
+                        }
+                      }} className="w-full bg-green-500 text-white px-3 py-2 rounded">Export GeoJSON</button>
                       <button onClick={() => webgisRef.current?.exportMap?.()} className="w-full border border-gray-200 text-gray-800 px-3 py-2 rounded">Export Map Image</button>
                     </div>
                   </div>
