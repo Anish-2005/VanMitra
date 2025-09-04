@@ -248,8 +248,6 @@ export default function AtlasPage() {
                         state={stateFilter}
                         district={districtFilter}
                         onLayerToggle={handleLayerToggle}
-                        onStartMeasurement={handleStartMeasurement}
-                        onClearMeasurement={handleClearMeasurement}
                       />
                     </div>
                   </div>
@@ -277,7 +275,7 @@ export default function AtlasPage() {
                 <div className="space-y-3">
                   {!isMeasuring ? (
                     <button
-                      onClick={handleStartMeasurement}
+                      onClick={() => webGISRef.current?.startMeasurement?.()}
                       className="w-full bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors"
                     >
                       Start Measurement
@@ -293,7 +291,7 @@ export default function AtlasPage() {
                     </div>
                   )}
                   <button
-                    onClick={handleClearMeasurement}
+                    onClick={() => webGISRef.current?.clearMeasurement?.()}
                     className="w-full bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition-colors"
                   >
                     Clear Measurement

@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { ArrowLeft, MapPin, Calendar, User, FileText, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
+import DecorativeBackground from "@/components/DecorativeBackground";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import WebGIS, { GISLayer, GISMarker } from "@/components/WebGIS";
+// LayerManager removed - use map's built-in controls instead
 
 interface FeatureData {
-  type: 'Feature';
+  type: "Feature";
   properties: {
     id: string;
     type?: string;
@@ -26,22 +28,55 @@ interface FeatureData {
   };
   geometry: {
     type: string;
-    coordinates: [number, number] | [number, number][] | [number, number][][] | [number, number][][][];
+    coordinates: any;
   };
 }
 
-export default function FeaturePage({ params }: { params: Promise<{ featureId: string }> }) {
-  const [featureId, setFeatureId] = useState<string>('');
+export default function FeaturePage({
+  params,
+}: {
+  params: Promise<{ featureId: string }>;
+}) {
+  const [featureId, setFeatureId] = useState<string>("");
   const [feature, setFeature] = useState<FeatureData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const webgisRef = useRef<any>(null);
+  const [layers, setLayers] = useState<GISLayer[]>([]);
+  const [markers, setMarkers] = useState<GISMarker[]>([]);
+  const [isFetchingBoundaries, setIsFetchingBoundaries] = useState(false);
+  const [toasts, setToasts] = useState<{ id: number; message: string; type?: 'info'|'error' }[]>([]);
+
+  const pushToast = (message: string, type: 'info'|'error' = 'info') => {
+    const id = Date.now() + Math.floor(Math.random() * 1000);
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 5000);
+  };
+
+  const fetchWithRetry = async (url: string, attempts = 3, backoff = 500) => {
+    let lastErr: any = null;
+    for (let i = 0; i < attempts; i++) {
+      try {
+        const r = await fetch(url, { headers: { Accept: 'application/json' } });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return await r.json();
+      } catch (err) {
+        lastErr = err;
+        await new Promise(res => setTimeout(res, backoff * Math.pow(2, i)));
+      }
+    }
+    throw lastErr;
+  };
+
   useEffect(() => {
-    const fetchParams = async () => {
+    const loadParams = async () => {
       const { featureId: id } = await params;
       setFeatureId(decodeURIComponent(id));
     };
-    fetchParams();
+    loadParams();
   }, [params]);
 
   useEffect(() => {
@@ -50,94 +85,67 @@ export default function FeaturePage({ params }: { params: Promise<{ featureId: s
     const fetchFeature = async () => {
       setLoading(true);
       setError(null);
-
       try {
-        // Determine if this is an FRA claim or asset based on ID pattern
-        const isFRAClaim = featureId.includes('FRA');
-
-        let apiUrl = '';
-        let searchParams = '';
-
-        if (isFRAClaim) {
-          // For FRA claims, extract state and district from ID
-          const parts = featureId.split('_');
-          if (parts.length >= 3) {
-            const stateCode = parts[0];
-            const districtCode = parts[1];
-
-            // Map codes to full names (simplified mapping)
-            const stateMap: { [key: string]: string } = {
-              'MP': 'Madhya Pradesh',
-              'TR': 'Tripura',
-              'OD': 'Odisha',
-              'TS': 'Telangana',
-              'WB': 'West Bengal'
-            };
-
-            const districtMap: { [key: string]: { [key: string]: string } } = {
-              'MP': { 'BH': 'Bhopal', 'IN': 'Indore' },
-              'TR': { 'WT': 'West Tripura' },
-              'OD': { 'PU': 'Puri' },
-              'TS': { 'HY': 'Hyderabad' },
-              'WB': { 'SB': 'Sundarban' }
-            };
-
-            const state = stateMap[stateCode] || 'Madhya Pradesh';
-            const district = districtMap[stateCode]?.[districtCode] || 'Bhopal';
-
-            apiUrl = `/api/atlas/fra?state=${encodeURIComponent(state)}&district=${encodeURIComponent(district)}`;
-          }
-        } else {
-          // For assets, try different states and districts
-          const states = ['Madhya Pradesh', 'Tripura', 'Odisha', 'Telangana', 'West Bengal'];
-          const districts: { [key: string]: string[] } = {
-            'Madhya Pradesh': ['Bhopal', 'Indore'],
-            'Tripura': ['West Tripura'],
-            'Odisha': ['Puri'],
-            'Telangana': ['Hyderabad'],
-            'West Bengal': ['Sundarban']
-          };
-
-          for (const state of states) {
-            for (const district of districts[state] || []) {
-              try {
-                const response = await fetch(`/api/atlas/assets?state=${encodeURIComponent(state)}&district=${encodeURIComponent(district)}`);
-                if (response.ok) {
-                  const data = await response.json();
-                  const foundFeature = data.features?.find((f: FeatureData) => f.properties.id === featureId);
-                  if (foundFeature) {
-                    setFeature(foundFeature);
-                    setLoading(false);
-                    return;
-                  }
-                }
-              } catch (err) {
-                console.log(`No feature found in ${state}, ${district}`);
-              }
+        // Try assets API first
+        const resp = await fetch(
+          `/api/atlas/assets?featureId=${encodeURIComponent(featureId)}`
+        );
+        if (resp.ok) {
+          const data = await resp.json();
+          const found = data.features?.find(
+            (f: FeatureData) => f.properties.id === featureId
+          );
+          if (found) {
+            setFeature(found);
+            if (found.geometry?.type === "Point") {
+              const coords = found.geometry.coordinates as [number, number];
+              setMarkers([
+                {
+                  id: found.properties.id,
+                  lng: coords[0],
+                  lat: coords[1],
+                  label: "Feature",
+                  color: "#ef4444",
+                },
+              ]);
             }
+            setLoading(false);
+            return;
           }
         }
 
-        if (apiUrl) {
-          const response = await fetch(apiUrl);
-          if (!response.ok) {
-            throw new Error(`API request failed: ${response.status}`);
+        // Fallback to FRA
+        const resp2 = await fetch(
+          `/api/atlas/fra?featureId=${encodeURIComponent(featureId)}`
+        );
+        if (resp2.ok) {
+          const data2 = await resp2.json();
+          const found2 = data2.features?.find(
+            (f: FeatureData) => f.properties.id === featureId
+          );
+          if (found2) {
+            setFeature(found2);
+            if (found2.geometry?.type === "Point") {
+              const coords = found2.geometry.coordinates as [number, number];
+              setMarkers([
+                {
+                  id: found2.properties.id,
+                  lng: coords[0],
+                  lat: coords[1],
+                  label: "Feature",
+                  color: "#ef4444",
+                },
+              ]);
+            }
+            setLoading(false);
+            return;
           }
-
-          const data = await response.json();
-          const foundFeature = data.features?.find((f: FeatureData) => f.properties.id === featureId);
-
-          if (foundFeature) {
-            setFeature(foundFeature);
-          } else {
-            setError('Feature not found');
-          }
-        } else {
-          setError('Unable to determine feature type');
         }
+
+        setError("Feature not found");
       } catch (err) {
-        console.error('Error fetching feature:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load feature');
+        console.error(err);
+        setError("Failed to load feature");
       } finally {
         setLoading(false);
       }
@@ -146,42 +154,125 @@ export default function FeaturePage({ params }: { params: Promise<{ featureId: s
     fetchFeature();
   }, [featureId]);
 
-  const getStatusIcon = (status?: string) => {
-    switch (status) {
-      case 'granted':
-        return <CheckCircle className="text-green-500" size={20} />;
-      case 'submitted':
-        return <Clock className="text-yellow-500" size={20} />;
-      case 'pending':
-        return <AlertCircle className="text-orange-500" size={20} />;
-      default:
-        return <FileText className="text-gray-500" size={20} />;
-    }
-  };
+  const derivedState = feature?.properties?.state || "Madhya Pradesh";
+  const derivedDistrict = feature?.properties?.district || "Bhopal";
 
-  const getStatusColor = (status?: string) => {
-    switch (status) {
-      case 'granted':
-        return 'text-green-700 bg-green-50';
-      case 'submitted':
-        return 'text-yellow-700 bg-yellow-50';
-      case 'pending':
-        return 'text-orange-700 bg-orange-50';
-      default:
-        return 'text-gray-700 bg-gray-50';
+  useEffect(() => {
+    setLayers([
+      {
+        id: "boundaries",
+        name: "State / District Boundaries",
+        type: "geojson",
+        url: "/api/atlas/boundaries",
+        visible: false,
+        style: {
+          fillColor: "#ffffff",
+          strokeColor: "#0b815a",
+          strokeWidth: 2,
+          opacity: 0.6,
+        },
+      },
+      {
+        id: "assets",
+        name: "Assets",
+        type: "geojson",
+        url: "/api/atlas/assets",
+        visible: true,
+        style: {
+          fillColor: "#0ea5e9",
+          strokeColor: "#0369a1",
+          strokeWidth: 1,
+          opacity: 0.9,
+        },
+      },
+    ]);
+  }, []);
+
+  const handleLayerToggle = (layerId: string) => {
+    const toggled = layers.find((l) => l.id === layerId);
+    if (toggled?.id === "boundaries") {
+      const willBeVisible = !toggled.visible;
+      if (willBeVisible) {
+        (async () => {
+          setIsFetchingBoundaries(true);
+          try {
+            const districtQuery = encodeURIComponent(
+              `${derivedDistrict}, ${derivedState}, India`
+            );
+            const nomUrl = `https://nominatim.openstreetmap.org/search.php?q=${districtQuery}&polygon_geojson=1&format=jsonv2`;
+            let res = null;
+            try {
+              res = await fetchWithRetry(nomUrl, 3, 400);
+            } catch (err) {
+              console.warn('District lookup failed, will try state fallback', err);
+            }
+
+            const cand = res && res.length > 0 ? res[0] : null;
+            if (cand && cand.geojson) {
+              setLayers((prev) =>
+                prev.map((l) =>
+                  l.id === "boundaries"
+                    ? { ...l, data: cand.geojson, visible: true }
+                    : l
+                )
+              );
+              pushToast('Boundaries loaded', 'info');
+              return;
+            }
+
+            // fallback: state boundaries
+            const stateQuery = encodeURIComponent(`${derivedState}, India`);
+            const nomUrl2 = `https://nominatim.openstreetmap.org/search.php?q=${stateQuery}&polygon_geojson=1&format=jsonv2`;
+            let res2 = null;
+            try {
+              res2 = await fetchWithRetry(nomUrl2, 3, 400);
+            } catch (err) {
+              console.warn('State lookup failed', err);
+            }
+
+            const cand2 = res2 && res2.length > 0 ? res2[0] : null;
+            if (cand2 && cand2.geojson) {
+              setLayers((prev) =>
+                prev.map((l) =>
+                  l.id === "boundaries"
+                    ? { ...l, data: cand2.geojson, visible: true }
+                    : l
+                )
+              );
+              pushToast('State boundaries loaded', 'info');
+              return;
+            }
+
+            pushToast('Boundaries not found for this area', 'error');
+          } catch (err) {
+            console.error("Boundaries fetch failed", err);
+            pushToast('Failed to fetch boundaries', 'error');
+          } finally {
+            setIsFetchingBoundaries(false);
+          }
+        })();
+      } else {
+        setLayers((prev) =>
+          prev.map((l) =>
+            l.id === "boundaries" ? { ...l, visible: false } : l
+          )
+        );
+      }
+    } else {
+      setLayers((prev) =>
+        prev.map((l) =>
+          l.id === layerId ? { ...l, visible: !l.visible } : l
+        )
+      );
     }
   };
 
   if (loading) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-100 p-8">
-          <div className="max-w-3xl mx-auto bg-white p-8 rounded-lg shadow">
-            <div className="animate-pulse">
-              <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            </div>
+        <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-100 p-8 text-gray-900">
+          <div className="max-w-3xl mx-auto bg-white p-8 rounded-lg shadow text-gray-900">
+            Loading...
           </div>
         </div>
       </ProtectedRoute>
@@ -191,159 +282,121 @@ export default function FeaturePage({ params }: { params: Promise<{ featureId: s
   if (error || !feature) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-100 p-8">
-          <div className="max-w-3xl mx-auto bg-white p-8 rounded-lg shadow">
-            <h1 className="text-2xl font-bold text-red-600">Error</h1>
-            <p className="mt-2 text-gray-700">{error || 'Feature not found'}</p>
-            <div className="mt-4">
-              <Link href="/atlas" className="text-sm text-green-600 hover:text-green-800">← Back to Atlas</Link>
-            </div>
+        <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-100 p-8 text-gray-900">
+          <div className="max-w-3xl mx-auto bg-white p-8 rounded-lg shadow text-gray-900">
+            <h2 className="text-red-600">{error || "Feature not found"}</h2>
+            <Link href="/atlas" className="text-blue-600">Back to Atlas</Link>
           </div>
         </div>
       </ProtectedRoute>
     );
   }
 
-  const isFRAClaim = featureId.includes('FRA');
   const props = feature.properties;
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-100 p-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="mb-6">
-            <Link href="/atlas" className="inline-flex items-center gap-2 text-green-600 hover:text-green-800 transition-colors">
-              <ArrowLeft size={16} />
-              Back to Atlas
+      <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-100 p-4 text-gray-900 relative overflow-hidden">
+        <DecorativeBackground count={4} />
+
+        <header className="relative z-10 max-w-7xl mx-auto px-6 pt-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-md bg-green-600 flex items-center justify-center border border-green-700 shadow-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 6h18M3 12h18M3 18h18" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-green-900">VanMitra</h2>
+              <p className="text-xs text-green-700">Map — Feature</p>
+            </div>
+          </div>
+
+          <nav className="flex items-center gap-3 text-sm">
+            <Link href="/atlas" className="text-green-800 hover:text-green-600">Atlas</Link>
+            <Link href="/" className="text-green-800 hover:text-green-600">Home</Link>
+          </nav>
+        </header>
+        <div className="max-w-7xl mx-auto mt-4 mb-6">
+          {/* Breadcrumb Navigation */}
+          <nav className="mb-4">
+            <Link href="/atlas" className="text-emerald-700 hover:text-emerald-900 font-medium">
+              &larr; Back to Atlas
             </Link>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-            <div className="bg-gradient-to-r from-green-600 to-emerald-600 p-6 text-white">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-2xl font-bold">
-                    {isFRAClaim ? 'FRA Claim Details' : 'Asset Details'}
-                  </h1>
-                  <p className="text-green-100 mt-1">ID: {props.id}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {getStatusIcon(props.status)}
-                  <span className="text-sm font-medium">{props.status || 'Unknown'}</span>
-                </div>
+          </nav>
+          
+          {/* Feature Header */}
+          <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Feature Details</h1>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+              <div>
+                <span className="font-semibold text-gray-600">ID:</span>
+                <p className="truncate">{props.id}</p>
               </div>
-            </div>
-
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <MapPin className="text-green-600" size={20} />
-                    <div>
-                      <p className="text-sm text-gray-500">Location</p>
-                      <p className="font-medium">{props.village || 'N/A'}, {props.district}, {props.state}</p>
-                    </div>
-                  </div>
-
-                  {props.claimant && (
-                    <div className="flex items-center gap-3">
-                      <User className="text-green-600" size={20} />
-                      <div>
-                        <p className="text-sm text-gray-500">Claimant</p>
-                        <p className="font-medium">{props.claimant}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {props.area && (
-                    <div className="flex items-center gap-3">
-                      <FileText className="text-green-600" size={20} />
-                      <div>
-                        <p className="text-sm text-gray-500">Area</p>
-                        <p className="font-medium">{props.area} hectares</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {props.application_date && (
-                    <div className="flex items-center gap-3">
-                      <Calendar className="text-green-600" size={20} />
-                      <div>
-                        <p className="text-sm text-gray-500">Application Date</p>
-                        <p className="font-medium">{new Date(props.application_date).toLocaleDateString()}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-gray-500 mb-2">Type</p>
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                      {props.type || props.claim_type || 'Unknown'}
-                    </span>
-                  </div>
-
-                  {props.status && (
-                    <div>
-                      <p className="text-sm text-gray-500 mb-2">Status</p>
-                      <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(props.status)}`}>
-                        {getStatusIcon(props.status)}
-                        {props.status}
-                      </span>
-                    </div>
-                  )}
-
-                  {props.source && (
-                    <div>
-                      <p className="text-sm text-gray-500 mb-2">Data Source</p>
-                      <p className="font-medium text-gray-700">{props.source}</p>
-                    </div>
-                  )}
-
-                  {props.osm_id && (
-                    <div>
-                      <p className="text-sm text-gray-500 mb-2">OSM ID</p>
-                      <p className="font-medium text-gray-700">{props.osm_id}</p>
-                    </div>
-                  )}
-                </div>
+              <div>
+                <span className="font-semibold text-gray-600">Type:</span>
+                <p>{props.type || "N/A"}</p>
               </div>
-
-              {props.tags && Object.keys(props.tags).length > 0 && (
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">OSM Tags</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {Object.entries(props.tags).map(([key, value]) => (
-                      <div key={key} className="bg-gray-50 p-2 rounded text-sm">
-                        <span className="font-medium text-gray-700">{key}:</span>
-                        <span className="text-gray-600 ml-1">{String(value)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {props.note && (
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Note</h3>
-                  <p className="text-gray-700 bg-yellow-50 p-3 rounded">{props.note}</p>
-                </div>
-              )}
-
-              <div className="mt-6 pt-6 border-t border-gray-200 flex gap-3">
-                <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                  Edit Details
-                </button>
-                <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-                  Generate Report
-                </button>
-                <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-                  View on Map
-                </button>
+              <div>
+                <span className="font-semibold text-gray-600">Status:</span>
+                <p>{props.status || "N/A"}</p>
+              </div>
+              <div>
+                <span className="font-semibold text-gray-600">Area:</span>
+                <p>{props.area ? `${props.area} ha` : "N/A"}</p>
               </div>
             </div>
           </div>
+
+          {/* Main Content Area */}
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Left panel removed - map controls will handle layer toggles */}
+
+            {/* Map Container */}
+            <div className="flex-1 bg-white rounded-xl shadow-md overflow-hidden" style={{ height: '90vh' }}>
+              <WebGIS
+                ref={webgisRef}
+                className="w-full h-full"
+                center={
+                  feature.geometry.type === "Point"
+                    ? (feature.geometry.coordinates as [number, number])
+                    : [88.8, 21.9]
+                }
+                zoom={12}
+                layers={layers}
+                markers={markers}
+                state={derivedState}
+                district={derivedDistrict}
+                baseRasterTiles={
+                  process.env.NEXT_PUBLIC_OPENWEATHER_KEY
+                    ? [
+                        `https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${process.env.NEXT_PUBLIC_OPENWEATHER_KEY}`,
+                      ]
+                    : undefined
+                }
+                baseRasterAttribution={"Map data © OpenWeatherMap"}
+                showControls={true}
+                showExportControls={true}
+                onLayerToggle={handleLayerToggle}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Toasts container */}
+        <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
+          {toasts.map((t) => (
+            <div key={t.id} className={`px-4 py-3 rounded-lg shadow-lg text-white text-sm flex items-center ${t.type === 'error' ? 'bg-red-600' : 'bg-emerald-600'}`}>
+              {t.type === 'error' ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              )}
+              {t.message}
+            </div>
+          ))}
         </div>
       </div>
     </ProtectedRoute>

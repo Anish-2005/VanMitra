@@ -55,6 +55,9 @@ export interface WebGISProps {
   // Location parameters for API calls
   state?: string;
   district?: string;
+  // Optional base raster tiles (eg. OpenWeather tile URLs)
+  baseRasterTiles?: string[];
+  baseRasterAttribution?: string;
   // Ref for external access
   ref?: React.Ref<WebGISRef>;
 }
@@ -100,30 +103,35 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
   const [isExporting, setIsExporting] = useState(false);
   const [currentLayers, setCurrentLayers] = useState<GISLayer[]>(layers);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [mapError, setMapError] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(false);
 
   // Initialize map
   useEffect(() => {
     if (!mapContainer.current) return;
 
+  // Build base raster source from prop or default to OSM
+  const tiles = (Array.isArray((arguments[0] as any)?.baseRasterTiles) && (arguments[0] as any).baseRasterTiles) || undefined;
+  // Filter out obviously invalid tiles (e.g., URLs containing 'undefined')
+  const validTiles = (tiles || []).filter((t: string) => typeof t === 'string' && t.length > 10 && !t.includes('undefined'));
+  const baseTiles = validTiles && validTiles.length > 0 ? validTiles : ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'];
+
     map.current = new maplibregl.Map({
       container: mapContainer.current,
       style: {
         version: 8,
         sources: {
-          'osm': {
+          'base-raster': {
             type: 'raster',
-            tiles: [
-              'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
-            ],
+            tiles: baseTiles,
             tileSize: 256,
-            attribution: '© OpenStreetMap contributors'
+            attribution: arguments[0]?.baseRasterAttribution || '© OpenStreetMap contributors'
           }
         },
         layers: [{
-          id: 'osm',
+          id: 'base-raster-layer',
           type: 'raster',
-          source: 'osm'
+          source: 'base-raster'
         }]
       },
       center: center,
@@ -143,64 +151,41 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
       console.log('Map canvas dimensions:', map.current!.getCanvas().width, 'x', map.current!.getCanvas().height);
       setMapLoaded(true);
 
-      // Map click handler (moved here to ensure map is loaded)
+      // Map click handler for generic clicks (calls external onMapClick if provided)
       map.current!.on('click', (e) => {
         if (onMapClick) {
           onMapClick(e.lngLat);
         }
-
-        // Handle measurement
-        if (isMeasuringRef.current) {
-          measurementPoints.current.push(e.lngLat);
-          if (measurementPoints.current.length === 2) {
-            const distance = turf.distance(
-              turf.point([measurementPoints.current[0].lng, measurementPoints.current[0].lat]),
-              turf.point([measurementPoints.current[1].lng, measurementPoints.current[1].lat]),
-              { units: 'kilometers' }
-            );
-            setMeasurementDistance(distance);
-
-            // Draw measurement line
-            const lineGeoJSON = {
-              type: 'Feature' as const,
-              properties: {},
-              geometry: {
-                type: 'LineString' as const,
-                coordinates: measurementPoints.current.map(p => [p.lng, p.lat])
-              }
-            };
-
-            if (measurementLine.current) {
-              (map.current!.getSource(measurementLine.current) as GeoJSONSource).setData(lineGeoJSON as any);
-            } else {
-              measurementLine.current = 'measurement-line';
-              map.current!.addSource(measurementLine.current, {
-                type: 'geojson',
-                data: lineGeoJSON as any
-              });
-              map.current!.addLayer({
-                id: 'measurement-line-layer',
-                type: 'line',
-                source: measurementLine.current,
-                paint: {
-                  'line-color': '#ff0000',
-                  'line-width': 3,
-                  'line-dasharray': [2, 2]
-                }
-              });
-            }
-
-            setIsMeasuring(false);
-            isMeasuringRef.current = false;
-            measurementPoints.current = [];
-          }
-        }
       });
     });
 
-    // Add error handling for map loading
+    // Add error handling for map loading and tile/source failures
     map.current.on('error', (e) => {
-      console.error('🗺️ Map loading error:', e);
+      try {
+        console.error('🗺️ Map error event:', e);
+        // Prefer structured error message when available
+        const msg = (e && (e.error?.message || e.message)) ? (e.error?.message || e.message) : (() => {
+          try { return JSON.stringify(e); } catch { return String(e); }
+        })();
+        setMapError(msg);
+      } catch (err) {
+        console.error('🗺️ Map error (logging failed):', err);
+        setMapError('Unknown map error');
+      }
+    });
+
+    // Listen for source/tile failures via sourcedata events
+    map.current.on('sourcedata', (e) => {
+      try {
+        // Some tile load failures are surfaced on sourcedata where the tile has an error
+        // We log the event and set a human-readable message when possible
+        if ((e as any).tile && (e as any).tile.state === 'errored') {
+          console.warn('🗺️ Tile error for source:', (e as any).sourceId, e);
+          setMapError(`Tile load error for source ${(e as any).sourceId}`);
+        }
+      } catch (err) {
+        // ignore
+      }
     });
 
     // Add tile loading events
@@ -287,7 +272,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
       const sourceId = `source-${layer.id}`;
       const layerId = `layer-${layer.id}`;
 
-      if (layer.visible && layer.data) {
+  if (layer.visible && layer.data) {
         console.log('Adding/updating layer:', layer.id, 'with', layer.data?.features?.length || 0, 'features');
 
         // Remove existing layer and source if they exist
@@ -315,6 +300,53 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
       }
     });
   }, [currentLayers, mapLoaded, layers]);
+
+  // Ensure boundaries are always rendered on top and have prominent styling.
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
+
+    try {
+      // Find the boundaries layer id
+      const boundariesLayer = currentLayers.find(l => l.id === 'boundaries');
+      if (!boundariesLayer) return;
+
+      const layerId = `layer-${boundariesLayer.id}`;
+      const sourceId = `source-${boundariesLayer.id}`;
+
+      if (map.current.getLayer(layerId)) {
+        // Attempt to set stronger paint properties depending on layer type
+        const features = boundariesLayer.data?.features || [];
+        const geometryType = features.length > 0 ? features[0]?.geometry?.type : null;
+
+        try {
+          if (geometryType === 'Polygon' || geometryType === 'MultiPolygon') {
+            // If it's a fill layer, update paint for prominence
+            map.current.setPaintProperty(layerId, 'fill-color', boundariesLayer.style.fillColor || '#ffffff');
+            map.current.setPaintProperty(layerId, 'fill-opacity', boundariesLayer.style.opacity ?? 0.6);
+            map.current.setPaintProperty(layerId, 'fill-outline-color', boundariesLayer.style.strokeColor || '#0b815a');
+          } else if (geometryType === 'LineString' || geometryType === 'MultiLineString') {
+            map.current.setPaintProperty(layerId, 'line-color', boundariesLayer.style.strokeColor || '#0b815a');
+            map.current.setPaintProperty(layerId, 'line-width', boundariesLayer.style.strokeWidth ?? 3);
+            map.current.setPaintProperty(layerId, 'line-opacity', boundariesLayer.style.opacity ?? 0.9);
+          }
+        } catch (paintErr) {
+          // Some paint properties may not exist yet; ignore
+          console.warn('Could not update paint properties for boundaries:', paintErr);
+        }
+
+        // Move to top
+        try {
+          // @ts-ignore - some typings don't list the optional beforeId parameter
+          map.current.moveLayer(layerId);
+          console.log('Ensured boundaries layer is on top:', layerId);
+        } catch (moveErr) {
+          console.warn('Failed to move boundaries layer to top:', moveErr);
+        }
+      }
+    } catch (err) {
+      console.warn('Boundaries top-layer enforcement failed:', err);
+    }
+  }, [currentLayers, mapLoaded]);
 
   const addLayerFromSource = (layer: GISLayer, sourceId: string, layerId: string) => {
     if (!map.current) return;
@@ -372,14 +404,14 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
     }
 
     try {
-      map.current!.addLayer(layerConfig);
-      console.log('Successfully added layer:', layerId);
+  map.current!.addLayer(layerConfig);
+  console.log('Successfully added layer:', layerId);
     } catch (error) {
       console.error('Error adding layer', layerId, ':', error);
       return;
     }
 
-    // Add click handler for features
+  // Add click handler for features
     map.current!.on('click', layerId, (e) => {
       if (e.features && e.features.length > 0 && onFeatureClick) {
         onFeatureClick({
@@ -394,6 +426,11 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
       map.current!.getCanvas().style.cursor = 'pointer';
     });
 
+    map.current!.on('mouseleave', layerId, () => {
+      map.current!.getCanvas().style.cursor = '';
+    });
+
+    // Add click/mouse handlers
     map.current!.on('mouseleave', layerId, () => {
       map.current!.getCanvas().style.cursor = '';
     });
@@ -450,40 +487,109 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
   const startMeasurement = useCallback(() => {
     if (externalStartMeasurement) {
       externalStartMeasurement();
-    } else {
-      setIsMeasuring(true);
-      isMeasuringRef.current = true;
-      measurementPoints.current = [];
-      setMeasurementDistance(null);
-      if (measurementLine.current && map.current) {
-        if (map.current.getLayer('measurement-line-layer')) {
-          map.current.removeLayer('measurement-line-layer');
-        }
-        if (map.current.getSource(measurementLine.current)) {
-          map.current.removeSource(measurementLine.current);
-        }
-        measurementLine.current = null;
-      }
+      return;
     }
+
+    if (!map.current) return;
+    setIsMeasuring(true);
+    isMeasuringRef.current = true;
+    measurementPoints.current = [];
+    setMeasurementDistance(null);
+
+    // Remove any existing measurement line/source
+    if (measurementLine.current && map.current) {
+      if (map.current.getLayer('measurement-line-layer')) {
+        map.current.removeLayer('measurement-line-layer');
+      }
+      if (map.current.getSource(measurementLine.current)) {
+        map.current.removeSource(measurementLine.current);
+      }
+      measurementLine.current = null;
+    }
+
+    // Attach a one-time handler for the first point
+    const firstHandler = (ev: maplibregl.MapMouseEvent) => {
+      const p1 = ev.lngLat;
+      // Replace measurementPoints with the first point
+      measurementPoints.current = [p1];
+
+      // Attach a one-time handler for the second point
+      map.current!.once('click', (ev2: maplibregl.MapMouseEvent) => {
+        const p2 = ev2.lngLat;
+        // Ensure we have valid points
+        if (!p1 || !p2 || typeof p1.lng === 'undefined' || typeof p2.lng === 'undefined') {
+          console.warn('Measurement cancelled or invalid points', p1, p2);
+          setIsMeasuring(false);
+          isMeasuringRef.current = false;
+          measurementPoints.current = [];
+          return;
+        }
+
+        // Compute distance using the two captured points
+        const distance = turf.distance(
+          turf.point([p1.lng, p1.lat]),
+          turf.point([p2.lng, p2.lat]),
+          { units: 'kilometers' }
+        );
+        setMeasurementDistance(distance);
+
+        // Draw measurement line
+        const lineGeoJSON = {
+          type: 'Feature' as const,
+          properties: {},
+          geometry: {
+            type: 'LineString' as const,
+            coordinates: [[p1.lng, p1.lat], [p2.lng, p2.lat]]
+          }
+        };
+
+        measurementLine.current = 'measurement-line';
+        if (map.current!.getSource(measurementLine.current)) {
+          (map.current!.getSource(measurementLine.current) as GeoJSONSource).setData(lineGeoJSON as any);
+        } else {
+          map.current!.addSource(measurementLine.current, {
+            type: 'geojson',
+            data: lineGeoJSON as any
+          });
+          map.current!.addLayer({
+            id: 'measurement-line-layer',
+            type: 'line',
+            source: measurementLine.current,
+            paint: {
+              'line-color': '#ff0000',
+              'line-width': 3,
+              'line-dasharray': [2, 2]
+            }
+          });
+        }
+
+        setIsMeasuring(false);
+        isMeasuringRef.current = false;
+        measurementPoints.current = [];
+      });
+    };
+
+    map.current.once('click', firstHandler);
   }, [externalStartMeasurement]);
 
   const clearMeasurement = useCallback(() => {
     if (externalClearMeasurement) {
       externalClearMeasurement();
-    } else {
-      setIsMeasuring(false);
-      isMeasuringRef.current = false;
-      setMeasurementDistance(null);
-      measurementPoints.current = [];
-      if (measurementLine.current && map.current) {
-        if (map.current.getLayer('measurement-line-layer')) {
-          map.current.removeLayer('measurement-line-layer');
-        }
-        if (map.current.getSource(measurementLine.current)) {
-          map.current.removeSource(measurementLine.current);
-        }
-        measurementLine.current = null;
+      return;
+    }
+
+    setIsMeasuring(false);
+    isMeasuringRef.current = false;
+    setMeasurementDistance(null);
+    measurementPoints.current = [];
+    if (measurementLine.current && map.current) {
+      if (map.current.getLayer('measurement-line-layer')) {
+        map.current.removeLayer('measurement-line-layer');
       }
+      if (map.current.getSource(measurementLine.current)) {
+        map.current.removeSource(measurementLine.current);
+      }
+      measurementLine.current = null;
     }
   }, [externalClearMeasurement]);
 
@@ -1047,7 +1153,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
         ref={mapContainer}
         className="w-full h-full"
         data-testid="map-container"
-        style={{ position: 'relative' }}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' }}
       />
 
       {/* Loading Overlay */}
@@ -1056,6 +1162,40 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
           <div className="bg-white rounded-lg p-4 shadow-lg flex items-center gap-3">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600"></div>
             <span className="text-sm font-medium text-gray-700">Loading map data...</span>
+          </div>
+        </div>
+      )}
+
+      {/* Map error overlay */}
+      {mapError && (
+        <div className="absolute inset-0 flex items-center justify-center z-40">
+          <div className="bg-white/95 rounded-lg p-6 shadow-lg max-w-lg text-center">
+            <h3 className="text-lg font-semibold text-red-600">Map error</h3>
+            <p className="text-sm text-gray-700 mt-2">{mapError}</p>
+            <div className="mt-4 flex justify-center gap-2">
+              <button
+                onClick={() => {
+                  // Simple retry: remove and re-create the map by forcing unload
+                  try {
+                    setMapLoaded(false);
+                    setMapError(null);
+                    if (map.current) {
+                      map.current.remove();
+                      map.current = null;
+                    }
+                    // Re-run the init effect by toggling a small state; easiest is to
+                    // reload the page as a last resort for deterministic recovery.
+                    window.location.reload();
+                  } catch (err) {
+                    console.error('Retry failed', err);
+                    setMapError(String(err));
+                  }
+                }}
+                className="px-3 py-2 bg-blue-600 text-white rounded"
+              >
+                Retry
+              </button>
+            </div>
           </div>
         </div>
       )}
