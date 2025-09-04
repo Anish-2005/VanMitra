@@ -82,76 +82,102 @@ export default function FeaturePage({
   useEffect(() => {
     if (!featureId) return;
 
-    const fetchFeature = async () => {
+    const fetchClaim = async () => {
       setLoading(true);
       setError(null);
       try {
-        // Try assets API first
-        const resp = await fetch(
-          `/api/atlas/assets?featureId=${encodeURIComponent(featureId)}`
-        );
-        if (resp.ok) {
-          const data = await resp.json();
-          const found = data.features?.find(
-            (f: FeatureData) => f.properties.id === featureId
-          );
-          if (found) {
-            setFeature(found);
-            if (found.geometry?.type === "Point") {
-              const coords = found.geometry.coordinates as [number, number];
-              setMarkers([
-                {
-                  id: found.properties.id,
-                  lng: coords[0],
-                  lat: coords[1],
-                  label: "Feature",
-                  color: "#ef4444",
-                },
-              ]);
-            }
-            setLoading(false);
-            return;
+        // Try to fetch claim by id via claims API
+  const params = new URLSearchParams();
+  params.set('id', featureId);
+  const url = `/api/claims?${params.toString()}`;
+  const resp = await fetch(url, { headers: { Accept: 'application/json' } });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+
+        // Data may be a GeoJSON FeatureCollection or an array/object
+        let item: any = null;
+        if (data && data.type === 'FeatureCollection' && Array.isArray(data.features)) {
+          item = data.features.find((f: any) => String(f.properties?.claim_id ?? f.properties?.id) === String(featureId)) || data.features[0] || null;
+          if (item) {
+            // wrap into feature shape expected below
           }
+        } else if (Array.isArray(data)) {
+          item = data.find((d: any) => String(d.claim_id ?? d.id) === String(featureId)) || data[0] || null;
+        } else if (data && (data.claim_id || data.id)) {
+          item = data;
         }
 
-        // Fallback to FRA
-        const resp2 = await fetch(
-          `/api/atlas/fra?featureId=${encodeURIComponent(featureId)}`
-        );
-        if (resp2.ok) {
-          const data2 = await resp2.json();
-          const found2 = data2.features?.find(
-            (f: FeatureData) => f.properties.id === featureId
-          );
-          if (found2) {
-            setFeature(found2);
-            if (found2.geometry?.type === "Point") {
-              const coords = found2.geometry.coordinates as [number, number];
-              setMarkers([
-                {
-                  id: found2.properties.id,
-                  lng: coords[0],
-                  lat: coords[1],
-                  label: "Feature",
-                  color: "#ef4444",
-                },
-              ]);
-            }
-            setLoading(false);
-            return;
-          }
+        if (!item) {
+          setError('Feature not found');
+          setLoading(false);
+          return;
         }
 
-        setError("Feature not found");
+        // If item is a feature (GeoJSON) use it directly, else normalize
+        let featureObj: FeatureData;
+        if (item.type === 'Feature') {
+          featureObj = {
+            type: 'Feature',
+            properties: {
+              id: String(item.properties?.claim_id ?? item.properties?.id ?? ''),
+              type: item.properties?.type,
+              claimant: item.properties?.claimant,
+              status: item.properties?.status,
+              area: item.properties?.land_area ?? item.properties?.area,
+              claim_type: item.properties?.claim_type,
+              village: item.properties?.village,
+              state: item.properties?.state,
+              district: item.properties?.district,
+              osm_id: item.properties?.osm_id,
+              tags: item.properties?.tags,
+              application_date: item.properties?.application_date,
+              source: item.properties?.source,
+              resolution_status: item.properties?.resolution_status,
+              note: item.properties?.note,
+            },
+            geometry: item.geometry
+          };
+        } else {
+          const geom = item.geometry ?? (item.lat && item.lng ? { type: 'Point', coordinates: [Number(item.lng), Number(item.lat)] } : null);
+          featureObj = {
+            type: 'Feature',
+            properties: {
+              id: String(item.claim_id ?? item.id ?? ''),
+              type: item.type,
+              claimant: item.claimant,
+              status: item.status,
+              area: item.land_area ?? item.area,
+              claim_type: item.claim_type,
+              village: item.village,
+              state: item.state,
+              district: item.district,
+              osm_id: item.osm_id,
+              tags: item.tags,
+              application_date: item.application_date,
+              source: item.source,
+              resolution_status: item.resolution_status,
+              note: item.note,
+            },
+            geometry: geom || { type: 'Point', coordinates: [88.8, 21.9] }
+          };
+        }
+
+        setFeature(featureObj);
+        if (featureObj.geometry?.type === 'Point') {
+          const coords = featureObj.geometry.coordinates as [number, number];
+          setMarkers([
+            { id: featureObj.properties.id, lng: coords[0], lat: coords[1], label: 'Feature', color: '#ef4444' }
+          ]);
+        }
       } catch (err) {
-        console.error(err);
-        setError("Failed to load feature");
+        console.error('Failed to fetch claim', err);
+        setError('Failed to load feature');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchFeature();
+    fetchClaim();
   }, [featureId]);
 
   const derivedState = feature?.properties?.state || "Madhya Pradesh";
