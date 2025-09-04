@@ -70,6 +70,7 @@ export default function AtlasPage() {
   const [pendingStateFilter, setPendingStateFilter] = useState(DEFAULT_STATE);
   const [pendingDistrictFilter, setPendingDistrictFilter] = useState(DEFAULT_DISTRICT);
   const [isApplyingFilters, setIsApplyingFilters] = useState(false);
+  const [filtersExpanded, setFiltersExpanded] = useState(true);
 
   const stateCenter = STATES.find(s => s.name === stateFilter)?.center ?? [88.8, 21.9];
 
@@ -524,68 +525,81 @@ export default function AtlasPage() {
 
               {/* Measurement tools moved below the map in the main column */}
 
-              <div className="p-6 bg-white rounded-xl shadow-md border border-green-100">
-                <h4 className="font-semibold text-green-900">Filters</h4>
-                <div className="mt-3">
-                  <label className="block text-sm text-green-700">State</label>
-                  <select 
-                    value={pendingStateFilter} 
-                    onChange={(e) => handleStateChange(e.target.value)} 
-                    className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
-                  >
-                    {(stateOptions.length ? stateOptions : STATES.map(s=>s.name)).map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
+              {/* Collapsible Filters (like LayerManager) */}
+              <div className="bg-white rounded-xl shadow-md border border-green-100 overflow-hidden mb-6">
+                <div className="flex items-center justify-between p-3 bg-gray-50 cursor-pointer" onClick={() => setFiltersExpanded(prev => !prev)}>
+                  <div className="flex items-center gap-2">
+                    <Layers size={16} />
+                    <span className="font-medium">Filters</span>
+                    <span className="text-sm text-gray-500">(controls)</span>
+                  </div>
+                  <div className={`transform transition-transform ${filtersExpanded ? 'rotate-180' : ''}`}>▼</div>
                 </div>
 
-                <div className="mt-3">
-                  <label className="block text-sm text-green-700">District</label>
-                  <select 
-                    value={pendingDistrictFilter} 
-                    onChange={(e) => handleDistrictChange(e.target.value)} 
-                    className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
-                  >
-                    {(districtOptionsByState[pendingStateFilter] && districtOptionsByState[pendingStateFilter].length) ? districtOptionsByState[pendingStateFilter].map(d => <option key={d} value={d}>{d}</option>) : ((STATES.find(s => s.name === pendingStateFilter)?.districts || []).map(d => <option key={d} value={d}>{d}</option>))}
-                  </select>
-                </div>
+                {filtersExpanded && (
+                  <div className="p-4 space-y-3">
+                    <div>
+                      <label className="block text-sm text-green-700">State</label>
+                      <select 
+                        value={pendingStateFilter} 
+                        onChange={(e) => handleStateChange(e.target.value)} 
+                        className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
+                      >
+                        {(stateOptions.length ? stateOptions : STATES.map(s=>s.name)).map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
 
-                <div className="mt-3">
-                  <label className="block text-sm text-green-700">Status</label>
-                  <select value={pendingStatusFilter} onChange={(e) => setPendingStatusFilter(e.target.value)} className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50">
-                    <option value="">any</option>
-                    {statusOptions.length ? statusOptions.map(s => <option key={s} value={s.toLowerCase()==='any'?'' : s}>{s}</option>) : (
-                      <>
-                        <option value="approved">approved</option>
-                        <option value="pending">pending</option>
-                        <option value="rejected">rejected</option>
-                      </>
-                    )}
-                  </select>
-                </div>
+                    <div>
+                      <label className="block text-sm text-green-700">District</label>
+                      <select 
+                        value={pendingDistrictFilter} 
+                        onChange={(e) => handleDistrictChange(e.target.value)} 
+                        className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
+                      >
+                        {(districtOptionsByState[pendingStateFilter] && districtOptionsByState[pendingStateFilter].length) ? districtOptionsByState[pendingStateFilter].map(d => <option key={d} value={d}>{d}</option>) : ((STATES.find(s => s.name === pendingStateFilter)?.districts || []).map(d => <option key={d} value={d}>{d}</option>))}
+                      </select>
+                    </div>
 
-                <div className="mt-3">
-                  <label className="block text-sm text-green-700">Claim type</label>
-                  <select value={pendingClaimTypeFilter ?? ''} onChange={(e) => setPendingClaimTypeFilter(e.target.value || null)} className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50">
-                    <option value="">any</option>
-                    {claimTypeOptions.length ? claimTypeOptions.map(ct => <option key={ct} value={ct}>{ct}</option>) : <option value="">(any)</option>}
-                  </select>
-                </div>
+                    <div>
+                      <label className="block text-sm text-green-700">Status</label>
+                      <select value={pendingStatusFilter} onChange={(e) => setPendingStatusFilter(e.target.value)} className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50">
+                        <option value="">any</option>
+                        {statusOptions.length ? statusOptions.map(s => <option key={s} value={s.toLowerCase()==='any'?'' : s}>{s}</option>) : (
+                          <>
+                            <option value="approved">approved</option>
+                            <option value="pending">pending</option>
+                            <option value="rejected">rejected</option>
+                          </>
+                        )}
+                      </select>
+                    </div>
 
-                <div className="mt-4">
-                  <button 
-                    onClick={handleApplyFilters}
-                    disabled={isApplyingFilters}
-                    className="w-full inline-flex items-center justify-center gap-2 bg-green-700 text-white px-4 py-2 rounded-md shadow-md hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isApplyingFilters ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        Applying...
-                      </>
-                    ) : (
-                      'Apply Filters'
-                    )}
-                  </button>
-                </div>
+                    <div>
+                      <label className="block text-sm text-green-700">Claim type</label>
+                      <select value={pendingClaimTypeFilter ?? ''} onChange={(e) => setPendingClaimTypeFilter(e.target.value || null)} className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50">
+                        <option value="">any</option>
+                        {claimTypeOptions.length ? claimTypeOptions.map(ct => <option key={ct} value={ct}>{ct}</option>) : <option value="">(any)</option>}
+                      </select>
+                    </div>
+
+                    <div>
+                      <button 
+                        onClick={handleApplyFilters}
+                        disabled={isApplyingFilters}
+                        className="w-full inline-flex items-center justify-center gap-2 bg-green-700 text-white px-4 py-2 rounded-md shadow-md hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isApplyingFilters ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            Applying...
+                          </>
+                        ) : (
+                          'Apply Filters'
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Legend */}
