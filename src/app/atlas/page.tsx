@@ -99,9 +99,10 @@ export default function AtlasPage() {
   // On mount: fetch unfiltered claims to derive dynamic filter options (states, districts, statuses, claim types)
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+  (async () => {
       try {
-        const res = await fetch('/api/claims?limit=1000', { headers: { Accept: 'application/json' } });
+    // Request all claims explicitly - default API returns only approved when status is missing
+    const res = await fetch('/api/claims?status=all&limit=1000', { headers: { Accept: 'application/json' } });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         const features = (data && data.type === 'FeatureCollection' && Array.isArray(data.features)) ? data.features : (Array.isArray(data) ? data : []);
@@ -152,7 +153,12 @@ export default function AtlasPage() {
         const params = new URLSearchParams();
         if (stateFilter) params.set('state', stateFilter);
         if (districtFilter) params.set('district', districtFilter);
-        if (statusFilter) params.set('status', statusFilter);
+        // If user selected "any" (empty) or explicitly 'all', request all claims from API
+        if (statusFilter === '' || statusFilter === 'all') {
+          params.set('status', 'all');
+        } else if (statusFilter) {
+          params.set('status', statusFilter);
+        }
         if (claimTypeFilter) params.set('claim_type', claimTypeFilter ?? '');
 
   const url = `/api/claims?${params.toString()}`;
