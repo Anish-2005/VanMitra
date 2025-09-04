@@ -208,19 +208,40 @@ export const decimalToDMS = (decimal: number, isLatitude: boolean): { degrees: n
 
 // Export utilities
 export const exportToGeoJSON = (features: GeoFeature[], filename: string = 'export.geojson') => {
-  const geojson = {
-    type: 'FeatureCollection',
-    features
-  };
+  // Accept either an array of features or a FeatureCollection-like input
+  const geojson: any = Array.isArray(features) ? { type: 'FeatureCollection', features } : features;
 
-  const dataStr = JSON.stringify(geojson, null, 2);
-  const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-
-  const exportFileDefaultName = filename;
-  const linkElement = document.createElement('a');
-  linkElement.setAttribute('href', dataUri);
-  linkElement.setAttribute('download', exportFileDefaultName);
-  linkElement.click();
+  try {
+    const dataStr = JSON.stringify(geojson, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/vnd.geo+json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const linkElement = document.createElement('a');
+    linkElement.href = url;
+    linkElement.download = filename;
+    // Firefox requires the element be added to the document
+    document.body.appendChild(linkElement);
+    linkElement.click();
+    // cleanup
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+      try { document.body.removeChild(linkElement); } catch {}
+    }, 1000);
+  } catch (err) {
+    // Fallback to old data URI method if Blob/URL fails
+    try {
+      const dataStr = JSON.stringify(geojson);
+      const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', filename);
+      document.body.appendChild(linkElement);
+      linkElement.click();
+      setTimeout(() => { try { document.body.removeChild(linkElement); } catch {} }, 500);
+    } catch (e) {
+      console.error('Failed to export GeoJSON', e);
+      throw e;
+    }
+  }
 };
 
 export const exportToKML = (features: GeoFeature[], filename: string = 'export.kml') => {
