@@ -110,11 +110,11 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
   useEffect(() => {
     if (!mapContainer.current) return;
 
-  // Build base raster source from prop or default to OSM
-  const tiles = (Array.isArray((arguments[0] as any)?.baseRasterTiles) && (arguments[0] as any).baseRasterTiles) || undefined;
-  // Filter out obviously invalid tiles (e.g., URLs containing 'undefined')
-  const validTiles = (tiles || []).filter((t: string) => typeof t === 'string' && t.length > 10 && !t.includes('undefined'));
-  const baseTiles = validTiles && validTiles.length > 0 ? validTiles : ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'];
+    // Build base raster source from prop or default to OSM
+    const tiles = (Array.isArray((arguments[0] as any)?.baseRasterTiles) && (arguments[0] as any).baseRasterTiles) || undefined;
+    // Filter out obviously invalid tiles (e.g., URLs containing 'undefined')
+    const validTiles = (tiles || []).filter((t: string) => typeof t === 'string' && t.length > 10 && !t.includes('undefined'));
+    const baseTiles = validTiles && validTiles.length > 0 ? validTiles : ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'];
 
     map.current = new maplibregl.Map({
       container: mapContainer.current,
@@ -163,11 +163,27 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
     map.current.on('error', (e) => {
       try {
         console.error('🗺️ Map error event:', e);
-        // Prefer structured error message when available
-        const msg = (e && (e.error?.message || e.message)) ? (e.error?.message || e.message) : (() => {
-          try { return JSON.stringify(e); } catch { return String(e); }
-        })();
-        setMapError(msg);
+        // Safe error message extraction
+        let errorMessage = 'Unknown map error';
+        
+        // Handle different error object structures
+        if (typeof e === 'object' && e !== null) {
+          if ('error' in e && typeof e.error === 'object' && e.error !== null && 'message' in e.error) {
+            errorMessage = String(e.error.message);
+          } else if ('message' in e) {
+            errorMessage = String(e.message);
+          } else {
+            try {
+              errorMessage = JSON.stringify(e);
+            } catch {
+              errorMessage = String(e);
+            }
+          }
+        } else {
+          errorMessage = String(e);
+        }
+        
+        setMapError(errorMessage);
       } catch (err) {
         console.error('🗺️ Map error (logging failed):', err);
         setMapError('Unknown map error');
@@ -290,15 +306,27 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
         if (map.current!.getLayer(outlineId)) {
           try { map.current!.removeLayer(outlineId); } catch (e) { /* ignore */ }
         }
-        if (map.current!.getSource(sourceId)) {
-          try { map.current!.removeSource(sourceId); } catch (e) { /* ignore */ }
-        }
 
-        // Add new source and layers
-        map.current!.addSource(sourceId, {
-          type: 'geojson',
-          data: layer.data
-        });
+        // Check if source already exists before adding
+        if (!map.current!.getSource(sourceId)) {
+          try {
+            map.current!.addSource(sourceId, {
+              type: 'geojson',
+              data: layer.data
+            });
+          } catch (error) {
+            console.error('Error adding source', sourceId, ':', error);
+            return;
+          }
+        } else {
+          // Update existing source data
+          try {
+            (map.current!.getSource(sourceId) as GeoJSONSource).setData(layer.data);
+          } catch (error) {
+            console.error('Error updating source', sourceId, ':', error);
+          }
+        }
+        
         addLayerFromSource(layer, sourceId, layerId);
       } else {
         // Remove layer and source if not visible or no data
@@ -310,9 +338,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
         if (map.current!.getLayer(outlineId)) {
           try { map.current!.removeLayer(outlineId); } catch (e) { /* ignore */ }
         }
-        if (map.current!.getSource(sourceId)) {
-          try { map.current!.removeSource(sourceId); } catch (e) { /* ignore */ }
-        }
+        // Don't remove the source as it might be used by other components
       }
     });
   }, [currentLayers, mapLoaded, layers]);
@@ -391,7 +417,10 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
             'circle-stroke-width': layer.style.strokeWidth || 2
           };
           try {
-            map.current!.addLayer(layerConfig);
+            // Check if layer already exists before adding
+            if (!map.current.getLayer(layerConfig.id)) {
+              map.current!.addLayer(layerConfig);
+            }
             // ensure circle layer is on top
             try { map.current!.moveLayer(layerConfig.id); } catch(e){}
           } catch (error) {
@@ -415,7 +444,9 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
             'line-opacity': layer.style.opacity || 0.9
           };
           try {
-            map.current!.addLayer(layerConfig);
+            if (!map.current.getLayer(layerConfig.id)) {
+              map.current!.addLayer(layerConfig);
+            }
             try { map.current!.moveLayer(layerConfig.id); } catch(e){}
           } catch (error) {
             console.error('Error adding line layer', layerConfig.id, ':', error);
@@ -458,8 +489,12 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
 
           try {
             // Add fill first, then outline so outline naturally sits above fill
-            map.current!.addLayer(fillLayer);
-            map.current!.addLayer(outlineLayer);
+            if (!map.current.getLayer(fillLayerId)) {
+              map.current!.addLayer(fillLayer);
+            }
+            if (!map.current.getLayer(outlineLayerId)) {
+              map.current!.addLayer(outlineLayer);
+            }
 
             // Try to move both to the top of the stack to ensure visibility above rasters
             try {
@@ -503,7 +538,14 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
             'circle-stroke-color': layer.style.strokeColor || '#ffffff',
             'circle-stroke-width': layer.style.strokeWidth || 2
           };
-          try { map.current!.addLayer(layerConfig); try { map.current!.moveLayer(layerConfig.id); } catch(e){} } catch (error) { console.error('Error adding default layer', layerConfig.id, ':', error); }
+          try { 
+            if (!map.current.getLayer(layerConfig.id)) {
+              map.current!.addLayer(layerConfig); 
+            }
+            try { map.current!.moveLayer(layerConfig.id); } catch(e){} 
+          } catch (error) { 
+            console.error('Error adding default layer', layerConfig.id, ':', error); 
+          }
         }
         break;
     }
@@ -1334,58 +1376,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
             </div>
           )}
 
-          {/* Export Control */}
-          {showExportControls && (
-            <div className="bg-white rounded-lg shadow-lg p-3 border border-gray-200">
-              <button
-                onClick={() => {
-                  console.log('Export button clicked, calling exportMap');
-                  exportMap();
-                }}
-                className="flex items-center gap-2 text-sm hover:bg-gray-100 px-2 py-1 rounded transition-colors"
-                title="Export map as image"
-              >
-                <Download size={16} />
-                Export Map
-              </button>
-              <button
-                onClick={() => {
-                  console.log('Manual screenshot test');
-                  alert('Please use your browser\'s screenshot tool (F12 > Screenshot) or press Ctrl+Shift+S to capture the map manually.');
-                }}
-                className="flex items-center gap-2 text-sm hover:bg-gray-100 px-2 py-1 rounded transition-colors mt-1"
-                title="Manual screenshot instructions"
-              >
-                📸 Manual Screenshot
-              </button>
-              <button
-                onClick={() => {
-                  console.log('Debug export - bypassing content check');
-                  // Force export without content validation
-                  if (map.current) {
-                    map.current.triggerRepaint();
-                    setTimeout(() => {
-                      const canvas = map.current!.getCanvas();
-                      const dataUrl = canvas.toDataURL('image/png', 1.0);
-                      const link = document.createElement('a');
-                      const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-                      link.download = `vanmitra-debug-${timestamp}.png`;
-                      link.href = dataUrl;
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
-                      console.log('Debug export completed');
-                      alert('Debug export saved - check the downloaded image');
-                    }, 1000);
-                  }
-                }}
-                className="flex items-center gap-2 text-sm hover:bg-red-100 px-2 py-1 rounded transition-colors mt-1 text-red-600"
-                title="Debug export (bypasses content check)"
-              >
-                🐛 Debug Export
-              </button>
-            </div>
-          )}
+         
         </div>
       )}
 
