@@ -199,6 +199,7 @@ function generateFallbackData(state: string, district: string) {
 }
 
 // OpenStreetMap Overpass API query for natural water bodies and agricultural features with retry logic
+/* eslint-disable @typescript-eslint/no-unused-vars */
 async function fetchOSMData(bbox: string, featureType: string, retryCount = 0): Promise<any> {
   const cacheKey = `${bbox}_${featureType}`;
   const now = Date.now();
@@ -295,6 +296,7 @@ async function fetchOSMData(bbox: string, featureType: string, retryCount = 0): 
     requestQueue.delete(queueKey);
   }
 }
+/* eslint-enable @typescript-eslint/no-unused-vars */
 
 // Convert OSM data to GeoJSON format
 function convertOSMToGeoJSON(osmData: any, stateName: string, districtName: string) {
@@ -304,7 +306,7 @@ function convertOSMToGeoJSON(osmData: any, stateName: string, districtName: stri
     .filter((element: any) => element.type === 'node' || element.type === 'way')
     .map((element: any, index: number) => {
       let coordinates: [number, number];
-      let geometryType = 'Point';
+  const geometryType = 'Point';
 
       if (element.type === 'node') {
         coordinates = [element.lon, element.lat];

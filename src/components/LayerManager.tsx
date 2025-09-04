@@ -172,8 +172,8 @@ export default function LayerManager({
                 Map Markers ({markers.length})
               </h4>
               <div className="space-y-2">
-                {markers.map(marker => (
-                  <div key={marker.id} className="border rounded p-2">
+                {markers.map((marker, idx) => (
+                  <div key={`${marker.id ?? 'marker'}-${idx}`} className="border rounded p-2">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <div

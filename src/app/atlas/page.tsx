@@ -36,11 +36,11 @@ export default function AtlasPage() {
 
   const [markers, setMarkers] = useState<GISMarker[]>([]);
 
-  const [stateFilter, setStateFilter] = useState(DEFAULT_STATE);
-  const [districtFilter, setDistrictFilter] = useState(DEFAULT_DISTRICT);
-  const [statusFilter, setStatusFilter] = useState('approved');
+  const [stateFilter, setStateFilter] = useState('all');
+  const [districtFilter, setDistrictFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [claimTypeFilter, setClaimTypeFilter] = useState<string | null>(null);
-  const [pendingStatusFilter, setPendingStatusFilter] = useState('approved');
+  const [pendingStatusFilter, setPendingStatusFilter] = useState('all');
   const [pendingClaimTypeFilter, setPendingClaimTypeFilter] = useState<string | null>(null);
   const [loadingClaims, setLoadingClaims] = useState(false);
   const [toasts, setToasts] = useState<{ id: number; message: string; type?: 'info'|'error' }[]>([]);
@@ -67,8 +67,8 @@ export default function AtlasPage() {
   const [mapZoom, setMapZoom] = useState<number>(7.5);
 
   // Temporary state for pending filter changes
-  const [pendingStateFilter, setPendingStateFilter] = useState(DEFAULT_STATE);
-  const [pendingDistrictFilter, setPendingDistrictFilter] = useState(DEFAULT_DISTRICT);
+  const [pendingStateFilter, setPendingStateFilter] = useState('all');
+  const [pendingDistrictFilter, setPendingDistrictFilter] = useState('all');
   const [isApplyingFilters, setIsApplyingFilters] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(true);
 
@@ -78,12 +78,15 @@ export default function AtlasPage() {
   useEffect(() => {
     setLayers(prevLayers => prevLayers.map(layer => ({
       ...layer,
-      url: layer.id === 'fra-claims'
-        ? `/api/atlas/fra?state=${encodeURIComponent(stateFilter)}&district=${encodeURIComponent(districtFilter)}`
-        : layer.id === 'village-boundaries'
-        ? `/api/atlas/boundaries?state=${encodeURIComponent(stateFilter)}&district=${encodeURIComponent(districtFilter)}`
-        : layer.id === 'assets'
-        ? `/api/atlas/assets?state=${encodeURIComponent(stateFilter)}&district=${encodeURIComponent(districtFilter)}`
+      url: (layer.id === 'fra-claims' || layer.id === 'village-boundaries' || layer.id === 'assets')
+        ? (() => {
+            const params = new URLSearchParams();
+            if (stateFilter && stateFilter !== 'all') params.set('state', stateFilter);
+            if (districtFilter && districtFilter !== 'all') params.set('district', districtFilter);
+            const base = layer.id === 'fra-claims' ? '/api/atlas/fra' : (layer.id === 'village-boundaries' ? '/api/atlas/boundaries' : '/api/atlas/assets');
+            const qs = params.toString();
+            return qs ? `${base}?${qs}` : base;
+          })()
         : layer.url
     })));
     // Force WebGIS re-render by changing key
@@ -124,7 +127,10 @@ export default function AtlasPage() {
             if (!districtsByState[stateName]) districtsByState[stateName] = new Set();
             if (districtName) districtsByState[stateName].add(districtName);
           }
-          if (status) statusesSet.add(status.toLowerCase() === 'any' ? 'any' : status);
+          if (status) {
+            const s = status.toString().toLowerCase();
+              statusesSet.add(s);
+          }
           if (ctype) claimTypesSet.add(ctype.toUpperCase());
         });
 
@@ -134,7 +140,7 @@ export default function AtlasPage() {
           const districtsObj: Record<string,string[]> = {};
           Object.entries(districtsByState).forEach(([s, set]) => { districtsObj[s] = Array.from(set).sort((a,b)=>a.localeCompare(b)); });
           setDistrictOptionsByState(districtsObj);
-          setStatusOptions(prev => prev.length ? prev : Array.from(statusesSet).map(s=>s.toLowerCase()==='any'?'any':s));
+          setStatusOptions(prev => prev.length ? prev : Array.from(statusesSet));
           setClaimTypeOptions(prev => prev.length ? prev : Array.from(claimTypesSet));
         }
       } catch (err) {
@@ -151,8 +157,8 @@ export default function AtlasPage() {
       try {
         setLoadingClaims(true);
         const params = new URLSearchParams();
-        if (stateFilter) params.set('state', stateFilter);
-        if (districtFilter) params.set('district', districtFilter);
+  if (stateFilter && stateFilter !== 'all') params.set('state', stateFilter);
+  if (districtFilter && districtFilter !== 'all') params.set('district', districtFilter);
         // If user selected "any" (empty) or explicitly 'all', request all claims from API
         if (statusFilter === '' || statusFilter === 'all') {
           params.set('status', 'all');
@@ -261,7 +267,10 @@ export default function AtlasPage() {
         if (!features.length) pushToast('No claims found for selected filters', 'info');
 
         // populate filter options
-        const statuses = Array.from(new Set(features.map(f => String((f.properties?.status ?? '').toString()).toLowerCase().replace(/^\w/, c => c.toUpperCase())))).filter(Boolean);
+          const statuses = Array.from(new Set(features.map(f => {
+            const s = String((f.properties?.status ?? '').toString()).toLowerCase();
+            return s === 'any' ? 'all' : s;
+          }))).filter(Boolean);
         const claimTypes = Array.from(new Set(features.map(f => String((f.properties?.claim_type ?? '').toString()).toUpperCase()))).filter(Boolean);
         setStatusOptions(statuses);
         setClaimTypeOptions(claimTypes);
@@ -319,7 +328,7 @@ export default function AtlasPage() {
     setStateFilter(pendingStateFilter);
     setDistrictFilter(pendingDistrictFilter);
   // apply pending filters
-  setStatusFilter(pendingStatusFilter ?? 'approved');
+  setStatusFilter(pendingStatusFilter ?? 'all');
   setClaimTypeFilter(pendingClaimTypeFilter ?? null);
     
     // Reset loading state after a short delay
@@ -557,6 +566,7 @@ export default function AtlasPage() {
                         onChange={(e) => handleStateChange(e.target.value)} 
                         className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
                       >
+                        <option value="all">All</option>
                         {(stateOptions.length ? stateOptions : STATES.map(s=>s.name)).map(s => <option key={s} value={s}>{s}</option>)}
                       </select>
                     </div>
@@ -568,15 +578,18 @@ export default function AtlasPage() {
                         onChange={(e) => handleDistrictChange(e.target.value)} 
                         className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
                       >
-                        {(districtOptionsByState[pendingStateFilter] && districtOptionsByState[pendingStateFilter].length) ? districtOptionsByState[pendingStateFilter].map(d => <option key={d} value={d}>{d}</option>) : ((STATES.find(s => s.name === pendingStateFilter)?.districts || []).map(d => <option key={d} value={d}>{d}</option>))}
+                        <option value="all">All</option>
+                        {pendingStateFilter !== 'all' ? (
+                          (districtOptionsByState[pendingStateFilter] && districtOptionsByState[pendingStateFilter].length) ? districtOptionsByState[pendingStateFilter].map(d => <option key={d} value={d}>{d}</option>) : ((STATES.find(s => s.name === pendingStateFilter)?.districts || []).map(d => <option key={d} value={d}>{d}</option>))
+                        ) : null}
                       </select>
                     </div>
 
                     <div>
                       <label className="block text-sm text-green-700">Status</label>
                       <select value={pendingStatusFilter} onChange={(e) => setPendingStatusFilter(e.target.value)} className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50">
-                        <option value="">any</option>
-                        {statusOptions.length ? statusOptions.map(s => <option key={s} value={s.toLowerCase()==='any'?'' : s}>{s}</option>) : (
+                        <option value="all">All</option>
+                        {statusOptions.length ? statusOptions.map(s => <option key={s} value={s}>{String(s).charAt(0).toUpperCase() + String(s).slice(1)}</option>) : (
                           <>
                             <option value="approved">approved</option>
                             <option value="pending">pending</option>

@@ -273,7 +273,7 @@ export default function Dashboard() {
                   <div className="flex items-center justify-between">
                     <div>
                       <h2 className="text-2xl font-bold text-green-900">Welcome back, {user?.displayName || 'User'}!</h2>
-                      <p className="text-green-700 mt-1">Here's what's happening with FRA claims and village development today.</p>
+                      <p className="text-green-700 mt-1">Here is what is happening with FRA claims and village development today.</p>
                     </div>
                     <div className="text-right">
                       <div className="text-sm text-green-600">Last updated</div>

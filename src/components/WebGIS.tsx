@@ -86,6 +86,8 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
   onStartMeasurement: externalStartMeasurement,
   onClearMeasurement: externalClearMeasurement,
   onExport: externalExport,
+  baseRasterTiles,
+  baseRasterAttribution,
   state = 'Madhya Pradesh',
   district = 'Bhopal'
 }, ref) {
@@ -110,10 +112,10 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
   useEffect(() => {
     if (!mapContainer.current) return;
 
-    // Build base raster source from prop or default to OSM
-    const tiles = (Array.isArray((arguments[0] as any)?.baseRasterTiles) && (arguments[0] as any).baseRasterTiles) || undefined;
-    // Filter out obviously invalid tiles (e.g., URLs containing 'undefined')
-    const validTiles = (tiles || []).filter((t: string) => typeof t === 'string' && t.length > 10 && !t.includes('undefined'));
+  // Build base raster source from prop or default to OSM
+  const tiles = Array.isArray(baseRasterTiles) ? baseRasterTiles : undefined;
+  // Filter out obviously invalid tiles (e.g., URLs containing 'undefined')
+  const validTiles = (tiles || []).filter((t: string) => typeof t === 'string' && t.length > 10 && !t.includes('undefined'));
     const baseTiles = validTiles && validTiles.length > 0 ? validTiles : ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'];
 
     map.current = new maplibregl.Map({
@@ -125,7 +127,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
             type: 'raster',
             tiles: baseTiles,
             tileSize: 256,
-            attribution: arguments[0]?.baseRasterAttribution || '© OpenStreetMap contributors'
+            attribution: baseRasterAttribution || '© OpenStreetMap contributors'
           }
         },
         layers: [{
@@ -882,7 +884,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
 
             let nonBlankPixels = 0;
             let totalPixels = 0;
-            let colorCounts: { [key: string]: number } = {};
+            const colorCounts: { [key: string]: number } = {};
 
             for (let i = 0; i < data.length; i += 4) {
               totalPixels++;
