@@ -453,36 +453,59 @@ export default function AtlasPage() {
                   </div>
                 </div>
               </motion.div>
-              {/* Measurement tools moved here: */}
-              <div className="mt-6 p-4 bg-white rounded-xl shadow-md border border-green-100">
-                <div className="flex items-center gap-2 mb-3">
-                  <Ruler size={16} />
-                  <h4 className="font-semibold text-green-900">Measurement Tools</h4>
-                </div>
-                <div className="space-y-3">
-                  {!isMeasuring ? (
+              {/* Measurement and Export tools side-by-side under the map */}
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 bg-white rounded-xl shadow-md border border-green-100">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Ruler size={16} />
+                    <h4 className="font-semibold text-green-900">Measurement Tools</h4>
+                  </div>
+                  <div className="space-y-3">
+                    {!isMeasuring ? (
+                      <button
+                        onClick={() => webGISRef.current?.startMeasurement?.()}
+                        className="w-full bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors"
+                      >
+                        Start Measurement
+                      </button>
+                    ) : (
+                      <div className="text-sm text-gray-600 bg-yellow-50 p-3 rounded-md">
+                        Click two points on the map to measure distance
+                      </div>
+                    )}
+                    {measurementDistance && (
+                      <div className="text-sm bg-green-50 p-3 rounded-md">
+                        <strong>Distance:</strong> {measurementDistance.toFixed(2)} km
+                      </div>
+                    )}
                     <button
-                      onClick={() => webGISRef.current?.startMeasurement?.()}
-                      className="w-full bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors"
+                      onClick={() => webGISRef.current?.clearMeasurement?.()}
+                      className="w-full bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition-colors"
                     >
-                      Start Measurement
+                      Clear Measurement
                     </button>
-                  ) : (
-                    <div className="text-sm text-gray-600 bg-yellow-50 p-3 rounded-md">
-                      Click two points on the map to measure distance
-                    </div>
-                  )}
-                  {measurementDistance && (
-                    <div className="text-sm bg-green-50 p-3 rounded-md">
-                      <strong>Distance:</strong> {measurementDistance.toFixed(2)} km
-                    </div>
-                  )}
-                  <button
-                    onClick={() => webGISRef.current?.clearMeasurement?.()}
-                    className="w-full bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition-colors"
-                  >
-                    Clear Measurement
-                  </button>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-white rounded-xl shadow-md border border-green-100">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Download size={16} />
+                    <h4 className="font-semibold text-green-900">Export Tools</h4>
+                  </div>
+                  <div className="space-y-3">
+                    <button
+                      onClick={handleExportGeoJSON}
+                      className="w-full bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors"
+                    >
+                      Export GeoJSON
+                    </button>
+                    <button
+                      onClick={() => { console.log('Export button clicked'); handleExportMap(); }}
+                      className="w-full border border-green-200 text-green-700 px-4 py-2 rounded-md hover:bg-green-50 transition-colors"
+                    >
+                      Export Map Image
+                    </button>
+                  </div>
                 </div>
               </div>
             </section>
@@ -591,29 +614,7 @@ export default function AtlasPage() {
                 </div>
               </div>
 
-              <div className="mb-6 p-6 bg-white rounded-xl shadow-md border border-green-100">
-                <div className="flex items-center gap-2 mb-3">
-                  <Download size={16} />
-                  <h4 className="font-semibold text-green-900">Export Tools</h4>
-                </div>
-                <div className="space-y-3">
-                  <button
-                    onClick={handleExportGeoJSON}
-                    className="w-full bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors"
-                  >
-                    Export GeoJSON
-                  </button>
-                  <button
-                    onClick={() => {
-                      console.log('Export button clicked');
-                      handleExportMap();
-                    }}
-                    className="w-full border border-green-200 text-green-700 px-4 py-2 rounded-md hover:bg-green-50 transition-colors"
-                  >
-                    Export Map Image
-                  </button>
-                </div>
-              </div>
+              {/* Export tools moved below the map beside measurement tools */}
             </aside>
           </div>
         </main>
