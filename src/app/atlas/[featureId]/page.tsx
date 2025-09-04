@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import * as turf from '@turf/turf';
+import { Ruler, Download, Layers } from 'lucide-react';
 import Link from "next/link";
 import DecorativeBackground from "@/components/DecorativeBackground";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -45,6 +47,8 @@ export default function FeaturePage({
   const webgisRef = useRef<any>(null);
   const [layers, setLayers] = useState<GISLayer[]>([]);
   const [markers, setMarkers] = useState<GISMarker[]>([]);
+  const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
+  const [mapZoom, setMapZoom] = useState<number>(12);
   const [isFetchingBoundaries, setIsFetchingBoundaries] = useState(false);
   const [toasts, setToasts] = useState<{ id: number; message: string; type?: 'info'|'error' }[]>([]);
 
@@ -163,11 +167,44 @@ export default function FeaturePage({
         }
 
         setFeature(featureObj);
-        if (featureObj.geometry?.type === 'Point') {
-          const coords = featureObj.geometry.coordinates as [number, number];
-          setMarkers([
-            { id: featureObj.properties.id, lng: coords[0], lat: coords[1], label: 'Feature', color: '#ef4444' }
-          ]);
+
+        // Create a dedicated layer for this feature so polygons render with fill + outline
+        const fc = { type: 'FeatureCollection' as const, features: [featureObj as any] };
+        const claimType = String(featureObj.properties?.claim_type ?? '').toUpperCase();
+        const colorMap: Record<string,string> = { IFR: '#16a34a', CR: '#3b82f6', CFR: '#f59e0b' };
+        const fillColor = colorMap[claimType] ?? '#60a5fa';
+
+        setLayers(prev => [
+          ...prev.filter(l => l.id !== 'claims-feature'),
+          {
+            id: 'claims-feature',
+            name: 'Claim',
+            type: 'geojson',
+            visible: true,
+            data: fc,
+            url: '',
+            style: { fillColor, strokeColor: fillColor, strokeWidth: 3, opacity: 0.6 }
+          }
+        ]);
+
+        // For polygon, compute centroid for marker and center map
+        try {
+          if (featureObj.geometry?.type === 'Point') {
+            const coords = featureObj.geometry.coordinates as [number, number];
+            setMarkers([{ id: featureObj.properties.id, lng: coords[0], lat: coords[1], label: '1', color: '#ef4444' }]);
+            setMapCenter([coords[0], coords[1]]);
+            setMapZoom(14);
+          } else if (featureObj.geometry && (featureObj.geometry.type === 'Polygon' || featureObj.geometry.type === 'MultiPolygon')) {
+            const centroid = turf.centroid(featureObj as any);
+            if (centroid && centroid.geometry && centroid.geometry.coordinates) {
+              const [lng, lat] = centroid.geometry.coordinates as [number, number];
+              setMarkers([{ id: featureObj.properties.id, lng, lat, label: '1', color: '#ef4444' }]);
+              setMapCenter([lng, lat]);
+              setMapZoom(12);
+            }
+          }
+        } catch (e) {
+          // fallback: do nothing
         }
       } catch (err) {
         console.error('Failed to fetch claim', err);
@@ -351,24 +388,43 @@ export default function FeaturePage({
           
           {/* Feature Header */}
           <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Feature Details</h1>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+            <div className="flex items-start gap-4">
               <div>
-                <span className="font-semibold text-gray-600">ID:</span>
+                <h1 className="text-2xl font-bold text-gray-900">Claim {props.id}</h1>
+                <div className="text-sm text-gray-600">{props.village ?? ''}, {props.district ?? ''}</div>
+              </div>
+              <div className="ml-auto flex items-center gap-2">
+                <div className={`px-2 py-1 rounded text-xs font-medium ${String(props.status).toLowerCase() === 'approved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                  {String(props.status ?? '').toUpperCase()}
+                </div>
+                <div className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">{String(props.claim_type ?? '').toUpperCase()}</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm mt-4">
+              <div>
+                <span className="font-semibold text-gray-600">ID</span>
                 <p className="truncate">{props.id}</p>
               </div>
               <div>
-                <span className="font-semibold text-gray-600">Type:</span>
-                <p>{props.type || "N/A"}</p>
+                <span className="font-semibold text-gray-600">Area</span>
+                <p>{props.area ? `${props.area} ha` : 'N/A'}</p>
               </div>
               <div>
-                <span className="font-semibold text-gray-600">Status:</span>
-                <p>{props.status || "N/A"}</p>
+                <span className="font-semibold text-gray-600">State</span>
+                <p>{props.state ?? '—'}</p>
               </div>
               <div>
-                <span className="font-semibold text-gray-600">Area:</span>
-                <p>{props.area ? `${props.area} ha` : "N/A"}</p>
+                <span className="font-semibold text-gray-600">Village</span>
+                <p>{props.village ?? '—'}</p>
               </div>
+            </div>
+
+            <div className="mt-4 flex items-center gap-2">
+              <button onClick={() => {}} className="px-3 py-1 bg-green-700 text-white rounded-md text-sm">Open detail</button>
+              <button onClick={() => {}} className="px-3 py-1 border rounded-md text-sm">Edit</button>
+              <button onClick={() => {}} className="px-3 py-1 border rounded-md text-sm">Report</button>
+              <button onClick={() => {}} className="px-3 py-1 border rounded-md text-sm">Verify</button>
             </div>
           </div>
 
@@ -377,32 +433,48 @@ export default function FeaturePage({
             {/* Left panel removed - map controls will handle layer toggles */}
 
             {/* Map Container */}
-            <div className="flex-1 bg-white rounded-xl shadow-md overflow-hidden" style={{ height: '90vh' }}>
-              <WebGIS
-                ref={webgisRef}
-                className="w-full h-full"
-                center={
-                  feature.geometry.type === "Point"
-                    ? (feature.geometry.coordinates as [number, number])
-                    : [88.8, 21.9]
-                }
-                zoom={12}
-                layers={layers}
-                markers={markers}
-                state={derivedState}
-                district={derivedDistrict}
-                baseRasterTiles={
-                  process.env.NEXT_PUBLIC_OPENWEATHER_KEY
-                    ? [
-                        `https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${process.env.NEXT_PUBLIC_OPENWEATHER_KEY}`,
-                      ]
-                    : undefined
-                }
-                baseRasterAttribution={"Map data © OpenWeatherMap"}
-                showControls={true}
-                showExportControls={true}
-                onLayerToggle={handleLayerToggle}
-              />
+            <div className="flex-1 bg-white rounded-xl shadow-md overflow-hidden">
+              <div style={{ height: '70vh' }}>
+                <WebGIS
+                  ref={webgisRef}
+                  className="w-full h-full"
+                  center={(mapCenter ?? (feature.geometry.type === 'Point' ? (feature.geometry.coordinates as [number, number]) : [88.8, 21.9])) as [number, number]}
+                  zoom={mapZoom}
+                  layers={layers}
+                  markers={markers}
+                  state={derivedState}
+                  district={derivedDistrict}
+                  showControls={true}
+                  showExportControls={true}
+                  onLayerToggle={handleLayerToggle}
+                />
+              </div>
+
+              <div className="p-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-3 bg-white rounded shadow-sm border">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Ruler size={16} />
+                      <h4 className="font-medium">Measurement</h4>
+                    </div>
+                    <div className="space-y-2">
+                      <button onClick={() => webgisRef.current?.startMeasurement?.()} className="w-full bg-blue-500 text-white px-3 py-2 rounded">Start Measurement</button>
+                      <button onClick={() => webgisRef.current?.clearMeasurement?.()} className="w-full bg-gray-200 text-gray-800 px-3 py-2 rounded">Clear</button>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-white rounded shadow-sm border">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Download size={16} />
+                      <h4 className="font-medium">Export</h4>
+                    </div>
+                    <div className="space-y-2">
+                      <button onClick={() => { /* export geojson for this feature */ }} className="w-full bg-green-500 text-white px-3 py-2 rounded">Export GeoJSON</button>
+                      <button onClick={() => webgisRef.current?.exportMap?.()} className="w-full border border-gray-200 text-gray-800 px-3 py-2 rounded">Export Map Image</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
