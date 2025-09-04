@@ -567,15 +567,23 @@ export default function AtlasPage() {
               <div className="mt-4 p-4 bg-white rounded-xl shadow-sm border border-green-50">
                 <h5 className="text-sm font-medium text-green-900 mb-2">Legend</h5>
                 <div className="space-y-2">
-                  {claimTypeOptions.length ? claimTypeOptions.map(ct => (
-                    <div key={ct} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span style={{ width: 16, height: 12, background: claimTypeColors[ct] ?? '#60a5fa', display: 'inline-block', borderRadius: 3 }} />
-                        <span className="text-sm">{ct}</span>
+                  {claimTypeOptions.length ? claimTypeOptions.map(ct => {
+                    const layerId = `claims-${ct.toLowerCase()}`;
+                    const layer = layers.find(l => l.id === layerId);
+                    const visible = layer ? !!layer.visible : true;
+                    return (
+                      <div key={ct} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span style={{ width: 16, height: 12, background: claimTypeColors[ct] ?? '#60a5fa', display: 'inline-block', borderRadius: 3, border: '1px solid rgba(0,0,0,0.06)' }} />
+                          <span className="text-sm">{ct}</span>
+                        </div>
+                        <label className="inline-flex items-center gap-2">
+                          <input type="checkbox" checked={visible} onChange={() => handleLayerToggle(layerId)} className="rounded border-gray-200" />
+                          <span className="text-sm text-gray-600">{visible ? 'Visible' : 'Hidden'}</span>
+                        </label>
                       </div>
-                      <button onClick={() => handleLayerToggle(`claims-${ct.toLowerCase()}`)} className="text-sm text-blue-600">Toggle</button>
-                    </div>
-                  )) : (
+                    );
+                  }) : (
                     <div className="text-xs text-gray-500">No claim types</div>
                   )}
                 </div>
