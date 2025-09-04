@@ -209,15 +209,21 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
     map.current.setZoom(zoom);
   }, [center, zoom]);
 
-  // Load data from APIs
+  // Load data from APIs and sync incoming layers
   useEffect(() => {
     console.log('Loading data for layers:', layers.length, 'with state:', state, 'district:', district);
     setIsLoadingData(true);
 
-    // Clear existing data when layers change to force fresh data loading
-    setCurrentLayers(prev => prev.map(layer => ({ ...layer, data: undefined })));
+    // Sync currentLayers to the incoming prop layers (preserve any provided data)
+    setCurrentLayers(layers.map(l => ({ ...l })));
 
     const fetchPromises = layers.map(layer => {
+      // If layer already contains data, set it immediately
+      if (layer.visible && layer.data) {
+        setCurrentLayers(prev => prev.map(l => l.id === layer.id ? { ...l, data: layer.data } : l));
+        return Promise.resolve(layer.data);
+      }
+
       if (layer.visible && layer.url) {
         // Only add state and district parameters if they're not already in the URL
         let url = layer.url;
@@ -272,30 +278,40 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
       const sourceId = `source-${layer.id}`;
       const layerId = `layer-${layer.id}`;
 
-  if (layer.visible && layer.data) {
+      if (layer.visible && layer.data) {
         console.log('Adding/updating layer:', layer.id, 'with', layer.data?.features?.length || 0, 'features');
 
-        // Remove existing layer and source if they exist
-        if (map.current!.getLayer(layerId)) {
-          map.current!.removeLayer(layerId);
+        // Remove any existing variants (fill / outline) and source if they exist
+        const fillId = `${layerId}-fill`;
+        const outlineId = `${layerId}-outline`;
+        if (map.current!.getLayer(fillId)) {
+          try { map.current!.removeLayer(fillId); } catch (e) { /* ignore */ }
+        }
+        if (map.current!.getLayer(outlineId)) {
+          try { map.current!.removeLayer(outlineId); } catch (e) { /* ignore */ }
         }
         if (map.current!.getSource(sourceId)) {
-          map.current!.removeSource(sourceId);
+          try { map.current!.removeSource(sourceId); } catch (e) { /* ignore */ }
         }
 
-        // Add new source and layer
+        // Add new source and layers
         map.current!.addSource(sourceId, {
           type: 'geojson',
           data: layer.data
         });
         addLayerFromSource(layer, sourceId, layerId);
-      } else if (!layer.visible) {
-        // Remove layer and source if not visible
-        if (map.current!.getLayer(layerId)) {
-          map.current!.removeLayer(layerId);
+      } else {
+        // Remove layer and source if not visible or no data
+        const fillId = `${layerId}-fill`;
+        const outlineId = `${layerId}-outline`;
+        if (map.current!.getLayer(fillId)) {
+          try { map.current!.removeLayer(fillId); } catch (e) { /* ignore */ }
+        }
+        if (map.current!.getLayer(outlineId)) {
+          try { map.current!.removeLayer(outlineId); } catch (e) { /* ignore */ }
         }
         if (map.current!.getSource(sourceId)) {
-          map.current!.removeSource(sourceId);
+          try { map.current!.removeSource(sourceId); } catch (e) { /* ignore */ }
         }
       }
     });
@@ -370,24 +386,112 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
           layerConfig.paint = {
             'circle-radius': 6,
             'circle-color': layer.style.fillColor || '#3b82f6',
-            'circle-opacity': layer.style.opacity || 0.8,
+            'circle-opacity': layer.style.opacity || 0.9,
             'circle-stroke-color': layer.style.strokeColor || '#ffffff',
             'circle-stroke-width': layer.style.strokeWidth || 2
           };
+          try {
+            map.current!.addLayer(layerConfig);
+            // ensure circle layer is on top
+            try { map.current!.moveLayer(layerConfig.id); } catch(e){}
+          } catch (error) {
+            console.error('Error adding point layer', layerConfig.id, ':', error);
+          }
+
+          // click handlers
+          map.current!.on('click', layerConfig.id, (e) => {
+            if (e.features && e.features.length > 0 && onFeatureClick) {
+              onFeatureClick({ layer, feature: e.features[0], lngLat: e.lngLat });
+            }
+          });
+          map.current!.on('mouseenter', layerConfig.id, () => { map.current!.getCanvas().style.cursor = 'pointer'; });
+          map.current!.on('mouseleave', layerConfig.id, () => { map.current!.getCanvas().style.cursor = ''; });
+
         } else if (geometryType === 'LineString' || geometryType === 'MultiLineString') {
           layerConfig.type = 'line';
           layerConfig.paint = {
             'line-color': layer.style.strokeColor || '#16a34a',
             'line-width': layer.style.strokeWidth || 2,
-            'line-opacity': layer.style.opacity || 0.8
+            'line-opacity': layer.style.opacity || 0.9
           };
+          try {
+            map.current!.addLayer(layerConfig);
+            try { map.current!.moveLayer(layerConfig.id); } catch(e){}
+          } catch (error) {
+            console.error('Error adding line layer', layerConfig.id, ':', error);
+          }
+
+          map.current!.on('click', layerConfig.id, (e) => {
+            if (e.features && e.features.length > 0 && onFeatureClick) {
+              onFeatureClick({ layer, feature: e.features[0], lngLat: e.lngLat });
+            }
+          });
+          map.current!.on('mouseenter', layerConfig.id, () => { map.current!.getCanvas().style.cursor = 'pointer'; });
+          map.current!.on('mouseleave', layerConfig.id, () => { map.current!.getCanvas().style.cursor = ''; });
+
         } else if (geometryType === 'Polygon' || geometryType === 'MultiPolygon') {
-          layerConfig.type = 'fill';
-          layerConfig.paint = {
-            'fill-color': layer.style.fillColor || '#bbf7d0',
-            'fill-opacity': layer.style.opacity || 0.4,
-            'fill-outline-color': layer.style.strokeColor || '#16a34a'
-          };
+          // For polygons, add a fill layer and a separate outline (line) layer to ensure visibility
+          const fillLayerId = `${layerId}-fill`;
+          const outlineLayerId = `${layerId}-outline`;
+
+          const fillLayer = {
+            id: fillLayerId,
+            source: sourceId,
+            type: 'fill',
+            paint: {
+              'fill-color': layer.style.fillColor || '#bbf7d0',
+              'fill-opacity': typeof layer.style.opacity === 'number' ? layer.style.opacity : 0.45,
+              'fill-antialias': true
+            }
+          } as any;
+
+          const outlineLayer = {
+            id: outlineLayerId,
+            source: sourceId,
+            type: 'line',
+            paint: {
+              'line-color': layer.style.strokeColor || (layer.style.fillColor ? layer.style.fillColor : '#16a34a'),
+              'line-width': layer.style.strokeWidth ?? 2,
+              'line-opacity': Math.max(0.8, layer.style.opacity ?? 0.9)
+            }
+          } as any;
+
+          try {
+            // Add fill first, then outline so outline naturally sits above fill
+            map.current!.addLayer(fillLayer);
+            map.current!.addLayer(outlineLayer);
+
+            // Try to move both to the top of the stack to ensure visibility above rasters
+            try {
+              map.current!.moveLayer(outlineLayerId);
+            } catch (e) { /* ignore */ }
+            try {
+              map.current!.moveLayer(fillLayerId);
+            } catch (e) { /* ignore */ }
+
+            // As extra precaution, update paint properties to ensure strong contrast
+            try {
+              map.current!.setPaintProperty(fillLayerId, 'fill-opacity', fillLayer.paint['fill-opacity']);
+              map.current!.setPaintProperty(fillLayerId, 'fill-color', fillLayer.paint['fill-color']);
+              map.current!.setPaintProperty(outlineLayerId, 'line-color', outlineLayer.paint['line-color']);
+              map.current!.setPaintProperty(outlineLayerId, 'line-width', outlineLayer.paint['line-width']);
+            } catch (e) { /* ignore paint failures */ }
+          } catch (error) {
+            console.error('Error adding polygon layers', fillLayerId, outlineLayerId, ':', error);
+            return;
+          }
+
+          // Click handlers for both fill and outline
+          [fillLayerId, outlineLayerId].forEach(lid => {
+            map.current!.on('click', lid, (e) => {
+              if (e.features && e.features.length > 0 && onFeatureClick) {
+                onFeatureClick({ layer, feature: e.features[0], lngLat: e.lngLat });
+              }
+            });
+            map.current!.on('mouseenter', lid, () => { map.current!.getCanvas().style.cursor = 'pointer'; });
+            map.current!.on('mouseleave', lid, () => { map.current!.getCanvas().style.cursor = ''; });
+          });
+
         } else {
           // Default to circle for unknown or empty geometry types
           console.log('Unknown geometry type for layer', layer.id, ', using default circle type');
@@ -399,41 +503,10 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
             'circle-stroke-color': layer.style.strokeColor || '#ffffff',
             'circle-stroke-width': layer.style.strokeWidth || 2
           };
+          try { map.current!.addLayer(layerConfig); try { map.current!.moveLayer(layerConfig.id); } catch(e){} } catch (error) { console.error('Error adding default layer', layerConfig.id, ':', error); }
         }
         break;
     }
-
-    try {
-  map.current!.addLayer(layerConfig);
-  console.log('Successfully added layer:', layerId);
-    } catch (error) {
-      console.error('Error adding layer', layerId, ':', error);
-      return;
-    }
-
-  // Add click handler for features
-    map.current!.on('click', layerId, (e) => {
-      if (e.features && e.features.length > 0 && onFeatureClick) {
-        onFeatureClick({
-          layer: layer,
-          feature: e.features[0],
-          lngLat: e.lngLat
-        });
-      }
-    });
-
-    map.current!.on('mouseenter', layerId, () => {
-      map.current!.getCanvas().style.cursor = 'pointer';
-    });
-
-    map.current!.on('mouseleave', layerId, () => {
-      map.current!.getCanvas().style.cursor = '';
-    });
-
-    // Add click/mouse handlers
-    map.current!.on('mouseleave', layerId, () => {
-      map.current!.getCanvas().style.cursor = '';
-    });
   };
 
   // Handle markers
