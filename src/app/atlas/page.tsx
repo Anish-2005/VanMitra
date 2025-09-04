@@ -453,21 +453,8 @@ export default function AtlasPage() {
                   </div>
                 </div>
               </motion.div>
-            </section>
-
-            <aside className="lg:col-span-4">
-              <div className="mb-6">
-                <LayerManager
-                  layers={layers}
-                  markers={markers}
-                  onLayerToggle={handleLayerToggle}
-                  onLayerRemove={handleLayerRemove}
-                  onLayerUpdate={handleLayerUpdate}
-                  onMarkerUpdate={handleMarkerUpdate}
-                />
-              </div>
-
-              <div className="mb-6 p-6 bg-white rounded-xl shadow-md border border-green-100">
+              {/* Measurement tools moved here: */}
+              <div className="mt-6 p-4 bg-white rounded-xl shadow-md border border-green-100">
                 <div className="flex items-center gap-2 mb-3">
                   <Ruler size={16} />
                   <h4 className="font-semibold text-green-900">Measurement Tools</h4>
@@ -498,6 +485,21 @@ export default function AtlasPage() {
                   </button>
                 </div>
               </div>
+            </section>
+
+            <aside className="lg:col-span-4">
+              <div className="mb-6">
+                <LayerManager
+                  layers={layers}
+                  markers={markers}
+                  onLayerToggle={handleLayerToggle}
+                  onLayerRemove={handleLayerRemove}
+                  onLayerUpdate={handleLayerUpdate}
+                  onMarkerUpdate={handleMarkerUpdate}
+                />
+              </div>
+
+              {/* Measurement tools moved below the map in the main column */}
 
               <div className="p-6 bg-white rounded-xl shadow-md border border-green-100">
                 <h4 className="font-semibold text-green-900">Filters</h4>
