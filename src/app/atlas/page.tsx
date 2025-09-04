@@ -639,19 +639,49 @@ export default function AtlasPage() {
           </div>
         </main>
 
-        <Modal open={modalOpen} onClose={() => { setModalOpen(false); setSelectedFeature(null); }} title={selectedFeature ? `Feature — ${selectedFeature.layer}` : undefined}>
+        <Modal open={modalOpen} onClose={() => { setModalOpen(false); setSelectedFeature(null); }} title={selectedFeature ? `Claim ${selectedFeature.properties?.claim_id ?? selectedFeature.properties?.id ?? ''}` : undefined}>
           {selectedFeature ? (
-            <div>
-              <div className="text-sm text-green-700">Properties</div>
-              <div className="mt-2 text-xs text-gray-700" style={{ maxHeight: 260, overflow: 'auto' }}>
-                <pre className="whitespace-pre-wrap">{JSON.stringify(selectedFeature.properties, null, 2)}</pre>
+            <div className="space-y-4">
+              <div className="flex items-start gap-4">
+                <div>
+                  <div className="text-sm text-gray-600">{selectedFeature.properties?.village ?? ''}, {selectedFeature.properties?.district ?? ''}</div>
+                </div>
+                <div className="ml-auto flex items-center gap-2">
+                  <div className={`px-2 py-1 rounded text-xs font-medium ${String(selectedFeature.properties?.status).toLowerCase() === 'approved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                    {String(selectedFeature.properties?.status ?? '').toUpperCase()}
+                  </div>
+                  <div className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">{String(selectedFeature.properties?.claim_type ?? '').toUpperCase()}</div>
+                </div>
               </div>
 
-              <div className="mt-4 flex gap-2">
-                <button className="px-3 py-1 bg-green-700 text-white rounded-md text-sm">Edit</button>
-                <button className="px-3 py-1 border rounded-md text-sm">Report</button>
-                <button className="px-3 py-1 border rounded-md text-sm" onClick={() => { /* toggled verify */ }}>Verify</button>
-                <button className="ml-auto px-3 py-1 text-sm text-green-700" onClick={() => { setModalOpen(false); router.push(`/atlas/${encodeURIComponent(selectedFeature.properties?.id ?? 'unknown')}`); }}>Open detail</button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <div className="text-xs text-gray-500">Land area</div>
+                  <div className="font-medium">{selectedFeature.properties?.land_area ?? '—'} ha</div>
+                </div>
+                <div className="space-y-2">
+                  <div className="text-xs text-gray-500">State</div>
+                  <div className="font-medium">{selectedFeature.properties?.state ?? '—'}</div>
+                </div>
+                <div className="space-y-2">
+                  <div className="text-xs text-gray-500">District</div>
+                  <div className="font-medium">{selectedFeature.properties?.district ?? '—'}</div>
+                </div>
+                <div className="space-y-2">
+                  <div className="text-xs text-gray-500">Village</div>
+                  <div className="font-medium">{selectedFeature.properties?.village ?? '—'}</div>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t">
+                <div className="flex items-center gap-2">
+                  <button onClick={() => { router.push(`/atlas/${encodeURIComponent(selectedFeature.properties?.claim_id ?? selectedFeature.properties?.id ?? '')}`); }} className="inline-flex items-center gap-2 px-3 py-1 bg-green-700 text-white rounded-md text-sm">
+                    Open detail
+                  </button>
+                  <button onClick={() => { /* show edit modal */ }} className="inline-flex items-center gap-2 px-3 py-1 border rounded-md text-sm">Edit</button>
+                  <button onClick={() => { /* report action */ }} className="inline-flex items-center gap-2 px-3 py-1 border rounded-md text-sm">Report</button>
+                  <button onClick={() => { /* verify action */ }} className="inline-flex items-center gap-2 px-3 py-1 border rounded-md text-sm">Verify</button>
+                </div>
               </div>
             </div>
           ) : null}
