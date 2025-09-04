@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import * as turf from '@turf/turf';
 import { STATES, DEFAULT_STATE, DEFAULT_DISTRICT } from '../../lib/regions';
 import { motion } from "framer-motion";
 import { Layers, ArrowRight, Ruler, Download } from "lucide-react";
@@ -16,58 +17,54 @@ import { createGeoJSONPoint, exportToGeoJSON } from "../../lib/gis-utils";
 
 export default function AtlasPage() {
   const [layers, setLayers] = useState<GISLayer[]>([
+    // Primary claims layer will be populated with fetched claims data
     {
-      id: 'fra-claims',
-      name: 'FRA Claims',
+      id: 'claims',
+      name: 'Claims',
       type: 'geojson',
-      url: `/api/atlas/fra?state=${DEFAULT_STATE}&district=${DEFAULT_DISTRICT}`,
+      url: '',
       visible: true,
+      data: undefined,
       style: {
         fillColor: '#16a34a',
         strokeColor: '#15803d',
         strokeWidth: 2,
         opacity: 0.7
       }
-    },
-    {
-      id: 'village-boundaries',
-      name: 'Village Boundaries',
-      type: 'geojson',
-      url: `/api/atlas/boundaries?state=${DEFAULT_STATE}&district=${DEFAULT_DISTRICT}`,
-      visible: true,
-      style: {
-        fillColor: '#fbbf24',
-        strokeColor: '#d97706',
-        strokeWidth: 2,
-        opacity: 0.5
-      }
-    },
-    {
-      id: 'assets',
-      name: 'Asset Maps',
-      type: 'geojson',
-      url: `/api/atlas/assets?state=${DEFAULT_STATE}&district=${DEFAULT_DISTRICT}`,
-      visible: true,
-      style: {
-        fillColor: '#3b82f6',
-        strokeColor: '#1e40af',
-        strokeWidth: 1,
-        opacity: 0.8
-      }
     }
   ]);
 
-  const [markers, setMarkers] = useState<GISMarker[]>([
-    { id: 'marker-mp', lng: 78.4, lat: 23.2, label: 'MP', color: '#16a34a', popup: '<b>Madhya Pradesh</b><br>FRA Claim IFR-001<br>Area: 15.5 ha' },
-    { id: 'marker-tr', lng: 91.2, lat: 23.8, label: 'TR', color: '#dc2626', popup: '<b>Tripura</b><br>FRA Claim CR-001<br>Area: 8.7 ha' },
-    { id: 'marker-od', lng: 85.8, lat: 19.8, label: 'OD', color: '#ea580c', popup: '<b>Odisha</b><br>FRA Claim IFR-001<br>Area: 18.9 ha' },
-    { id: 'marker-ts', lng: 78.4, lat: 17.3, label: 'TS', color: '#7c3aed', popup: '<b>Telangana</b><br>FRA Claim CR-001<br>Area: 14.2 ha' },
-    { id: 'marker-wb', lng: 88.8, lat: 21.9, label: 'WB', color: '#0891b2', popup: '<b>West Bengal</b><br>FRA Claim IFR-001<br>Area: 16.5 ha' }
-  ]);
+  const [markers, setMarkers] = useState<GISMarker[]>([]);
 
   const [stateFilter, setStateFilter] = useState(DEFAULT_STATE);
   const [districtFilter, setDistrictFilter] = useState(DEFAULT_DISTRICT);
+  const [statusFilter, setStatusFilter] = useState('approved');
+  const [claimTypeFilter, setClaimTypeFilter] = useState<string | null>(null);
+  const [pendingStatusFilter, setPendingStatusFilter] = useState('approved');
+  const [pendingClaimTypeFilter, setPendingClaimTypeFilter] = useState<string | null>(null);
+  const [loadingClaims, setLoadingClaims] = useState(false);
+  const [toasts, setToasts] = useState<{ id: number; message: string; type?: 'info'|'error' }[]>([]);
+
+  const [statusOptions, setStatusOptions] = useState<string[]>([]);
+  const [claimTypeOptions, setClaimTypeOptions] = useState<string[]>([]);
+  const [stateOptions, setStateOptions] = useState<string[]>([]);
+  const [districtOptionsByState, setDistrictOptionsByState] = useState<Record<string,string[]>>({});
+
+  // simple color palette for claim types
+  const claimTypeColors: Record<string,string> = {
+    IFR: '#16a34a',
+    CR: '#3b82f6',
+    CFR: '#f59e0b'
+  };
+
+  const pushToast = (message: string, type: 'info'|'error' = 'info') => {
+    const id = Date.now() + Math.floor(Math.random() * 1000);
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 5000);
+  };
   const [mapKey, setMapKey] = useState(0); // Key to force WebGIS re-render
+  const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
+  const [mapZoom, setMapZoom] = useState<number>(7.5);
 
   // Temporary state for pending filter changes
   const [pendingStateFilter, setPendingStateFilter] = useState(DEFAULT_STATE);
@@ -98,6 +95,205 @@ export default function AtlasPage() {
     setPendingDistrictFilter(districtFilter);
   }, []);
 
+  // On mount: fetch unfiltered claims to derive dynamic filter options (states, districts, statuses, claim types)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/claims?limit=1000', { headers: { Accept: 'application/json' } });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const features = (data && data.type === 'FeatureCollection' && Array.isArray(data.features)) ? data.features : (Array.isArray(data) ? data : []);
+
+        // derive states and districts
+        const statesSet = new Set<string>();
+        const districtsByState: Record<string, Set<string>> = {};
+        const statusesSet = new Set<string>();
+        const claimTypesSet = new Set<string>();
+
+        features.forEach((f: any) => {
+          const props = f.properties || f;
+          const stateName = (props?.state ?? '').toString();
+          const districtName = (props?.district ?? '').toString();
+          const status = (props?.status ?? '').toString();
+          const ctype = (props?.claim_type ?? props?.claimType ?? '').toString();
+          if (stateName) {
+            statesSet.add(stateName);
+            if (!districtsByState[stateName]) districtsByState[stateName] = new Set();
+            if (districtName) districtsByState[stateName].add(districtName);
+          }
+          if (status) statusesSet.add(status.toLowerCase() === 'any' ? 'any' : status);
+          if (ctype) claimTypesSet.add(ctype.toUpperCase());
+        });
+
+        if (!cancelled) {
+          const statesArr = Array.from(statesSet).sort((a,b)=>a.localeCompare(b));
+          setStateOptions(statesArr);
+          const districtsObj: Record<string,string[]> = {};
+          Object.entries(districtsByState).forEach(([s, set]) => { districtsObj[s] = Array.from(set).sort((a,b)=>a.localeCompare(b)); });
+          setDistrictOptionsByState(districtsObj);
+          setStatusOptions(prev => prev.length ? prev : Array.from(statusesSet).map(s=>s.toLowerCase()==='any'?'any':s));
+          setClaimTypeOptions(prev => prev.length ? prev : Array.from(claimTypesSet));
+        }
+      } catch (err) {
+        console.warn('Could not derive filter options from API:', err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Fetch claims when applied filters change
+  useEffect(() => {
+    const controller = new AbortController();
+    const fetchClaims = async () => {
+      try {
+        setLoadingClaims(true);
+        const params = new URLSearchParams();
+        if (stateFilter) params.set('state', stateFilter);
+        if (districtFilter) params.set('district', districtFilter);
+        if (statusFilter) params.set('status', statusFilter);
+        if (claimTypeFilter) params.set('claim_type', claimTypeFilter ?? '');
+
+  const url = `/api/claims?${params.toString()}`;
+  const res = await fetch(url, { signal: controller.signal, headers: { Accept: 'application/json' } });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        // Convert to GeoJSON features and markers
+        const features: any[] = [];
+        const newMarkers: any[] = [];
+
+        // If the API returns a FeatureCollection
+        if (data && data.type === 'FeatureCollection' && Array.isArray(data.features)) {
+          data.features.forEach((f: any, idx: number) => {
+            // ensure geometry is valid
+            if (f.geometry) {
+              features.push(f);
+              // For polygon geometries, compute an accurate centroid with turf
+              try {
+                if (f.geometry.type === 'Point') {
+                  const [lng, lat] = f.geometry.coordinates;
+                  const pid = String(f.properties?.claim_id ?? f.properties?.id ?? `claim-${idx}`);
+                  const ppopup = `<div style="min-width:160px;font-size:13px"><strong>Claim ${pid}</strong><div>Type: ${String(f.properties?.claim_type ?? '')}</div><div>Area: ${String(f.properties?.land_area ?? f.properties?.area ?? '')} ha</div><div style="margin-top:6px"><a href=\"/atlas/${encodeURIComponent(pid)}\" style=\"color:#0b78ff; text-decoration:none;\">View details</a></div></div>`;
+                  newMarkers.push({ id: pid, lng, lat, label: String(f.properties?.claim_id ?? f.properties?.id ?? ''), color: '#16a34a', popup: ppopup, raw: f.properties });
+                } else if (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon') {
+                  const centroid = turf.centroid(f);
+                  if (centroid && centroid.geometry && centroid.geometry.coordinates) {
+                    const [lng, lat] = centroid.geometry.coordinates;
+                    const pid = String(f.properties?.claim_id ?? f.properties?.id ?? `claim-${idx}`);
+                    const ppopup = `<div style="min-width:160px;font-size:13px"><strong>Claim ${pid}</strong><div>Type: ${String(f.properties?.claim_type ?? '')}</div><div>Area: ${String(f.properties?.land_area ?? f.properties?.area ?? '')} ha</div><div style="margin-top:6px"><a href=\"/atlas/${encodeURIComponent(pid)}\" style=\"color:#0b78ff; text-decoration:none;\">View details</a></div></div>`;
+                    newMarkers.push({ id: pid, lng, lat, label: String(f.properties?.claim_id ?? f.properties?.id ?? ''), color: '#16a34a', popup: ppopup, raw: f.properties });
+                  }
+                }
+              } catch (e) {
+                // fallback to safe centroid calculation
+                try {
+                  const coords = f.geometry.type === 'Polygon' ? f.geometry.coordinates[0] : f.geometry.coordinates[0][0];
+                  let sx = 0, sy = 0, count = 0;
+                  coords.forEach((c: any) => { sx += c[0]; sy += c[1]; count++; });
+                  if (count) {
+                    const lng = sx / count;
+                    const lat = sy / count;
+                    newMarkers.push({ id: String(f.properties?.claim_id ?? f.properties?.id ?? `claim-${idx}`), lng, lat, label: String(f.properties?.claim_id ?? f.properties?.id ?? ''), color: '#16a34a', popup: f.properties, raw: f.properties });
+                  }
+                } catch (ee) {
+                  // ignore centroid errors
+                }
+              }
+            }
+          });
+        } else if (Array.isArray(data)) {
+          // older API shape: array of plain objects
+          data.forEach((item: any, idx: number) => {
+            let geom = item.geometry;
+            if (!geom && (item.lat !== undefined || item.lng !== undefined)) {
+              geom = { type: 'Point', coordinates: [Number(item.lng), Number(item.lat)] };
+            }
+            if (geom) {
+              features.push({ type: 'Feature', properties: item, geometry: geom });
+              if (geom.type === 'Point') {
+                newMarkers.push({ id: String(item.claim_id ?? item.id ?? `claim-${idx}`), lng: geom.coordinates[0], lat: geom.coordinates[1], label: String(item.claim_id ?? item.id ?? ''), color: '#16a34a', popup: item, raw: item });
+              }
+            }
+          });
+        } else if (data && data.id) {
+          const item = data;
+          const geom = item.geometry ?? (item.lat && item.lng ? { type: 'Point', coordinates: [Number(item.lng), Number(item.lat)] } : null);
+          if (geom) {
+            features.push({ type: 'Feature', properties: item, geometry: geom });
+            if (geom.type === 'Point') newMarkers.push({ id: String(item.claim_id ?? item.id), lng: geom.coordinates[0], lat: geom.coordinates[1], label: String(item.claim_id ?? item.id), color: '#16a34a', popup: item, raw: item });
+          }
+        }
+
+        // Build layers grouped by claim_type so polygons are styled by type
+        const types = Array.from(new Set(features.map(f => String((f.properties?.claim_type ?? 'unknown')).toUpperCase())));
+    const newLayers: GISLayer[] = types.map(t => ({
+          id: `claims-${t.toLowerCase()}`,
+          name: `Claims — ${t}`,
+          type: 'geojson',
+          url: '',
+          visible: true,
+          data: {
+            type: 'FeatureCollection',
+            features: features.filter(f => String((f.properties?.claim_type ?? 'unknown')).toUpperCase() === t)
+          },
+          style: {
+      fillColor: claimTypeColors[t] ?? '#60a5fa',
+      strokeColor: claimTypeColors[t] ?? '#2563eb',
+      strokeWidth: 3,
+      opacity: 0.65
+          }
+        }));
+
+  // increase fill opacity slightly for better visibility
+  const adjustedLayers = newLayers.length ? newLayers : [{ id: 'claims', name: 'Claims', type: 'geojson', url: '', visible: true, data: { type: 'FeatureCollection', features }, style: { fillColor: '#16a34a', strokeColor: '#15803d', strokeWidth: 2, opacity: 0.6 } }];
+  adjustedLayers.forEach((l: any) => { l.style.opacity = l.style.opacity ?? 0.6 });
+  setLayers(adjustedLayers as GISLayer[]);
+        setMarkers(newMarkers.map(m => ({ ...m, color: claimTypeColors[(m.raw?.claim_type ?? m.raw?.claimType ?? '').toUpperCase()] ?? '#16a34a' })));
+        setMapKey(k => k + 1);
+        if (!features.length) pushToast('No claims found for selected filters', 'info');
+
+        // populate filter options
+        const statuses = Array.from(new Set(features.map(f => String((f.properties?.status ?? '').toString()).toLowerCase().replace(/^\w/, c => c.toUpperCase())))).filter(Boolean);
+        const claimTypes = Array.from(new Set(features.map(f => String((f.properties?.claim_type ?? '').toString()).toUpperCase()))).filter(Boolean);
+        setStatusOptions(statuses);
+        setClaimTypeOptions(claimTypes);
+
+        // auto-center map to features bbox for better visibility
+        try {
+          if (features.length) {
+            const fc: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features } as any;
+            const bbox = turf.bbox(fc); // [minX, minY, maxX, maxY]
+            const centerLng = (bbox[0] + bbox[2]) / 2;
+            const centerLat = (bbox[1] + bbox[3]) / 2;
+            setMapCenter([centerLng, centerLat]);
+            // compute an approximate zoom based on bbox size
+            const lngSpan = Math.abs(bbox[2] - bbox[0]);
+            const latSpan = Math.abs(bbox[3] - bbox[1]);
+            const span = Math.max(lngSpan, latSpan);
+            let z = 6;
+            if (span < 0.02) z = 14;
+            else if (span < 0.1) z = 12;
+            else if (span < 0.5) z = 10;
+            else if (span < 2) z = 8;
+            else z = 6;
+            setMapZoom(z);
+          }
+        } catch (e) {
+          // ignore centering errors
+        }
+      } catch (err) {
+        if ((err as any).name === 'AbortError') return;
+        console.error('Failed to fetch claims', err);
+        pushToast('Failed to fetch claims', 'error');
+      } finally {
+        setLoadingClaims(false);
+      }
+    };
+    fetchClaims();
+    return () => controller.abort();
+  }, [stateFilter, districtFilter, statusFilter, claimTypeFilter]);
+
   const handleStateChange = (newState: string) => {
     setPendingStateFilter(newState);
     // Reset district if state changes
@@ -115,6 +311,9 @@ export default function AtlasPage() {
     setIsApplyingFilters(true);
     setStateFilter(pendingStateFilter);
     setDistrictFilter(pendingDistrictFilter);
+  // apply pending filters
+  setStatusFilter(pendingStatusFilter ?? 'approved');
+  setClaimTypeFilter(pendingClaimTypeFilter ?? null);
     
     // Reset loading state after a short delay
     setTimeout(() => setIsApplyingFilters(false), 1000);
@@ -156,6 +355,7 @@ export default function AtlasPage() {
     setSelectedFeature({ ...featureInfo, properties: featureInfo.feature?.properties });
     setModalOpen(true);
   };
+
 
   const handleMapClick = (lngLat: { lng: number; lat: number }) => {
     console.log('Map clicked at:', lngLat);
@@ -235,8 +435,8 @@ export default function AtlasPage() {
                       <WebGIS
                         key={mapKey}
                         ref={webGISRef}
-                        center={stateCenter as [number, number]}
-                        zoom={7.5}
+                        center={(mapCenter ?? stateCenter) as [number, number]}
+                        zoom={mapZoom}
                         layers={layers}
                         markers={markers}
                         onFeatureClick={handleFeatureClick}
@@ -308,7 +508,7 @@ export default function AtlasPage() {
                     onChange={(e) => handleStateChange(e.target.value)} 
                     className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
                   >
-                    {STATES.map(s => <option key={s.code} value={s.name}>{s.name}</option>)}
+                    {(stateOptions.length ? stateOptions : STATES.map(s=>s.name)).map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
 
@@ -319,7 +519,29 @@ export default function AtlasPage() {
                     onChange={(e) => handleDistrictChange(e.target.value)} 
                     className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
                   >
-                    {(STATES.find(s => s.name === pendingStateFilter)?.districts || []).map(d => <option key={d} value={d}>{d}</option>)}
+                    {(districtOptionsByState[pendingStateFilter] && districtOptionsByState[pendingStateFilter].length) ? districtOptionsByState[pendingStateFilter].map(d => <option key={d} value={d}>{d}</option>) : ((STATES.find(s => s.name === pendingStateFilter)?.districts || []).map(d => <option key={d} value={d}>{d}</option>))}
+                  </select>
+                </div>
+
+                <div className="mt-3">
+                  <label className="block text-sm text-green-700">Status</label>
+                  <select value={pendingStatusFilter} onChange={(e) => setPendingStatusFilter(e.target.value)} className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50">
+                    <option value="">any</option>
+                    {statusOptions.length ? statusOptions.map(s => <option key={s} value={s.toLowerCase()==='any'?'' : s}>{s}</option>) : (
+                      <>
+                        <option value="approved">approved</option>
+                        <option value="pending">pending</option>
+                        <option value="rejected">rejected</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+
+                <div className="mt-3">
+                  <label className="block text-sm text-green-700">Claim type</label>
+                  <select value={pendingClaimTypeFilter ?? ''} onChange={(e) => setPendingClaimTypeFilter(e.target.value || null)} className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50">
+                    <option value="">any</option>
+                    {claimTypeOptions.length ? claimTypeOptions.map(ct => <option key={ct} value={ct}>{ct}</option>) : <option value="">(any)</option>}
                   </select>
                 </div>
 
@@ -338,6 +560,24 @@ export default function AtlasPage() {
                       'Apply Filters'
                     )}
                   </button>
+                </div>
+              </div>
+
+              {/* Legend */}
+              <div className="mt-4 p-4 bg-white rounded-xl shadow-sm border border-green-50">
+                <h5 className="text-sm font-medium text-green-900 mb-2">Legend</h5>
+                <div className="space-y-2">
+                  {claimTypeOptions.length ? claimTypeOptions.map(ct => (
+                    <div key={ct} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span style={{ width: 16, height: 12, background: claimTypeColors[ct] ?? '#60a5fa', display: 'inline-block', borderRadius: 3 }} />
+                        <span className="text-sm">{ct}</span>
+                      </div>
+                      <button onClick={() => handleLayerToggle(`claims-${ct.toLowerCase()}`)} className="text-sm text-blue-600">Toggle</button>
+                    </div>
+                  )) : (
+                    <div className="text-xs text-gray-500">No claim types</div>
+                  )}
                 </div>
               </div>
 
@@ -385,6 +625,20 @@ export default function AtlasPage() {
             </div>
           ) : null}
         </Modal>
+
+        {/* Toasts */}
+        <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
+          {toasts.map((t) => (
+            <div key={t.id} className={`px-4 py-3 rounded-lg shadow-lg text-white text-sm flex items-center ${t.type === 'error' ? 'bg-red-600' : 'bg-emerald-600'}`}>
+              {t.type === 'error' ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"/></svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
+              )}
+              {t.message}
+            </div>
+          ))}
+        </div>
       </div>
     </ProtectedRoute>
   );
