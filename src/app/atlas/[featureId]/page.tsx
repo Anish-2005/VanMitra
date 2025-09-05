@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import * as turf from '@turf/turf';
-import { Ruler, Download, Layers } from 'lucide-react';
+import { Ruler, Download, Layers, ArrowLeft } from 'lucide-react';
 import Link from "next/link";
 import DecorativeBackground from "@/components/DecorativeBackground";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -373,7 +373,12 @@ export default function FeaturePage({
         <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-100 p-8 text-gray-900">
           <div className="max-w-3xl mx-auto bg-white p-8 rounded-lg shadow text-gray-900">
             <h2 className="text-red-600">{error || "Feature not found"}</h2>
-            <Link href="/atlas" className="text-blue-600">Back to Atlas</Link>
+            <div className="mt-4">
+              <Link href="/atlas" className="inline-flex items-center gap-2 bg-white border border-gray-200 px-3 py-2 rounded text-emerald-800 hover:bg-emerald-50">
+                <ArrowLeft size={14} />
+                Back to Atlas
+              </Link>
+            </div>
           </div>
         </div>
       </ProtectedRoute>
@@ -389,6 +394,9 @@ export default function FeaturePage({
 
         <header className="relative z-10 max-w-7xl mx-auto px-6 pt-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <Link href="/atlas" className="inline-flex items-center justify-center h-9 w-9 rounded-md bg-white border border-gray-200 text-emerald-800 shadow-sm hover:bg-emerald-50" aria-label="Back to Atlas">
+              <ArrowLeft size={18} />
+            </Link>
             <div className="h-9 w-9 rounded-md bg-green-600 flex items-center justify-center border border-green-700 shadow-sm">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 6h18M3 12h18M3 18h18" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </div>
@@ -403,13 +411,7 @@ export default function FeaturePage({
             <Link href="/" className="text-green-800 hover:text-green-600">Home</Link>
           </nav>
         </header>
-        <div className="max-w-7xl mx-auto mt-4 mb-6">
-          {/* Breadcrumb Navigation */}
-          <nav className="mb-4">
-            <Link href="/atlas" className="text-emerald-700 hover:text-emerald-900 font-medium">
-              &larr; Back to Atlas
-            </Link>
-          </nav>
+  <div className="max-w-7xl mx-auto mt-4 mb-6">
 
           {/* Feature Header */}
           <div className="bg-white rounded-xl shadow-md p-6 mb-6">
