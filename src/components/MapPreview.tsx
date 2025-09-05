@@ -78,6 +78,8 @@ export default function MapPreview({
         markers.forEach((m) => {
           const el = document.createElement("div");
           const size = typeof (m as any).size === 'number' ? (m as any).size : 12;
+          el.dataset.baseSize = String(size);
+          el.dataset.outline = (m as any).outline || '#ecfccb';
           el.style.width = `${size}px`;
           el.style.height = `${size}px`;
           el.style.borderRadius = "50%";
@@ -85,7 +87,11 @@ export default function MapPreview({
           const outline = (m as any).outline || '#ecfccb';
           const borderThickness = Math.max(1, Math.round(size * 0.12));
           el.style.border = `${borderThickness}px solid ${outline}`;
+          el.style.zIndex = '9999';
+          el.style.transform = 'translate(-50%, -50%)';
           const marker = new maplibregl.Marker({ element: el }).setLngLat([m.lng, m.lat]).addTo(map);
+          // attach marker metadata
+          try { (marker as any).__markerData = { maxDiameterMeters: (m as any).maxDiameterMeters || 50000 }; } catch (e) {}
           createdMarkers.current.push(marker);
         });
       } catch (e) {
@@ -93,20 +99,28 @@ export default function MapPreview({
       }
 
       // zoom-based dynamic sizing for preview markers
+      const metersPerPixelAt = (lat: number, zoomLevel: number) => {
+        return 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoomLevel);
+      };
+
       const updatePreviewMarkerSizes = () => {
         try {
           const zoom = map.getZoom();
-          const scale = Math.max(1, Math.min(3, 1 + (12 - zoom) * 0.25));
+          const center = map.getCenter();
+          const metersPerPixel = metersPerPixelAt(center.lat, zoom);
           createdMarkers.current.forEach((mk: any) => {
             try {
               const el = mk.getElement && mk.getElement();
               if (!el) return;
               const base = Number(el.dataset?.baseSize) || parseInt(el.style.width || '12', 10) || 12;
               const outline = el.dataset?.outline || '#ecfccb';
-              const newSize = Math.max(6, Math.round(base * scale));
-              el.style.width = `${newSize}px`;
-              el.style.height = `${newSize}px`;
-              const borderThickness = Math.max(1, Math.round(newSize * 0.12));
+              const meta = (mk as any).__markerData || { maxDiameterMeters: 50000 };
+              const pixelDiameter = Math.max(1, Math.round(meta.maxDiameterMeters / metersPerPixel));
+              const pixelRadius = Math.max(3, Math.round(pixelDiameter / 2));
+              const clampedSize = Math.max(Math.round(base * 0.6), Math.min(pixelRadius * 2, Math.round(base * 3)));
+              el.style.width = `${clampedSize}px`;
+              el.style.height = `${clampedSize}px`;
+              const borderThickness = Math.max(1, Math.round(clampedSize * 0.12));
               el.style.border = `${borderThickness}px solid ${outline}`;
             } catch (err) {}
           });

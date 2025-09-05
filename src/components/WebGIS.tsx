@@ -342,6 +342,16 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
         if (map.current!.getLayer(outlineId)) {
           try { map.current!.removeLayer(outlineId); } catch (e) { /* ignore */ }
         }
+        // Also remove any point layer paint handler registered earlier
+        try {
+          const pointHandlerKey = layerId; // matches how we stored handlers (layerConfig.id)
+          if ((map.current as any)._pointLayerHandlers && (map.current as any)._pointLayerHandlers[pointHandlerKey]) {
+            const h = (map.current as any)._pointLayerHandlers[pointHandlerKey];
+            try { if (map.current) map.current.off('move', h); } catch (e) {}
+            try { if (map.current) map.current.off('zoom', h); } catch (e) {}
+            delete (map.current as any)._pointLayerHandlers[pointHandlerKey];
+          }
+        } catch (e) {}
         // Don't remove the source as it might be used by other components
       }
     });
@@ -439,6 +449,57 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
           });
           map.current!.on('mouseenter', layerConfig.id, () => { map.current!.getCanvas().style.cursor = 'pointer'; });
           map.current!.on('mouseleave', layerConfig.id, () => { map.current!.getCanvas().style.cursor = ''; });
+
+          // Register a dynamic size updater so the circle layer can represent a
+          // real-world maximum diameter in meters (default 200km). We compute
+          // pixels for the desired meter diameter at the current map zoom & lat
+          // and set the layer's circle-radius accordingly.
+          try {
+            // initialize handlers storage on the map instance
+            if (!(map.current as any)._pointLayerHandlers) (map.current as any)._pointLayerHandlers = {};
+
+            // desired max diameter in meters (allow override via style.maxDiameterMeters)
+            const maxDiameterMeters = (layer.style as any).maxDiameterMeters || 50000; // 50 km default
+            const minRadiusPx = ((layer.style as any).minRadiusPx) || 3;
+
+            const metersPerPixelAt = (lat: number, zoomLevel: number) => {
+              // WebMercator approximation: metersPerPixel = 156543.03392 * cos(latitude) / 2^zoom
+              return 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoomLevel);
+            };
+
+            const updateFn = () => {
+              try {
+                if (!map.current) return;
+                const center = map.current.getCenter();
+                const z = map.current.getZoom();
+                const metersPerPixel = metersPerPixelAt(center.lat, z);
+                // convert diameter meters -> pixels
+                const pixelDiameter = Math.max(1, Math.round(maxDiameterMeters / metersPerPixel));
+                const pixelRadius = Math.max(minRadiusPx, Math.round(pixelDiameter / 2));
+                // apply to layer
+                if (map.current.getLayer(layerConfig.id)) {
+                  try { map.current.setPaintProperty(layerConfig.id, 'circle-radius', pixelRadius); } catch (e) {}
+                }
+              } catch (e) { /* ignore update errors */ }
+            };
+
+            // remove previous handler for this layer if present
+            if ((map.current as any)._pointLayerHandlers[layerConfig.id]) {
+              try {
+                map.current.off('move', (map.current as any)._pointLayerHandlers[layerConfig.id]);
+                map.current.off('zoom', (map.current as any)._pointLayerHandlers[layerConfig.id]);
+              } catch (e) {}
+            }
+
+            map.current.on('move', updateFn);
+            map.current.on('zoom', updateFn);
+            (map.current as any)._pointLayerHandlers[layerConfig.id] = updateFn;
+
+            // initialize immediately
+            updateFn();
+          } catch (e) {
+            console.warn('Failed to register point layer size updater for', layerConfig.id, e);
+          }
 
         } else if (geometryType === 'LineString' || geometryType === 'MultiLineString') {
           layerConfig.type = 'line';
@@ -589,6 +650,9 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
       el.style.display = 'flex';
       el.style.alignItems = 'center';
       el.style.justifyContent = 'center';
+  // ensure DOM marker sits above map canvas and is centered on coordinate
+  el.style.zIndex = '9999';
+  el.style.transform = 'translate(-50%, -50%)';
       // Adjust label font size based on marker size
       el.style.fontSize = `${Math.max(10, Math.round(size * 0.35))}px`;
       el.style.fontWeight = '700';
@@ -608,38 +672,52 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
         mapMarker.setPopup(popup);
       }
 
-      markersRef.current.push(mapMarker);
+  // store marker data on marker instance for later sizing
+  try { (mapMarker as any).__markerData = { maxDiameterMeters: (marker as any).maxDiameterMeters }; } catch (e) {}
+  markersRef.current.push(mapMarker);
     });
 
-    // Zoom-based dynamic sizing: make markers larger when zoomed out so tiny areas remain visible
-    const updateMarkerSizes = () => {
-      if (!map.current) return;
-      const zoom = map.current.getZoom();
-      // scale function: at zoom >=12 -> 1x, lower zooms increase size up to 3x
-      const scale = Math.max(1, Math.min(3, 1 + (12 - zoom) * 0.25));
-      markersRef.current.forEach(mk => {
-        try {
-          const el = (mk as any).getElement?.();
-          if (!el) return;
-          const base = Number(el.dataset.baseSize) || 24;
-          const outline = el.dataset.outline || '#ffffff';
-          const newSize = Math.max(6, Math.round(base * scale));
-          el.style.width = `${newSize}px`;
-          el.style.height = `${newSize}px`;
-          const borderThickness = Math.max(2, Math.round(newSize * 0.12));
-          el.style.border = `${borderThickness}px solid ${outline}`;
-          el.style.fontSize = `${Math.max(10, Math.round(newSize * 0.35))}px`;
-        } catch (e) { /* ignore per-marker sizing errors */ }
-      });
+    // Zoom/move based dynamic sizing: compute pixel diameter for the desired
+    // real-world max diameter (50 km default) so DOM markers match vector layer.
+    const metersPerPixelAt = (lat: number, zoomLevel: number) => {
+      return 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoomLevel);
     };
 
-    // attach zoom listener
+    const updateMarkerSizes = () => {
+      if (!map.current) return;
+      try {
+        const center = map.current.getCenter();
+        const z = map.current.getZoom();
+        const metersPerPixel = metersPerPixelAt(center.lat, z);
+        markersRef.current.forEach(mk => {
+          try {
+            const el = (mk as any).getElement?.();
+            if (!el) return;
+            // base size is preferred visual size; marker may also have maxDiameterMeters override
+            const base = Number(el.dataset.baseSize) || 24;
+            const outline = el.dataset.outline || '#ffffff';
+            const markerObj = (mk as any).__markerData || null;
+            const maxDiameterMeters = markerObj?.maxDiameterMeters || markerObj?.maxDiameterMeters === 0 ? markerObj.maxDiameterMeters : 50000; // 50km default
+            const pixelDiameter = Math.max(1, Math.round(maxDiameterMeters / metersPerPixel));
+            const pixelRadius = Math.max(3, Math.round(pixelDiameter / 2));
+            // prefer scaling that doesn't shrink below 60% of base size
+            const clampedSize = Math.max(Math.round(base * 0.6), Math.min(pixelRadius * 2, Math.round(base * 3)));
+            el.style.width = `${clampedSize}px`;
+            el.style.height = `${clampedSize}px`;
+            const borderThickness = Math.max(2, Math.round(clampedSize * 0.12));
+            el.style.border = `${borderThickness}px solid ${outline}`;
+            el.style.fontSize = `${Math.max(10, Math.round(clampedSize * 0.35))}px`;
+          } catch (e) { /* per-marker error */ }
+        });
+      } catch (e) {}
+    };
+
     if (map.current) {
-      // remove previous handler if any
+      try { (map.current as any)._markerZoomHandler && map.current.off('move', (map.current as any)._markerZoomHandler); } catch (e) {}
       try { (map.current as any)._markerZoomHandler && map.current.off('zoom', (map.current as any)._markerZoomHandler); } catch (e) {}
+      map.current.on('move', updateMarkerSizes);
       map.current.on('zoom', updateMarkerSizes);
       (map.current as any)._markerZoomHandler = updateMarkerSizes;
-      // call once to initialize sizes
       updateMarkerSizes();
     }
 
