@@ -66,6 +66,7 @@ export interface WebGISRef {
   exportMap: () => void;
   startMeasurement: () => void;
   clearMeasurement: () => void;
+  flyTo: (lng: number, lat: number, zoom?: number) => void;
 }
 
 const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
@@ -570,17 +571,27 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
     markers.forEach(marker => {
       const el = document.createElement('div');
       el.className = 'marker';
-      el.style.width = '24px';
-      el.style.height = '24px';
+      // use provided size or default
+      const size = typeof (marker as any).size === 'number' ? (marker as any).size : 24;
+      el.style.width = `${size}px`;
+      el.style.height = `${size}px`;
       el.style.borderRadius = '50%';
       el.style.background = marker.color || '#16a34a';
-      el.style.border = '3px solid white';
-      el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+      // outline for better contrast when provided
+      const outline = (marker as any).outline || '#ffffff';
+      // store metadata on element for dynamic scaling
+      el.dataset.baseSize = String(size);
+      el.dataset.outline = outline;
+      // border thickness scales with size
+      const borderThickness = Math.max(2, Math.round(size * 0.12));
+      el.style.border = `${borderThickness}px solid ${outline}`;
+      el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.25)';
       el.style.display = 'flex';
       el.style.alignItems = 'center';
       el.style.justifyContent = 'center';
-      el.style.fontSize = '12px';
-      el.style.fontWeight = 'bold';
+      // Adjust label font size based on marker size
+      el.style.fontSize = `${Math.max(10, Math.round(size * 0.35))}px`;
+      el.style.fontWeight = '700';
       el.style.color = 'white';
 
       if (marker.label) {
@@ -599,6 +610,48 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
 
       markersRef.current.push(mapMarker);
     });
+
+    // Zoom-based dynamic sizing: make markers larger when zoomed out so tiny areas remain visible
+    const updateMarkerSizes = () => {
+      if (!map.current) return;
+      const zoom = map.current.getZoom();
+      // scale function: at zoom >=12 -> 1x, lower zooms increase size up to 3x
+      const scale = Math.max(1, Math.min(3, 1 + (12 - zoom) * 0.25));
+      markersRef.current.forEach(mk => {
+        try {
+          const el = (mk as any).getElement?.();
+          if (!el) return;
+          const base = Number(el.dataset.baseSize) || 24;
+          const outline = el.dataset.outline || '#ffffff';
+          const newSize = Math.max(6, Math.round(base * scale));
+          el.style.width = `${newSize}px`;
+          el.style.height = `${newSize}px`;
+          const borderThickness = Math.max(2, Math.round(newSize * 0.12));
+          el.style.border = `${borderThickness}px solid ${outline}`;
+          el.style.fontSize = `${Math.max(10, Math.round(newSize * 0.35))}px`;
+        } catch (e) { /* ignore per-marker sizing errors */ }
+      });
+    };
+
+    // attach zoom listener
+    if (map.current) {
+      // remove previous handler if any
+      try { (map.current as any)._markerZoomHandler && map.current.off('zoom', (map.current as any)._markerZoomHandler); } catch (e) {}
+      map.current.on('zoom', updateMarkerSizes);
+      (map.current as any)._markerZoomHandler = updateMarkerSizes;
+      // call once to initialize sizes
+      updateMarkerSizes();
+    }
+
+    // cleanup handler on markers change/unmount
+    return () => {
+      try {
+        if (map.current && (map.current as any)._markerZoomHandler) {
+          map.current.off('zoom', (map.current as any)._markerZoomHandler);
+          delete (map.current as any)._markerZoomHandler;
+        }
+      } catch (e) {}
+    };
   }, [markers, mapLoaded]);
 
   // Measurement functions
@@ -1247,7 +1300,16 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
   useImperativeHandle(ref, () => ({
     exportMap,
     startMeasurement,
-    clearMeasurement
+    clearMeasurement,
+    flyTo: (lng: number, lat: number, zoom?: number) => {
+      try {
+        if (!map.current) return;
+        const targetZoom = typeof zoom === 'number' ? zoom : Math.max(10, map.current.getZoom());
+        map.current.flyTo({ center: [lng, lat], zoom: targetZoom, essential: true });
+      } catch (e) {
+        try { map.current && map.current.setCenter && map.current.setCenter([lng, lat]); } catch (err) {}
+      }
+    }
   }), [exportMap, startMeasurement, clearMeasurement]);
 
   // Layer toggle function

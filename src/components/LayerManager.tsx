@@ -13,6 +13,7 @@ interface LayerManagerProps {
   onLayerRemove: (layerId: string) => void;
   onLayerUpdate: (layerId: string, updates: Partial<GISLayer>) => void;
   onMarkerUpdate?: (markerId: string, updates: Partial<GISMarker>) => void;
+  onMarkerGoto?: (lng: number, lat: number) => void;
 }
 
 export default function LayerManager({
@@ -21,7 +22,8 @@ export default function LayerManager({
   onLayerToggle,
   onLayerRemove,
   onLayerUpdate,
-  onMarkerUpdate
+  onMarkerUpdate,
+  onMarkerGoto
 }: LayerManagerProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [editingLayer, setEditingLayer] = useState<string | null>(null);
@@ -182,12 +184,21 @@ export default function LayerManager({
                         ></div>
                         <span className="text-sm font-medium">{marker.label || marker.id}</span>
                       </div>
-                      <button
-                        onClick={() => setEditingMarker(editingMarker === marker.id ? null : marker.id)}
-                        className="text-gray-500 hover:text-gray-700"
-                      >
-                        <Settings size={14} />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => onMarkerGoto && onMarkerGoto(marker.lng, marker.lat)}
+                          className="text-green-600 hover:text-green-800"
+                          title="Go to marker"
+                        >
+                          <MapPin size={14} />
+                        </button>
+                        <button
+                          onClick={() => setEditingMarker(editingMarker === marker.id ? null : marker.id)}
+                          className="text-gray-500 hover:text-gray-700"
+                        >
+                          <Settings size={14} />
+                        </button>
+                      </div>
                     </div>
 
                     {editingMarker === marker.id && (

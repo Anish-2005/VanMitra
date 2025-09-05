@@ -188,14 +188,35 @@ export default function AtlasPage() {
                   const [lng, lat] = f.geometry.coordinates;
                   const pid = String(f.properties?.claim_id ?? f.properties?.id ?? `claim-${idx}`);
                   const ppopup = `<div style="min-width:160px;font-size:13px"><strong>Claim ${pid}</strong><div>Type: ${String(f.properties?.claim_type ?? '')}</div><div>Area: ${String(f.properties?.land_area ?? f.properties?.area ?? '')} ha</div><div style="margin-top:6px"><a href=\"/atlas/${encodeURIComponent(pid)}\" style=\"color:#0b78ff; text-decoration:none;\">View details</a></div></div>`;
-                  newMarkers.push({ id: pid, lng, lat, label: String(f.properties?.claim_id ?? f.properties?.id ?? ''), color: '#16a34a', popup: ppopup, raw: f.properties });
+                  // determine marker size (points remain small by default)
+                  const areaVal = Number(f.properties?.land_area ?? f.properties?.area ?? 0);
+                  const size = areaVal > 0 ? Math.max(6, Math.min(18, Math.sqrt(areaVal) * 2)) : 8;
+                  newMarkers.push({ id: pid, lng, lat, label: String(f.properties?.claim_id ?? f.properties?.id ?? ''), color: '#16a34a', popup: ppopup, raw: f.properties, size });
                 } else if (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon') {
                   const centroid = turf.centroid(f);
                   if (centroid && centroid.geometry && centroid.geometry.coordinates) {
                     const [lng, lat] = centroid.geometry.coordinates;
                     const pid = String(f.properties?.claim_id ?? f.properties?.id ?? `claim-${idx}`);
                     const ppopup = `<div style="min-width:160px;font-size:13px"><strong>Claim ${pid}</strong><div>Type: ${String(f.properties?.claim_type ?? '')}</div><div>Area: ${String(f.properties?.land_area ?? f.properties?.area ?? '')} ha</div><div style="margin-top:6px"><a href=\"/atlas/${encodeURIComponent(pid)}\" style=\"color:#0b78ff; text-decoration:none;\">View details</a></div></div>`;
-                    newMarkers.push({ id: pid, lng, lat, label: String(f.properties?.claim_id ?? f.properties?.id ?? ''), color: '#16a34a', popup: ppopup, raw: f.properties });
+                    // compute visible marker size from area; use turf.area if land_area missing
+                    let areaVal = Number(f.properties?.land_area ?? f.properties?.area ?? 0);
+                    if (!areaVal || areaVal === 0) {
+                      try { areaVal = turf.area(f) / 10000; } catch (ee) { areaVal = 0; }
+                    }
+                    // areaVal in hectares; for very small areas, increase marker size for visibility
+                    let size = 10; // default
+                    if (areaVal > 0) {
+                      // scale: tiny (<0.1ha) => larger marker; large areas => small marker
+                      if (areaVal < 0.1) size = 20;
+                      else if (areaVal < 0.5) size = 16;
+                      else if (areaVal < 2) size = 12;
+                      else size = 8;
+                    } else {
+                      size = 14; // unknown area fallback
+                    }
+                    // high-contrast outline color for tiny markers
+                    const outline = areaVal < 0.5 ? '#000000' : '#ffffff';
+                    newMarkers.push({ id: pid, lng, lat, label: String(f.properties?.claim_id ?? f.properties?.id ?? ''), color: '#16a34a', popup: ppopup, raw: f.properties, size, outline });
                   }
                 }
               } catch (e) {
@@ -541,6 +562,7 @@ export default function AtlasPage() {
                   onLayerRemove={handleLayerRemove}
                   onLayerUpdate={handleLayerUpdate}
                   onMarkerUpdate={handleMarkerUpdate}
+                    onMarkerGoto={(lng, lat) => { try { webGISRef.current?.flyTo?.(lng, lat, 12); } catch(e){} }}
                 />
               </div>
 

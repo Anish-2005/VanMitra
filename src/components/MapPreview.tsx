@@ -73,21 +73,49 @@ export default function MapPreview({
 
       mapRef.current = map;
 
-      // add initial markers
+  // add initial markers
       try {
         markers.forEach((m) => {
           const el = document.createElement("div");
-          el.style.width = "12px";
-          el.style.height = "12px";
+          const size = typeof (m as any).size === 'number' ? (m as any).size : 12;
+          el.style.width = `${size}px`;
+          el.style.height = `${size}px`;
           el.style.borderRadius = "50%";
-          el.style.background = "#16a34a";
-          el.style.border = "2px solid #ecfccb";
+          el.style.background = (m as any).color || "#16a34a";
+          const outline = (m as any).outline || '#ecfccb';
+          const borderThickness = Math.max(1, Math.round(size * 0.12));
+          el.style.border = `${borderThickness}px solid ${outline}`;
           const marker = new maplibregl.Marker({ element: el }).setLngLat([m.lng, m.lat]).addTo(map);
           createdMarkers.current.push(marker);
         });
       } catch (e) {
         // ignore marker errors
       }
+
+      // zoom-based dynamic sizing for preview markers
+      const updatePreviewMarkerSizes = () => {
+        try {
+          const zoom = map.getZoom();
+          const scale = Math.max(1, Math.min(3, 1 + (12 - zoom) * 0.25));
+          createdMarkers.current.forEach((mk: any) => {
+            try {
+              const el = mk.getElement && mk.getElement();
+              if (!el) return;
+              const base = Number(el.dataset?.baseSize) || parseInt(el.style.width || '12', 10) || 12;
+              const outline = el.dataset?.outline || '#ecfccb';
+              const newSize = Math.max(6, Math.round(base * scale));
+              el.style.width = `${newSize}px`;
+              el.style.height = `${newSize}px`;
+              const borderThickness = Math.max(1, Math.round(newSize * 0.12));
+              el.style.border = `${borderThickness}px solid ${outline}`;
+            } catch (err) {}
+          });
+        } catch (err) {}
+      };
+
+      map.on('zoom', updatePreviewMarkerSizes);
+      // initialize sizes
+      updatePreviewMarkerSizes();
 
       const addGeoJSON = async (name: string, url: string, type: 'fill' | 'line' | 'circle') => {
         try {
@@ -236,15 +264,18 @@ export default function MapPreview({
       const maplibregl = (window as any).maplibregl;
       markers.forEach((m: any) => {
         try {
-          const el = document.createElement("div");
-          el.style.width = "12px";
-          el.style.height = "12px";
-          el.style.borderRadius = "50%";
-          el.style.background = "#16a34a";
-          el.style.border = "2px solid #ecfccb";
-          const marker = new maplibregl.Marker({ element: el }).setLngLat([m.lng, m.lat]).addTo(map);
-          createdMarkers.current.push(marker);
-        } catch (err) {}
+            const el = document.createElement("div");
+            const size = typeof (m as any).size === 'number' ? (m as any).size : 12;
+            el.style.width = `${size}px`;
+            el.style.height = `${size}px`;
+            el.style.borderRadius = "50%";
+            el.style.background = (m as any).color || "#16a34a";
+            const outline = (m as any).outline || '#ecfccb';
+            const borderThickness = Math.max(1, Math.round(size * 0.12));
+            el.style.border = `${borderThickness}px solid ${outline}`;
+            const marker = new maplibregl.Marker({ element: el }).setLngLat([m.lng, m.lat]).addTo(map);
+            createdMarkers.current.push(marker);
+          } catch (err) {}
       });
     } catch (e) {}
   }, [JSON.stringify(center), zoom, JSON.stringify(markers.map((m: any) => [m.lng, m.lat]))]);
