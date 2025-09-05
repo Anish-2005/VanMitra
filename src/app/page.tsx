@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, HTMLMotionProps } from "framer-motion";
 // Framer-motion's JSX generics sometimes conflict with the project's TS setup.
 // Create lightweight aliases cast to any so we can use className/onClick without type errors.
-const MDiv: any = motion.div;
-const MBackdrop: any = motion.div;
-const MAside: any = motion.aside;
+const MDiv: React.FC<HTMLMotionProps<"div">> = motion.div;
+const MBackdrop: React.FC<HTMLMotionProps<"div">> = motion.div;
+const MAside: React.FC<HTMLMotionProps<"aside">> = motion.aside;
 import DecorativeBackground from "@/components/DecorativeBackground";
 import { 
   ArrowRight, Leaf, MapPin, Server, Database, Layers, 
@@ -39,7 +39,7 @@ export default function Home() {
       await signInWithEmailAndPassword(auth, email, password);
       setLoginOpen(false);
       setError("");
-    } catch (err) {
+    } catch  {
       setError("Invalid credentials");
     }
   };
@@ -50,7 +50,7 @@ export default function Home() {
       await signInWithPopup(auth, provider);
       setLoginOpen(false);
       setError("");
-    } catch (err) {
+    } catch {
       setError("Google sign-in failed");
     }
   };
@@ -137,17 +137,19 @@ export default function Home() {
       {/* Mobile menu panel with animation */}
       <AnimatePresence>
         {mobileOpen && (
-          <MDiv className="md:hidden fixed inset-0 z-40" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <MDiv {...({ className: "md:hidden fixed inset-0 z-40", initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } } as any)}>
             {/* backdrop */}
-            <MBackdrop className="absolute inset-0 bg-black/30" onClick={() => setMobileOpen(false)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
+            <MBackdrop {...({ className: "absolute inset-0 bg-black/30", onClick: () => setMobileOpen(false), initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } } as any)} />
 
             {/* sliding panel */}
-            <MAside
-              className="absolute top-0 right-0 w-11/12 max-w-sm bg-white h-full shadow-xl p-6"
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              <MAside
+              {...({
+                className: "absolute top-0 right-0 w-11/12 max-w-sm bg-white h-full shadow-xl p-6",
+                initial: { x: '100%' },
+                animate: { x: 0 },
+                exit: { x: '100%' },
+                transition: { type: 'spring', stiffness: 300, damping: 30 }
+              } as any)}
             >
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
@@ -183,8 +185,8 @@ export default function Home() {
       {/* Login modal */}
       <AnimatePresence>
         {loginOpen && (
-          <MDiv className="fixed inset-0 z-50 flex items-center justify-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <MBackdrop className="absolute inset-0 bg-black/50" onClick={() => setLoginOpen(false)} />
+          <MDiv {...({ className: "fixed inset-0 z-50 flex items-center justify-center", initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } } as any)}>
+            <MBackdrop {...({ className: "absolute inset-0 bg-black/50", onClick: () => setLoginOpen(false) } as any)} />
             <div className="relative bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4">
               <h3 className="text-lg font-semibold text-green-900 mb-4">Sign In</h3>
               {error && <p className="text-red-600 mb-4">{error}</p>}

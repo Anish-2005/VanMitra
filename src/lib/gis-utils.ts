@@ -226,7 +226,7 @@ export const exportToGeoJSON = (features: GeoFeature[], filename: string = 'expo
       URL.revokeObjectURL(url);
       try { document.body.removeChild(linkElement); } catch {}
     }, 1000);
-  } catch (err) {
+  } catch {
     // Fallback to old data URI method if Blob/URL fails
     try {
       const dataStr = JSON.stringify(geojson);
