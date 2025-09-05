@@ -8,6 +8,8 @@ const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes - increased cache duration
 const requestQueue = new Map<string, Promise<any>>();
 const REQUEST_TIMEOUT = 30000; // 30 seconds timeout for queued requests
 
+type OSMResponse = { elements?: any[] };
+
 // Pre-cache common mock data for instant loading
 function initializeMockCache() {
   const commonStates = ['Madhya Pradesh', 'Tripura', 'Odisha', 'Telangana', 'West Bengal'];
@@ -49,7 +51,7 @@ function initializeMockCache() {
 initializeMockCache();
 
 // Quick OSM fetch with minimal retries and fast timeout
-async function fetchOSMDataQuick(bbox: string, featureType: string): Promise<any> {
+async function fetchOSMDataQuick(bbox: string, featureType: string): Promise<OSMResponse | null> {
   const cacheKey = `${bbox}_${featureType}`;
   const now = Date.now();
 
@@ -97,12 +99,12 @@ async function fetchOSMDataQuick(bbox: string, featureType: string): Promise<any
       return null;
     }
 
-    const data = await response.json();
+  const data = (await response.json()) as OSMResponse;
 
-    // Cache the successful response
-    osmCache.set(cacheKey, { data, timestamp: now });
+  // Cache the successful response
+  osmCache.set(cacheKey, { data, timestamp: now });
 
-    return data;
+  return data;
   } catch (error) {
     // Return null on any error for fast fallback
     return null;
@@ -299,10 +301,10 @@ async function fetchOSMData(bbox: string, featureType: string, retryCount = 0): 
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
 // Convert OSM data to GeoJSON format
-function convertOSMToGeoJSON(osmData: any, stateName: string, districtName: string) {
+function convertOSMToGeoJSON(osmData: OSMResponse | null, stateName: string, districtName: string) {
   if (!osmData || !osmData.elements) return [];
 
-  return osmData.elements
+  return (osmData.elements || [])
     .filter((element: any) => element.type === 'node' || element.type === 'way')
     .map((element: any, index: number) => {
       let coordinates: [number, number];
@@ -446,8 +448,8 @@ export async function GET(request: Request) {
     osmCache.set(cacheKey, { data: geojson, timestamp: Date.now() });
     return NextResponse.json(geojson);
 
-  } catch (error) {
-    console.error('Error in assets API:', error);
+  } catch (err) {
+    console.error('Error in assets API:', err);
 
     // Fast fallback to mock data
     console.log('Fast fallback to mock data due to error');
@@ -459,7 +461,7 @@ export async function GET(request: Request) {
         source: 'Realistic Fallback Data',
         state,
         district,
-        error: error instanceof Error ? error.message : 'Unknown error',
+  error: err instanceof Error ? err.message : 'Unknown error',
         timestamp: new Date().toISOString()
       }
     };

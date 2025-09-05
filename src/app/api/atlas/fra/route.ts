@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 // Simple in-memory cache for FRA data
-const fraCache = new Map<string, { data: any; timestamp: number }>();
+const fraCache = new Map<string, { data: unknown; timestamp: number }>();
 const FRA_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes for FRA data
 
 // Pre-cache common FRA claims data
@@ -414,8 +414,8 @@ export async function GET(request: Request) {
     fraCache.set(cacheKey, { data: geojson, timestamp: Date.now() });
 
     return NextResponse.json(geojson);
-  } catch (error) {
-    console.error('Error in FRA API:', error);
+  } catch (err) {
+    console.error('Error in FRA API:', err);
 
     // Fallback to realistic sample data if API fails
     const features = generateFallbackFRAClaims(state, district);
@@ -432,7 +432,7 @@ export async function GET(request: Request) {
           submitted: features.filter(f => f.properties.status === 'submitted').length,
           pending: features.filter(f => f.properties.status === 'pending').length
         },
-        error: error instanceof Error ? error.message : 'Unknown error',
+  error: err instanceof Error ? err.message : 'Unknown error',
         timestamp: new Date().toISOString()
       }
     };

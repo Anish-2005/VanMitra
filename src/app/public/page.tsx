@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Users, MapPin } from "lucide-react";
+import { Users} from "lucide-react";
 import DecorativeBackground from "@/components/DecorativeBackground";
 import Link from "next/link";
 import MapPreview from "../../components/MapPreview";

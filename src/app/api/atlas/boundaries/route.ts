@@ -4,6 +4,9 @@ import { NextResponse } from "next/server";
 const osmCache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes - increased cache duration
 
+// Minimal OSM response type (only fields we use)
+type OSMResponse = { elements?: any[] };
+
 // Request queue to prevent concurrent requests to the same endpoint
 const requestQueue = new Map<string, Promise<any>>();
 const REQUEST_TIMEOUT = 30000; // 30 seconds timeout for queued requests
@@ -69,7 +72,7 @@ function initializeBoundariesCache() {
 initializeBoundariesCache();
 
 // Quick OSM administrative boundaries fetch
-async function fetchOSMAdministrativeBoundariesQuick(bbox: string): Promise<any> {
+async function fetchOSMAdministrativeBoundariesQuick(bbox: string): Promise<OSMResponse | null> {
   const cacheKey = `boundaries_${bbox}`;
   const now = Date.now();
 
@@ -118,13 +121,13 @@ async function fetchOSMAdministrativeBoundariesQuick(bbox: string): Promise<any>
       return null;
     }
 
-    const data = await response.json();
+  const data = (await response.json()) as OSMResponse;
 
-    // Cache the successful response
-    osmCache.set(cacheKey, { data, timestamp: now });
+  // Cache the successful response
+  osmCache.set(cacheKey, { data, timestamp: now });
 
-    return data;
-  } catch (error) {
+  return data;
+  } catch (_error) {
     // Return null on any error for fast fallback
     return null;
   }
@@ -348,7 +351,7 @@ async function fetchVillageBoundaries(state: string, district: string) {
   };
 
   // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 500));
+  await new Promise((resolve) => setTimeout(resolve, 500));
 
   const stateData = mockBoundaries[state as keyof typeof mockBoundaries];
   if (!stateData) return [];
@@ -358,7 +361,9 @@ async function fetchVillageBoundaries(state: string, district: string) {
 }
 
 // Function to fetch administrative boundaries from OSM with retry logic
-async function fetchOSMAdministrativeBoundaries(bbox: string, retryCount = 0): Promise<any> {
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+async function fetchOSMAdministrativeBoundaries(bbox: string, retryCount = 0): Promise<OSMResponse | null> {
   const cacheKey = `boundaries_${bbox}`;
   const now = Date.now();
 
@@ -431,14 +436,14 @@ async function fetchOSMAdministrativeBoundaries(bbox: string, retryCount = 0): P
         return null;
       }
 
-      const data = await response.json();
+  const data = (await response.json()) as OSMResponse;
 
-      // Cache the successful response
-      osmCache.set(cacheKey, { data, timestamp: now });
+  // Cache the successful response
+  osmCache.set(cacheKey, { data, timestamp: now });
 
-      return data;
-    } catch (error) {
-      console.error(`Error fetching OSM administrative boundaries (attempt ${retryCount + 1}):`, error);
+  return data;
+    } catch (err) {
+      console.error(`Error fetching OSM administrative boundaries (attempt ${retryCount + 1}):`, err);
       return null;
     }
   })();
@@ -448,12 +453,13 @@ async function fetchOSMAdministrativeBoundaries(bbox: string, retryCount = 0): P
 
   try {
     const result = await requestPromise;
-    return result;
+    return result as OSMResponse | null;
   } finally {
     // Clean up the queue after the request completes
     requestQueue.delete(queueKey);
   }
 }
+/* eslint-enable @typescript-eslint/no-unused-vars */
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -499,11 +505,11 @@ export async function GET(request: Request) {
     };
 
     // Wait for OSM data with short timeout
-    try {
-      const osmData = await Promise.race([
+  try {
+      const osmData = (await Promise.race([
         osmPromise,
         new Promise((_, reject) => setTimeout(() => reject(new Error('OSM timeout')), 3000))
-      ]);
+      ])) as OSMResponse | null;
 
       if (osmData && osmData.elements && osmData.elements.length > 0) {
         // Convert OSM data to GeoJSON
@@ -561,7 +567,7 @@ export async function GET(request: Request) {
           return NextResponse.json(geojson);
         }
       }
-    } catch (osmError) {
+    } catch (_osmError) {
       console.log('OSM boundaries fetch failed or timed out, using fast mock data');
     }
 
@@ -570,8 +576,8 @@ export async function GET(request: Request) {
     osmCache.set(cacheKey, { data: mockGeojson, timestamp: Date.now() });
     return NextResponse.json(mockGeojson);
 
-  } catch (error) {
-    console.error('Error in boundaries API:', error);
+  } catch (err) {
+    console.error('Error in boundaries API:', err);
 
     // Ultimate fallback to realistic sample data
     const features = generateFallbackBoundaries(state, district);
@@ -579,10 +585,10 @@ export async function GET(request: Request) {
       type: "FeatureCollection",
       features: features.slice(0, 10),
       metadata: {
-        source: 'Realistic Fallback Data',
-        state,
-        district,
-        error: error instanceof Error ? error.message : 'Unknown error',
+  source: 'Realistic Fallback Data',
+  state,
+  district,
+  error: err instanceof Error ? err.message : 'Unknown error',
         timestamp: new Date().toISOString()
       }
     };

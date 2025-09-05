@@ -6,18 +6,21 @@ import { Ruler, Download, Layers } from 'lucide-react';
 import Link from "next/link";
 import DecorativeBackground from "@/components/DecorativeBackground";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import WebGIS, { GISLayer, GISMarker } from "@/components/WebGIS";
+import WebGIS, { GISLayer, GISMarker, WebGISRef } from "@/components/WebGIS";
 import { exportToGeoJSON } from '@/lib/gis-utils';
 // LayerManager removed - use map's built-in controls instead
 
 interface FeatureData {
+  area: number | undefined;
   type: "Feature";
   properties: {
-    id: string;
+    id?: string;
+    claim_id?: string | number;
     type?: string;
     claimant?: string;
     status?: string;
     area?: number;
+    land_area?: number;
     claim_type?: string;
     village?: string;
     state: string;
@@ -31,8 +34,27 @@ interface FeatureData {
   };
   geometry: {
     type: string;
-    coordinates: any;
+    coordinates: any[];
   };
+  // Also allow plain object fields used by non-GeoJSON responses
+  claim_id?: string | number;
+  id?: string | number;
+  lat?: number | string;
+  lng?: number | string;
+  land_area?: number;
+  // Other plain object fields
+  claimant?: string;
+  status?: string;
+  claim_type?: string;
+  village?: string;
+  state?: string;
+  district?: string;
+  osm_id?: number;
+  tags?: any;
+  application_date?: string;
+  source?: string;
+  resolution_status?: string;
+  note?: string;
 }
 
 export default function FeaturePage({
@@ -45,7 +67,7 @@ export default function FeaturePage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const webgisRef = useRef<any>(null);
+  const webgisRef = useRef<WebGISRef | null>(null);
   const [layers, setLayers] = useState<GISLayer[]>([]);
   const [markers, setMarkers] = useState<GISMarker[]>([]);
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
@@ -62,7 +84,7 @@ export default function FeaturePage({
   };
 
   const fetchWithRetry = async (url: string, attempts = 3, backoff = 500) => {
-    let lastErr: any = null;
+    let lastErr: unknown = null;
     for (let i = 0; i < attempts; i++) {
       try {
         const r = await fetch(url, { headers: { Accept: 'application/json' } });
@@ -100,14 +122,14 @@ export default function FeaturePage({
         const data = await resp.json();
 
         // Data may be a GeoJSON FeatureCollection or an array/object
-        let item: any = null;
+        let item: FeatureData | null = null;
         if (data && data.type === 'FeatureCollection' && Array.isArray(data.features)) {
-          item = data.features.find((f: any) => String(f.properties?.claim_id ?? f.properties?.id) === String(featureId)) || data.features[0] || null;
+          item = data.features.find((f: FeatureData) => String(f.properties?.claim_id ?? f.properties?.id) === String(featureId)) || (data.features[0] as FeatureData) || null;
           if (item) {
             // wrap into feature shape expected below
           }
         } else if (Array.isArray(data)) {
-          item = data.find((d: any) => String(d.claim_id ?? d.id) === String(featureId)) || data[0] || null;
+          item = (data.find((d: any) => String(d.claim_id ?? d.id) === String(featureId)) as FeatureData) || (data[0] as FeatureData) || null;
         } else if (data && (data.claim_id || data.id)) {
           item = data;
         }
@@ -119,9 +141,10 @@ export default function FeaturePage({
         }
 
         // If item is a feature (GeoJSON) use it directly, else normalize
-        let featureObj: FeatureData;
+  let featureObj: FeatureData;
         if (item.type === 'Feature') {
           featureObj = {
+            area: item.properties?.land_area ?? item.properties?.area,
             type: 'Feature',
             properties: {
               id: String(item.properties?.claim_id ?? item.properties?.id ?? ''),
@@ -131,8 +154,8 @@ export default function FeaturePage({
               area: item.properties?.land_area ?? item.properties?.area,
               claim_type: item.properties?.claim_type,
               village: item.properties?.village,
-              state: item.properties?.state,
-              district: item.properties?.district,
+              state: item.properties?.state ?? 'Madhya Pradesh',
+              district: item.properties?.district ?? 'Bhopal',
               osm_id: item.properties?.osm_id,
               tags: item.properties?.tags,
               application_date: item.properties?.application_date,
@@ -145,6 +168,7 @@ export default function FeaturePage({
         } else {
           const geom = item.geometry ?? (item.lat && item.lng ? { type: 'Point', coordinates: [Number(item.lng), Number(item.lat)] } : null);
           featureObj = {
+            area: item.land_area ?? item.area,
             type: 'Feature',
             properties: {
               id: String(item.claim_id ?? item.id ?? ''),
@@ -154,8 +178,8 @@ export default function FeaturePage({
               area: item.land_area ?? item.area,
               claim_type: item.claim_type,
               village: item.village,
-              state: item.state,
-              district: item.district,
+              state: item.state ?? 'Madhya Pradesh',
+              district: item.district ?? 'Bhopal',
               osm_id: item.osm_id,
               tags: item.tags,
               application_date: item.application_date,
@@ -170,7 +194,7 @@ export default function FeaturePage({
         setFeature(featureObj);
 
         // Create a dedicated layer for this feature so polygons render with fill + outline
-        const fc = { type: 'FeatureCollection' as const, features: [featureObj as any] };
+  const fc: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [featureObj as unknown as GeoJSON.Feature] };
         const claimType = String(featureObj.properties?.claim_type ?? '').toUpperCase();
         const colorMap: Record<string, string> = { IFR: '#16a34a', CR: '#3b82f6', CFR: '#f59e0b' };
         const fillColor = colorMap[claimType] ?? '#60a5fa';
@@ -192,14 +216,14 @@ export default function FeaturePage({
         try {
           if (featureObj.geometry?.type === 'Point') {
             const coords = featureObj.geometry.coordinates as [number, number];
-            setMarkers([{ id: featureObj.properties.id, lng: coords[0], lat: coords[1], label: '1', color: '#ef4444' }]);
+            setMarkers([{ id: String(featureObj.properties.id ?? 'unknown'), lng: coords[0], lat: coords[1], label: '1', color: '#ef4444' }]);
             setMapCenter([coords[0], coords[1]]);
             setMapZoom(14);
-          } else if (featureObj.geometry && (featureObj.geometry.type === 'Polygon' || featureObj.geometry.type === 'MultiPolygon')) {
-            const centroid = turf.centroid(featureObj as any);
+            } else if (featureObj.geometry && (featureObj.geometry.type === 'Polygon' || featureObj.geometry.type === 'MultiPolygon')) {
+            const centroid = turf.centroid(featureObj as unknown as GeoJSON.Feature);
             if (centroid && centroid.geometry && centroid.geometry.coordinates) {
               const [lng, lat] = centroid.geometry.coordinates as [number, number];
-              setMarkers([{ id: featureObj.properties.id, lng, lat, label: '1', color: '#ef4444' }]);
+              setMarkers([{ id: String(featureObj.properties.id ?? 'unknown'), lng, lat, label: '1', color: '#ef4444' }]);
               setMapCenter([lng, lat]);
               setMapZoom(12);
             }

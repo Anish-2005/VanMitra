@@ -197,9 +197,10 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
       try {
         // Some tile load failures are surfaced on sourcedata where the tile has an error
         // We log the event and set a human-readable message when possible
-        if ((e as any).tile && (e as any).tile.state === 'errored') {
-          console.warn('🗺️ Tile error for source:', (e as any).sourceId, e);
-          setMapError(`Tile load error for source ${(e as any).sourceId}`);
+        const evt = e as unknown as { tile?: { state?: string }; sourceId?: string };
+        if (evt.tile && evt.tile.state === 'errored') {
+          console.warn('🗺️ Tile error for source:', evt.sourceId, e);
+          setMapError(`Tile load error for source ${evt.sourceId}`);
         }
       } catch (err) {
         // ignore
@@ -395,7 +396,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
   const addLayerFromSource = (layer: GISLayer, sourceId: string, layerId: string) => {
     if (!map.current) return;
 
-    const layerConfig: any = {
+    const layerConfig: { id: string; source: string; type: string; paint?: Record<string, unknown> } = {
       id: layerId,
       source: sourceId,
       type: 'circle' // Default type
@@ -421,7 +422,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
           try {
             // Check if layer already exists before adding
             if (!map.current.getLayer(layerConfig.id)) {
-              map.current!.addLayer(layerConfig);
+              map.current!.addLayer(layerConfig as any);
             }
             // ensure circle layer is on top
             try { map.current!.moveLayer(layerConfig.id); } catch(e){}
@@ -447,7 +448,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
           };
           try {
             if (!map.current.getLayer(layerConfig.id)) {
-              map.current!.addLayer(layerConfig);
+              map.current!.addLayer(layerConfig as any);
             }
             try { map.current!.moveLayer(layerConfig.id); } catch(e){}
           } catch (error) {
@@ -467,7 +468,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
           const fillLayerId = `${layerId}-fill`;
           const outlineLayerId = `${layerId}-outline`;
 
-          const fillLayer = {
+          const fillLayer: { id: string; source: string; type: 'fill'; paint: Record<string, unknown> } = {
             id: fillLayerId,
             source: sourceId,
             type: 'fill',
@@ -476,9 +477,9 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
               'fill-opacity': typeof layer.style.opacity === 'number' ? layer.style.opacity : 0.45,
               'fill-antialias': true
             }
-          } as any;
+          };
 
-          const outlineLayer = {
+          const outlineLayer: { id: string; source: string; type: 'line'; paint: Record<string, unknown> } = {
             id: outlineLayerId,
             source: sourceId,
             type: 'line',
@@ -487,15 +488,15 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
               'line-width': layer.style.strokeWidth ?? 2,
               'line-opacity': Math.max(0.8, layer.style.opacity ?? 0.9)
             }
-          } as any;
+          };
 
           try {
             // Add fill first, then outline so outline naturally sits above fill
             if (!map.current.getLayer(fillLayerId)) {
-              map.current!.addLayer(fillLayer);
+              map.current!.addLayer(fillLayer as any);
             }
             if (!map.current.getLayer(outlineLayerId)) {
-              map.current!.addLayer(outlineLayer);
+              map.current!.addLayer(outlineLayer as any);
             }
 
             // Try to move both to the top of the stack to ensure visibility above rasters
@@ -542,7 +543,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent({
           };
           try { 
             if (!map.current.getLayer(layerConfig.id)) {
-              map.current!.addLayer(layerConfig); 
+              map.current!.addLayer(layerConfig as any); 
             }
             try { map.current!.moveLayer(layerConfig.id); } catch(e){} 
           } catch (error) { 

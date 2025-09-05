@@ -2,8 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { STATES, DEFAULT_STATE, DEFAULT_DISTRICT } from '../../lib/regions';
-import { motion } from "framer-motion";
-import { Target, BookOpen, ArrowRight } from "lucide-react";
+import {  BookOpen, ArrowRight } from "lucide-react";
 import DecorativeBackground from "@/components/DecorativeBackground";
 import Link from "next/link";
 import MapPreview from "../../components/MapPreview";
