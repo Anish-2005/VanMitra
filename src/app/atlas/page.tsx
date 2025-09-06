@@ -346,33 +346,6 @@ export default function AtlasPage() {
             (f) => String(f.properties?.claim_type ?? "unknown").toUpperCase() === t,
           )
 
-          // centroid features for point-symbols (for auto-scaling symbols)
-          const centroidFeatures = typeFeatures
-            .map((f) => {
-              try {
-                if (f.geometry && (f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon")) {
-                  const c = turf.centroid(f)
-                  if (c && c.geometry && c.geometry.coordinates) {
-                    return {
-                      type: "Feature",
-                      geometry: { type: "Point", coordinates: c.geometry.coordinates },
-                      properties: { ...f.properties },
-                    }
-                  }
-                } else if (f.geometry && f.geometry.type === "Point") {
-                  return {
-                    type: "Feature",
-                    geometry: { type: "Point", coordinates: f.geometry.coordinates },
-                    properties: { ...f.properties },
-                  }
-                }
-              } catch (e) {
-                return null
-              }
-              return null
-            })
-            .filter(Boolean)
-
           const areaLayer: GISLayer = {
             id: `claims-${t.toLowerCase()}`,
             name: `Claims — ${t}`,
@@ -387,27 +360,7 @@ export default function AtlasPage() {
               opacity: 0.65,
             },
           }
-
-          const centroidLayer: GISLayer = {
-            id: `claims-centroids-${t.toLowerCase()}`,
-            name: `Claims — ${t} (centroids)`,
-            type: "geojson",
-            url: "",
-            visible: true,
-            data: { type: "FeatureCollection", features: centroidFeatures },
-            // include scaling hints consumed by WebGIS (maxDiameterMeters and radius clamps)
-            style: {
-              fillColor: claimTypeColors[t] ?? "#60a5fa",
-              strokeColor: "#ffffff",
-              strokeWidth: 2,
-              opacity: 1,
-              maxDiameterMeters: 50000,
-              minRadiusPx: 6,
-              maxRadiusPx: 40,
-            } as any,
-          }
-
-          return [areaLayer, centroidLayer]
+          return [areaLayer]
         })
 
         // increase fill opacity slightly for better visibility
@@ -1032,106 +985,54 @@ export default function AtlasPage() {
               <div className="mt-4 p-4 bg-white rounded-xl shadow-sm border border-green-50">
                 <h5 className="text-sm font-medium text-green-900 mb-3">Legend</h5>
                 <div className="space-y-3">
-                  {/* Location symbols layer */}
-                  <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-                    <div className="flex items-center gap-2">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                          d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"
-                          fill="#ff4444"
-                          stroke="#ffffff"
-                          strokeWidth="2"
-                        />
-                        <circle cx="12" cy="10" r="3" fill="#ffffff" />
-                      </svg>
-                      <span className="text-sm font-medium">Location Symbols</span>
-                    </div>
-                    <span className="text-xs text-gray-500">Auto-scaling markers</span>
-                  </div>
+                    {claimTypeOptions.length ? (
+                      claimTypeOptions.map((ct) => {
+                        const layerId = `claims-${ct.toLowerCase()}`
+                        const layer = layers.find((l) => l.id === layerId)
+                        const visible = layer ? !!layer.visible : true
+                        const color = claimTypeColors[ct] ?? "#60a5fa"
 
-                  {claimTypeOptions.length ? (
-                    claimTypeOptions.map((ct) => {
-                      const layerId = `claims-${ct.toLowerCase()}`
-                      const centroidLayerId = `claims-centroids-${ct.toLowerCase()}`
-                      const layer = layers.find((l) => l.id === layerId)
-                      const centroidLayer = layers.find((l) => l.id === centroidLayerId)
-                      const visible = layer ? !!layer.visible : true
-                      const centroidVisible = centroidLayer ? !!centroidLayer.visible : true
-                      const color = claimTypeColors[ct] ?? "#60a5fa"
-
-                      return (
-                        <div key={ct} className="space-y-2">
-                          {/* Claim area layer */}
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <span
-                                style={{
-                                  width: 16,
-                                  height: 12,
-                                  background: color,
-                                  display: "inline-block",
-                                  borderRadius: 3,
-                                  border: "1px solid rgba(0,0,0,0.06)",
-                                }}
-                              />
-                              <span className="text-sm">{ct} Areas</span>
-                            </div>
-                            <label className="inline-flex items-center gap-2">
-                              <input
-                                type="checkbox"
-                                checked={visible}
-                                onChange={() => handleLayerToggle(layerId)}
-                                className="rounded border-gray-200"
-                              />
-                              <span className="text-sm text-gray-600">{visible ? "Visible" : "Hidden"}</span>
-                            </label>
-                          </div>
-
-                          {/* Location symbols layer */}
-                          <div className="flex items-center justify-between ml-4">
-                            <div className="flex items-center gap-2">
-                              <svg
-                                width="12"
-                                height="12"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <path
-                                  d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"
-                                  fill={color}
-                                  stroke="#ffffff"
-                                  strokeWidth="2"
+                        return (
+                          <div key={ct} className="space-y-2">
+                            {/* Claim area layer */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span
+                                  style={{
+                                    width: 16,
+                                    height: 12,
+                                    background: color,
+                                    display: "inline-block",
+                                    borderRadius: 3,
+                                    border: "1px solid rgba(0,0,0,0.06)",
+                                  }}
                                 />
-                                <circle cx="12" cy="10" r="3" fill="#ffffff" />
-                              </svg>
-                              <span className="text-xs text-gray-600">{ct} Symbols</span>
+                                <span className="text-sm">{ct} Areas</span>
+                              </div>
+                              <label className="inline-flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  checked={visible}
+                                  onChange={() => handleLayerToggle(layerId)}
+                                  className="rounded border-gray-200"
+                                />
+                                <span className="text-sm text-gray-600">{visible ? "Visible" : "Hidden"}</span>
+                              </label>
                             </div>
-                            <label className="inline-flex items-center gap-2">
-                              <input
-                                type="checkbox"
-                                checked={centroidVisible}
-                                onChange={() => handleLayerToggle(centroidLayerId)}
-                                className="rounded border-gray-200 scale-75"
-                              />
-                              <span className="text-xs text-gray-500">{centroidVisible ? "On" : "Off"}</span>
-                            </label>
                           </div>
-                        </div>
-                      )
-                    })
-                  ) : (
-                    <div className="text-xs text-gray-500">No claim types available</div>
-                  )}
+                        )
+                      })
+                    ) : (
+                      <div className="text-xs text-gray-500">No claim types available</div>
+                    )}
 
-                  <div className="pt-2 border-t border-gray-100">
-                    <div className="text-xs text-gray-600">
-                      <div className="font-medium mb-1">Symbol Behavior:</div>
-                      <div>• Zoom out: Larger symbols for easy spotting</div>
-                      <div>• Zoom in: Smaller symbols for detail view</div>
-                      <div>• Colors match claim area types</div>
+                    <div className="pt-2 border-t border-gray-100">
+                      <div className="text-xs text-gray-600">
+                        <div className="font-medium mb-1">Note:</div>
+                        <div>Symbols for claim centroids have been removed for a cleaner overview.</div>
+                        <div>Use the area layers and zoom controls to inspect claims.</div>
+                      </div>
                     </div>
-                  </div>
                 </div>
               </div>
             </aside>
