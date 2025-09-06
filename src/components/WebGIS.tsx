@@ -72,7 +72,8 @@ export interface WebGISRef {
 
 const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
   {
-    center = [88.8, 21.9],
+  // Default center set to central Madhya Pradesh (approximate)
+  center = [78.0, 23.3],
     zoom = 8,
     layers = [],
     markers = [],
@@ -351,20 +352,21 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
         // Remove layer and source if not visible or no data
         const fillId = `${layerId}-fill`
         const outlineId = `${layerId}-outline`
-        if (map.current!.getLayer(fillId)) {
-          try {
-            map.current!.removeLayer(fillId)
-          } catch (e) {
-            /* ignore */
+
+        const tryRemoveLayer = (id: string) => {
+          if (map.current!.getLayer(id)) {
+            try {
+              map.current!.removeLayer(id)
+            } catch (e) {
+              /* ignore */
+            }
           }
         }
-        if (map.current!.getLayer(outlineId)) {
-          try {
-            map.current!.removeLayer(outlineId)
-          } catch (e) {
-            /* ignore */
-          }
-        }
+
+        // Remove common variants
+        tryRemoveLayer(fillId)
+        tryRemoveLayer(outlineId)
+
         // Also remove any point layer paint handler registered earlier
         try {
           const pointHandlerKey = layerId // matches how we stored handlers (layerConfig.id)
@@ -379,7 +381,53 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
             delete (map.current as any)._pointLayerHandlers[pointHandlerKey]
           }
         } catch (e) {}
-        // Don't remove the source as it might be used by other components
+
+        // Special-case: if this is the boundaries layer, we previously created
+        // district/state sub-sources and sub-layers. Remove those explicitly.
+        try {
+          if (layer.id === "boundaries") {
+            // Ensure we remove all known boundary sub-sources/layers including tehsil
+            const subSuffixes = ["-tehsil", "-district", "-state"]
+            for (const s of subSuffixes) {
+              const subSource = `source-${layer.id}${s}`
+              const subLayer = `layer-${layer.id}${s}`
+              const subFill = `${subLayer}-fill`
+              const subOutline = `${subLayer}-outline`
+
+              // remove any outline/fill variants
+              tryRemoveLayer(subFill)
+              tryRemoveLayer(subOutline)
+              // remove the main sub-layer
+              tryRemoveLayer(subLayer)
+
+              // remove source if exists
+              try {
+                if (map.current!.getSource(subSource)) {
+                  try {
+                    map.current!.removeSource(subSource)
+                  } catch (e) {
+                    /* ignore */
+                  }
+                }
+              } catch (e) {}
+            }
+          }
+        } catch (e) {
+          /* ignore */
+        }
+
+        // Also remove the primary source for the layer if present and safe
+        try {
+          if (map.current!.getSource(sourceId)) {
+            try {
+              map.current!.removeSource(sourceId)
+            } catch (e) {
+              // Some sources may be shared; ignore removal errors
+            }
+          }
+        } catch (e) {
+          /* ignore */
+        }
       }
     })
   }, [currentLayers, mapLoaded, layers])
@@ -393,41 +441,41 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
       const boundariesLayer = currentLayers.find((l) => l.id === "boundaries")
       if (!boundariesLayer) return
 
-      const layerId = `layer-${boundariesLayer.id}`
-      const sourceId = `source-${boundariesLayer.id}`
+      // We may have split the boundaries into sub-layers (tehsil/district/state).
+      // Move them in sequence so final stacking is: tehsil (bottom), district (middle), state (top).
+      const subSuffixesInOrder = ["-tehsil", "-district", "-state"]
 
-      if (map.current.getLayer(layerId)) {
-        // Attempt to set stronger paint properties depending on layer type
-        const features = boundariesLayer.data?.features || []
-        const geometryType = features.length > 0 ? features[0]?.geometry?.type : null
+      for (const s of subSuffixesInOrder) {
+        const subLayer = `layer-${boundariesLayer.id}${s}`
+        const subFill = `${subLayer}-fill`
+        const subOutline = `${subLayer}-outline`
 
+        // Try to move outline, fill, then the main sub-layer to the top in this order.
+        // Because we move tehsil first, then district, then state, the final order will
+        // have state on top, district below it, and tehsil below both.
         try {
-          if (geometryType === "Polygon" || geometryType === "MultiPolygon") {
-            // If it's a fill layer, update paint for prominence
-            map.current.setPaintProperty(layerId, "fill-color", boundariesLayer.style.fillColor || "#ffffff")
-            map.current.setPaintProperty(layerId, "fill-opacity", boundariesLayer.style.opacity ?? 0.6)
-            map.current.setPaintProperty(layerId, "fill-outline-color", boundariesLayer.style.strokeColor || "#0b815a")
-          } else if (geometryType === "LineString" || geometryType === "MultiLineString") {
-            map.current.setPaintProperty(layerId, "line-color", boundariesLayer.style.strokeColor || "#0b815a")
-            map.current.setPaintProperty(layerId, "line-width", boundariesLayer.style.strokeWidth ?? 3)
-            map.current.setPaintProperty(layerId, "line-opacity", boundariesLayer.style.opacity ?? 0.9)
+          if (map.current.getLayer(subOutline)) {
+            // @ts-ignore
+            map.current.moveLayer(subOutline)
           }
-        } catch (paintErr) {
-          // Some paint properties may not exist yet; ignore
-          console.warn("Could not update paint properties for boundaries:", paintErr)
-        }
-
-        // Move to top
+        } catch (e) {}
         try {
-          // @ts-ignore - some typings don't list the optional beforeId parameter
-          map.current.moveLayer(layerId)
-          console.log("Ensured boundaries layer is on top:", layerId)
-        } catch (moveErr) {
-          console.warn("Failed to move boundaries layer to top:", moveErr)
-        }
+          if (map.current.getLayer(subFill)) {
+            // @ts-ignore
+            map.current.moveLayer(subFill)
+          }
+        } catch (e) {}
+        try {
+          if (map.current.getLayer(subLayer)) {
+            // @ts-ignore
+            map.current.moveLayer(subLayer)
+          }
+        } catch (e) {}
       }
+
+      console.log("Ensured boundaries sub-layers stacked in order: tehsil < district < state")
     } catch (err) {
-      console.warn("Boundaries top-layer enforcement failed:", err)
+      console.warn("Boundaries stacking enforcement failed:", err)
     }
   }, [currentLayers, mapLoaded])
 

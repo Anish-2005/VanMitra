@@ -7,7 +7,8 @@ interface Marker { lng: number; lat: number; label?: string }
 type Layers = { fra?: boolean; boundaries?: boolean; assets?: boolean };
 
 export default function MapPreview({
-  center = [88.8, 21.9],
+  // Default center set to central Madhya Pradesh (approximate)
+  center = [78.0, 23.3],
   zoom = 8,
   markers = [],
   layers = { fra: false, boundaries: false, assets: false },
@@ -138,14 +139,87 @@ export default function MapPreview({
           if (createdSources.current[sourceId]) return;
           const res = await fetch(url);
           const geojson = await res.json();
-          map.addSource(sourceId, { type: 'geojson', data: geojson });
-          createdSources.current[sourceId] = true;
-          const layerDef: any = { id: layerId, type, source: sourceId };
-          if (type === 'fill') layerDef.paint = { 'fill-color': '#bbf7d0', 'fill-opacity': 0.4 };
-          if (type === 'line') layerDef.paint = { 'line-color': '#16a34a', 'line-width': 2 };
-          if (type === 'circle') layerDef.paint = { 'circle-radius': 6, 'circle-color': '#38bdf8' };
-          map.addLayer(layerDef);
-          createdLayers.current[layerId] = true;
+          // Special handling for boundaries: split into district vs state so we can style them differently
+          if (name === 'boundaries' && type === 'line') {
+            // Heuristic: single-feature collection -> state boundary, multi-feature -> districts
+            const features = geojson && geojson.features ? geojson.features : [];
+            const stateFeatures = features.filter((f: any) => f.properties?.level === 'state');
+            const districtFeatures = features.filter((f: any) => f.properties?.level === 'district');
+            const tehsilFeatures = features.filter((f: any) => f.properties?.level === 'tehsil');
+
+            // If no explicit level props, use length heuristic (fallback)
+            if (!stateFeatures.length && !districtFeatures.length && !tehsilFeatures.length) {
+              if (features.length === 1) stateFeatures.push(features[0]);
+              else if (features.length > 1) districtFeatures.push(...features);
+            }
+
+            // Add tehsil first (bottom-most, subtle styling)
+            if (tehsilFeatures.length > 0) {
+              const srcTehsil = `${sourceId}-tehsil`;
+              const layerTehsil = `${layerId}-tehsil`;
+              const tehsilGeo = { type: 'FeatureCollection', features: tehsilFeatures };
+              if (!map.getSource(srcTehsil)) map.addSource(srcTehsil, { type: 'geojson', data: tehsilGeo });
+              createdSources.current[srcTehsil] = true;
+              if (!map.getLayer(layerTehsil)) {
+                const layerDef: any = { id: layerTehsil, type: 'line', source: srcTehsil };
+                layerDef.paint = {
+                  'line-color': '#dc2626',
+                  'line-width': 0.8,
+                  'line-opacity': 0.6,
+                };
+                map.addLayer(layerDef);
+                createdLayers.current[layerTehsil] = true;
+              }
+            }
+
+            // Add district layer next (less prominent, dashed red)
+            if (districtFeatures.length > 0) {
+              const srcDistrict = `${sourceId}-district`;
+              const layerDistrict = `${layerId}-district`;
+              const districtGeo = { type: 'FeatureCollection', features: districtFeatures };
+              if (!map.getSource(srcDistrict)) map.addSource(srcDistrict, { type: 'geojson', data: districtGeo });
+              createdSources.current[srcDistrict] = true;
+              if (!map.getLayer(layerDistrict)) {
+                const layerDef: any = { id: layerDistrict, type: 'line', source: srcDistrict };
+                layerDef.paint = {
+                  'line-color': '#dc2626',
+                  'line-width': 1,
+                  'line-opacity': 0.7,
+                  'line-dasharray': [2, 2]
+                };
+                map.addLayer(layerDef);
+                createdLayers.current[layerDistrict] = true;
+              }
+            }
+
+            // Add state layer on top (more prominent solid red)
+            if (stateFeatures.length > 0) {
+              const srcState = `${sourceId}-state`;
+              const layerState = `${layerId}-state`;
+              const stateGeo = { type: 'FeatureCollection', features: stateFeatures };
+              if (!map.getSource(srcState)) map.addSource(srcState, { type: 'geojson', data: stateGeo });
+              createdSources.current[srcState] = true;
+              if (!map.getLayer(layerState)) {
+                const layerDef: any = { id: layerState, type: 'line', source: srcState };
+                layerDef.paint = {
+                  'line-color': '#dc2626',
+                  'line-width': 3,
+                  'line-opacity': 1
+                };
+                map.addLayer(layerDef);
+                createdLayers.current[layerState] = true;
+              }
+            }
+          } else {
+            map.addSource(sourceId, { type: 'geojson', data: geojson });
+            createdSources.current[sourceId] = true;
+            const layerDef: any = { id: layerId, type, source: sourceId };
+            if (type === 'fill') layerDef.paint = { 'fill-color': '#bbf7d0', 'fill-opacity': 0.4 };
+            if (type === 'line') layerDef.paint = { 'line-color': '#16a34a', 'line-width': 2 };
+            if (type === 'circle') layerDef.paint = { 'circle-radius': 6, 'circle-color': '#38bdf8' };
+            map.addLayer(layerDef);
+            createdLayers.current[layerId] = true;
+          }
 
           // attach events for feature interactions
           try {
@@ -233,12 +307,66 @@ export default function MapPreview({
             if (!map.getSource(sourceId)) map.addSource(sourceId, { type: 'geojson', data: geojson });
             createdSources.current[sourceId] = true;
             if (!map.getLayer(layerId)) {
-              const layerDef: any = { id: layerId, type, source: sourceId };
-              if (type === 'fill') layerDef.paint = { 'fill-color': '#bbf7d0', 'fill-opacity': 0.4 };
-              if (type === 'line') layerDef.paint = { 'line-color': '#16a34a', 'line-width': 2 };
-              if (type === 'circle') layerDef.paint = { 'circle-radius': 6, 'circle-color': '#38bdf8' };
-              map.addLayer(layerDef);
-              createdLayers.current[layerId] = true;
+              // Special case: boundaries line layer -> split into district/state for styling
+                if (name === 'boundaries' && type === 'line') {
+                const features = geojson && geojson.features ? geojson.features : [];
+                const stateFeatures = features.filter((f: any) => f.properties?.level === 'state');
+                const districtFeatures = features.filter((f: any) => f.properties?.level === 'district');
+                const tehsilFeatures = features.filter((f: any) => f.properties?.level === 'tehsil');
+                if (!stateFeatures.length && !districtFeatures.length && !tehsilFeatures.length) {
+                  if (features.length === 1) stateFeatures.push(features[0]);
+                  else if (features.length > 1) districtFeatures.push(...features);
+                }
+
+                if (tehsilFeatures.length > 0) {
+                  const srcTehsil = `${sourceId}-tehsil`;
+                  const layerTehsil = `${layerId}-tehsil`;
+                  const tehsilGeo = { type: 'FeatureCollection', features: tehsilFeatures };
+                  if (!map.getSource(srcTehsil)) map.addSource(srcTehsil, { type: 'geojson', data: tehsilGeo });
+                  createdSources.current[srcTehsil] = true;
+                  if (!map.getLayer(layerTehsil)) {
+                    const layerDef: any = { id: layerTehsil, type: 'line', source: srcTehsil };
+                    layerDef.paint = { 'line-color': '#dc2626', 'line-width': 0.8, 'line-opacity': 0.6 };
+                    map.addLayer(layerDef);
+                    createdLayers.current[layerTehsil] = true;
+                  }
+                }
+
+                if (districtFeatures.length > 0) {
+                  const srcDistrict = `${sourceId}-district`;
+                  const layerDistrict = `${layerId}-district`;
+                  const districtGeo = { type: 'FeatureCollection', features: districtFeatures };
+                  if (!map.getSource(srcDistrict)) map.addSource(srcDistrict, { type: 'geojson', data: districtGeo });
+                  createdSources.current[srcDistrict] = true;
+                  if (!map.getLayer(layerDistrict)) {
+                    const layerDef: any = { id: layerDistrict, type: 'line', source: srcDistrict };
+                    layerDef.paint = { 'line-color': '#dc2626', 'line-width': 1, 'line-opacity': 0.7, 'line-dasharray': [2,2] };
+                    map.addLayer(layerDef);
+                    createdLayers.current[layerDistrict] = true;
+                  }
+                }
+
+                if (stateFeatures.length > 0) {
+                  const srcState = `${sourceId}-state`;
+                  const layerState = `${layerId}-state`;
+                  const stateGeo = { type: 'FeatureCollection', features: stateFeatures };
+                  if (!map.getSource(srcState)) map.addSource(srcState, { type: 'geojson', data: stateGeo });
+                  createdSources.current[srcState] = true;
+                  if (!map.getLayer(layerState)) {
+                    const layerDef: any = { id: layerState, type: 'line', source: srcState };
+                    layerDef.paint = { 'line-color': '#dc2626', 'line-width': 3, 'line-opacity': 1 };
+                    map.addLayer(layerDef);
+                    createdLayers.current[layerState] = true;
+                  }
+                }
+              } else {
+                const layerDef: any = { id: layerId, type, source: sourceId };
+                if (type === 'fill') layerDef.paint = { 'fill-color': '#bbf7d0', 'fill-opacity': 0.4 };
+                if (type === 'line') layerDef.paint = { 'line-color': '#16a34a', 'line-width': 2 };
+                if (type === 'circle') layerDef.paint = { 'circle-radius': 6, 'circle-color': '#38bdf8' };
+                map.addLayer(layerDef);
+                createdLayers.current[layerId] = true;
+              }
             }
           } catch (err) {}
         }).catch(() => {});
@@ -248,8 +376,15 @@ export default function MapPreview({
     const removeLayer = (name: string) => {
       const sourceId = `src-${name}`;
       const layerId = `layer-${name}`;
-      try { if (map.getLayer(layerId)) map.removeLayer(layerId); } catch (e) {}
-      try { if (map.getSource(sourceId)) map.removeSource(sourceId); } catch (e) {}
+  try { if (map.getLayer(layerId)) map.removeLayer(layerId); } catch (e) {}
+  try { if (map.getSource(sourceId)) map.removeSource(sourceId); } catch (e) {}
+  // Also remove tehsil/district/state sub-layers/sources for boundaries
+  try { if (map.getLayer(`${layerId}-tehsil`)) map.removeLayer(`${layerId}-tehsil`); } catch (e) {}
+  try { if (map.getLayer(`${layerId}-district`)) map.removeLayer(`${layerId}-district`); } catch (e) {}
+  try { if (map.getLayer(`${layerId}-state`)) map.removeLayer(`${layerId}-state`); } catch (e) {}
+  try { if (map.getSource(`${sourceId}-tehsil`)) map.removeSource(`${sourceId}-tehsil`); } catch (e) {}
+  try { if (map.getSource(`${sourceId}-district`)) map.removeSource(`${sourceId}-district`); } catch (e) {}
+  try { if (map.getSource(`${sourceId}-state`)) map.removeSource(`${sourceId}-state`); } catch (e) {}
       delete createdLayers.current[layerId];
       delete createdSources.current[sourceId];
       try { if (map.getLayer('layer-highlight')) map.removeLayer('layer-highlight'); } catch (e) {}

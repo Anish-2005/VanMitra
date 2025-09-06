@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import * as turf from "@turf/turf"
-import { STATES } from "../../lib/regions"
+import { STATES, DEFAULT_STATE } from "../../lib/regions"
 import { motion } from "framer-motion"
 import { Layers, Ruler, Download } from "lucide-react"
 import DecorativeBackground from "@/components/DecorativeBackground"
@@ -70,7 +70,21 @@ export default function AtlasPage() {
   const [isApplyingFilters, setIsApplyingFilters] = useState(false)
   const [filtersExpanded, setFiltersExpanded] = useState(true)
 
-  const stateCenter = STATES.find((s) => s.name === stateFilter)?.center ?? [88.8, 21.9]
+  // Boundary layer toggles
+  const [showStateBoundary, setShowStateBoundary] = useState(false)
+  const [showDistrictBoundary, setShowDistrictBoundary] = useState(false)
+  const [showTehsilBoundary, setShowTehsilBoundary] = useState(false)
+  const [boundaryLayers, setBoundaryLayers] = useState<GISLayer[]>([])
+  // Pending UI state for boundary toggles (Apply button will commit)
+  const [pendingShowStateBoundary, setPendingShowStateBoundary] = useState(showStateBoundary)
+  const [pendingShowDistrictBoundary, setPendingShowDistrictBoundary] = useState(showDistrictBoundary)
+  const [pendingShowTehsilBoundary, setPendingShowTehsilBoundary] = useState(showTehsilBoundary)
+  // simple counter to re-run loading effect when user applies
+  const [applyCounter, setApplyCounter] = useState(0)
+
+  // If no specific state is selected, default to the project's default state (Madhya Pradesh)
+  const effectiveState = stateFilter === "all" ? DEFAULT_STATE : stateFilter
+  const stateCenter = STATES.find((s) => s.name === effectiveState)?.center ?? [78.9629, 22.9734]
 
   useEffect(() => {
     setLayers((prevLayers) =>
@@ -473,6 +487,96 @@ export default function AtlasPage() {
     return () => controller.abort()
   }, [stateFilter, districtFilter, statusFilter, claimTypeFilter])
 
+  // Effect to handle boundary layer loading
+  useEffect(() => {
+    const loadBoundaryLayers = async () => {
+      const newBoundaryLayers: GISLayer[] = []
+
+      // Use the committed (live) values when loading
+      if (showStateBoundary) {
+        try {
+          const response = await fetch("/api/atlas/boundaries?level=state&state=Madhya Pradesh")
+          const data = await response.json()
+          if (data.features && data.features.length > 0) {
+            newBoundaryLayers.push({
+              id: "state-boundary",
+              name: "State Boundary",
+              type: "geojson",
+              url: "",
+              visible: true,
+              data: data,
+              style: {
+                fillColor: "transparent",
+                strokeColor: "#dc2626",
+                strokeWidth: 3,
+                opacity: 1,
+              },
+            })
+          }
+        } catch (error) {
+          console.error("Failed to load state boundary:", error)
+        }
+      }
+
+
+  if (showDistrictBoundary) {
+        try {
+          const response = await fetch("/api/atlas/boundaries?level=district&state=Madhya Pradesh")
+          const data = await response.json()
+          if (data.features && data.features.length > 0) {
+            newBoundaryLayers.push({
+              id: "district-boundary",
+              name: "District Boundaries",
+              type: "geojson",
+              url: "",
+              visible: true,
+              data: data,
+              style: {
+                fillColor: "transparent",
+                strokeColor: "#2563eb",
+                strokeWidth: 2,
+                opacity: 1,
+              },
+            })
+          }
+        } catch (error) {
+          console.error("Failed to load district boundaries:", error)
+        }
+      }
+
+
+  if (showTehsilBoundary) {
+        try {
+          const response = await fetch("/api/atlas/boundaries?level=tehsil&state=Madhya Pradesh")
+          const data = await response.json()
+          if (data.features && data.features.length > 0) {
+            newBoundaryLayers.push({
+              id: "tehsil-boundary",
+              name: "Tehsil Boundaries",
+              type: "geojson",
+              url: "",
+              visible: true,
+              data: data,
+              style: {
+                fillColor: "transparent",
+                strokeColor: "#16a34a",
+                strokeWidth: 1,
+                opacity: 1,
+              },
+            })
+          }
+        } catch (error) {
+          console.error("Failed to load tehsil boundaries:", error)
+        }
+      }
+
+      setBoundaryLayers(newBoundaryLayers)
+    }
+
+    loadBoundaryLayers()
+    // applyCounter allows manual re-run when user clicks Apply
+  }, [showStateBoundary, showDistrictBoundary, showTehsilBoundary, applyCounter])
+
   const handleStateChange = (newState: string) => {
     setPendingStateFilter(newState)
     const stateData = STATES.find((s) => s.name === newState)
@@ -622,7 +726,7 @@ export default function AtlasPage() {
                         ref={webGISRef}
                         center={(mapCenter ?? stateCenter) as [number, number]}
                         zoom={mapZoom}
-                        layers={layers}
+                        layers={[...layers, ...boundaryLayers]}
                         markers={markers}
                         onFeatureClick={handleFeatureClick}
                         onMapClick={handleMapClick}
@@ -700,7 +804,7 @@ export default function AtlasPage() {
             <aside className="lg:col-span-4">
               <div className="mb-6">
                 <LayerManager
-                  layers={layers}
+                  layers={[...layers, ...boundaryLayers]}
                   markers={markers}
                   onLayerToggle={handleLayerToggle}
                   onLayerRemove={handleLayerRemove}
@@ -832,6 +936,97 @@ export default function AtlasPage() {
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Boundary Toggles */}
+              <div className="bg-white rounded-xl shadow-md border border-green-100 overflow-hidden mb-6">
+                <div className="flex items-center justify-between p-3 bg-gray-50">
+                  <div className="flex items-center gap-2">
+                    <Layers size={16} />
+                    <span className="font-medium">Boundary Layers</span>
+                    <span className="text-sm text-gray-500">(Madhya Pradesh)</span>
+                  </div>
+                </div>
+
+                <div className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-red-500 bg-transparent"></div>
+                      <span className="text-sm font-medium">State Boundary</span>
+                    </div>
+                    <label className="inline-flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={pendingShowStateBoundary}
+                        onChange={(e) => setPendingShowStateBoundary(e.target.checked)}
+                        className="rounded border-gray-200"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-blue-500 bg-transparent"></div>
+                      <span className="text-sm font-medium">District Boundaries</span>
+                    </div>
+                    <label className="inline-flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={pendingShowDistrictBoundary}
+                        onChange={(e) => setPendingShowDistrictBoundary(e.target.checked)}
+                        className="rounded border-gray-200"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-green-500 bg-transparent"></div>
+                      <span className="text-sm font-medium">Tehsil Boundaries</span>
+                    </div>
+                    <label className="inline-flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={pendingShowTehsilBoundary}
+                        onChange={(e) => setPendingShowTehsilBoundary(e.target.checked)}
+                        className="rounded border-gray-200"
+                      />
+                    </label>
+                  </div>
+                </div>
+                <div className="p-3 border-t border-green-50 bg-green-50 flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      // Commit pending selections
+                      setShowStateBoundary(pendingShowStateBoundary)
+                      setShowDistrictBoundary(pendingShowDistrictBoundary)
+                      setShowTehsilBoundary(pendingShowTehsilBoundary)
+                      // trigger reload effect
+                      setApplyCounter((c) => c + 1)
+                      // Force WebGIS re-render/refresh so the map re-loads layers and paints
+                      setMapKey((k) => k + 1)
+                      // Recenter map to state center and reset zoom to a sensible default
+                      try {
+                        setMapCenter(stateCenter as [number, number])
+                      } catch (e) {}
+                      setMapZoom(7.5)
+                    }}
+                    className="bg-green-700 text-white px-3 py-1 rounded-md text-sm"
+                  >
+                    Apply
+                  </button>
+                  <button
+                    onClick={() => {
+                      // Revert pending to committed values
+                      setPendingShowStateBoundary(showStateBoundary)
+                      setPendingShowDistrictBoundary(showDistrictBoundary)
+                      setPendingShowTehsilBoundary(showTehsilBoundary)
+                    }}
+                    className="bg-white border border-green-200 text-green-700 px-3 py-1 rounded-md text-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
 
               <div className="mt-4 p-4 bg-white rounded-xl shadow-sm border border-green-50">

@@ -28,6 +28,19 @@ export default function LayerManager({
   const [isExpanded, setIsExpanded] = useState(true);
   const [editingLayer, setEditingLayer] = useState<string | null>(null);
   const [editingMarker, setEditingMarker] = useState<string | null>(null);
+  // stagedVisibility holds local toggles until user presses Apply
+  const [stagedVisibility, setStagedVisibility] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    layers.forEach(l => { initial[l.id] = !!l.visible });
+    return initial;
+  });
+
+  // sync staged when layers prop changes (e.g., external updates)
+  React.useEffect(() => {
+    const next: Record<string, boolean> = {};
+    layers.forEach(l => { next[l.id] = !!l.visible });
+    setStagedVisibility(next);
+  }, [JSON.stringify(layers.map(l => ({ id: l.id, v: l.visible })))]);
 
   const handleStyleChange = (layerId: string, styleKey: string, value: string | number) => {
     const updates: Partial<GISLayer> = {
@@ -76,11 +89,15 @@ export default function LayerManager({
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => onLayerToggle(layer.id)}
+                        onClick={() => {
+                          // toggle staged visibility locally
+                          setStagedVisibility(prev => ({ ...prev, [layer.id]: !prev[layer.id] }));
+                        }}
                         className="text-gray-500 hover:text-gray-700"
                       >
-                        {layer.visible ? <Eye size={14} /> : <EyeOff size={14} />}
+                        {stagedVisibility[layer.id] ? <Eye size={14} /> : <EyeOff size={14} />}
                       </button>
++
                       <span className="text-sm font-medium">{layer.name}</span>
                       <span className="text-xs text-gray-500 uppercase">{layer.type}</span>
                     </div>
@@ -163,6 +180,31 @@ export default function LayerManager({
                   )}
                 </div>
               ))}
+            </div>
+            {/* Apply / Reset controls for staged visibility */}
+            <div className="mt-3 flex items-center gap-2">
+              <button
+                className="px-3 py-1 bg-blue-600 text-white rounded text-sm"
+                onClick={() => {
+                  // compute diffs and call onLayerToggle for each layer that changed
+                  layers.forEach(l => {
+                    const staged = !!stagedVisibility[l.id];
+                    const current = !!l.visible;
+                    if (staged !== current) {
+                      onLayerToggle(l.id);
+                    }
+                  });
+                }}
+              >Apply</button>
+              <button
+                className="px-3 py-1 bg-gray-100 text-sm rounded"
+                onClick={() => {
+                  // reset staged visibility to current props
+                  const reset: Record<string, boolean> = {};
+                  layers.forEach(l => { reset[l.id] = !!l.visible });
+                  setStagedVisibility(reset);
+                }}
+              >Reset</button>
             </div>
           </div>
 
