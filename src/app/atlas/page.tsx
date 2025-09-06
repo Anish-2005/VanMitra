@@ -585,6 +585,107 @@ export default function AtlasPage() {
   }
 
   const handleFeatureClick = (featureInfo: { layer: string; feature: any; lngLat: any }) => {
+    // If a boundary layer was clicked, compute area and (for tehsil) claims count
+    const { layer, feature, lngLat } = featureInfo as any
+    const props = feature?.properties || {}
+
+    const getBoundaryLabel = (p: any) => {
+      if (!p) return undefined
+      return (
+        p.name || p.NAME || p.NAME_1 || p.NAME_2 || p.ST_NM || p.STATE_NAME || p.state || p.district || p.DISTRICT || p.tehsil || p.TEHSIL || p.subdistrict || p.SUBDIST || p._label || p._name || p._source || (p?.NAME_0) || undefined
+      )
+    }
+
+    const isBoundary = String(layer?.id ?? layer?.name ?? "").toLowerCase().includes("boundary") ||
+      String(props?.level ?? "").toLowerCase().includes("state") ||
+      String(props?.level ?? "").toLowerCase().includes("district") ||
+      String(props?.level ?? "").toLowerCase().includes("tehsil")
+
+    if (isBoundary) {
+      // compute area using turf (m^2 -> convert to hectares)
+      let areaHa: number | null = null
+      try {
+        const geom = feature.geometry ?? feature
+        const areaSqM = turf.area(geom)
+        areaHa = areaSqM / 10000
+      } catch (e) {
+        areaHa = null
+      }
+
+  // default label (try multiple common property names)
+  const label = getBoundaryLabel(props) ?? "Boundary"
+
+      // If tehsil, also compute number of claims inside it
+      const level = (props?.level || layer?.id || layer?.name || "").toString().toLowerCase()
+      const isTehsil = level.includes("tehsil") || String(props?.type ?? "").toLowerCase().includes("tehsil")
+
+      const boundaryFeature = {
+        layer: layer?.id || layer?.name || "boundary",
+        feature,
+        lngLat,
+        properties: {
+          ...props,
+          _label: label,
+          _area_ha: areaHa,
+        },
+      }
+
+      setSelectedFeature(boundaryFeature)
+      setModalOpen(true)
+
+      if (isTehsil) {
+        ;(async () => {
+          try {
+            // show counting state in modal
+            setSelectedFeature((prev) => (prev ? { ...prev, properties: { ...prev.properties, _counting: true } } : prev))
+
+            // Fetch claims for the state to limit results (use current stateFilter or default)
+            const st = stateFilter === "all" ? DEFAULT_STATE : stateFilter
+            const q = new URLSearchParams()
+            q.set("state", st)
+            q.set("limit", "10000")
+            const res = await fetch(`/api/claims?${q.toString()}`)
+            if (!res.ok) throw new Error(`HTTP ${res.status}`)
+            const data = await res.json()
+            const features: any[] = data && data.type === "FeatureCollection" ? data.features || [] : Array.isArray(data) ? data : []
+
+            // Prepare polygon feature for intersection checks
+            const polyFeature = feature.type === 'Feature' ? feature : { type: 'Feature', properties: {}, geometry: feature }
+
+            let count = 0
+            for (const f of features) {
+              try {
+                if (!f || !f.geometry) continue
+
+                const gtype = (f.geometry.type || '').toLowerCase()
+
+                if (gtype === 'point' || gtype === 'multipoint') {
+                  const coords = gtype === 'point' ? f.geometry.coordinates : (f.geometry.coordinates && f.geometry.coordinates[0])
+                  if (!coords) continue
+                  const pt = turf.point(coords)
+                  if (turf.booleanPointInPolygon(pt, polyFeature)) count++
+                } else {
+                  // For polygon/multipolygon or unknown geometries, use booleanIntersects
+                  const feat = f.type === 'Feature' ? f : { type: 'Feature', properties: f.properties || {}, geometry: f.geometry }
+                  if (turf.booleanIntersects(feat, polyFeature)) count++
+                }
+              } catch (e) {
+                // ignore per-feature errors
+              }
+            }
+
+            // update modal properties with claims count and clear counting flag
+            setSelectedFeature((prev) => (prev ? { ...prev, properties: { ...prev.properties, claims_count: count, _counting: false } } : prev))
+          } catch (err) {
+            console.warn("Failed to count claims for tehsil:", err)
+            setSelectedFeature((prev) => (prev ? { ...prev, properties: { ...prev.properties, _counting: false } } : prev))
+          }
+        })()
+      }
+      return
+    }
+
+    // default behavior for non-boundary features (claims)
     setSelectedFeature({ ...featureInfo, properties: featureInfo.feature?.properties })
     setModalOpen(true)
   }
@@ -1050,87 +1151,125 @@ export default function AtlasPage() {
           }}
           title={
             selectedFeature
-              ? `Claim ${selectedFeature.properties?.claim_id ?? selectedFeature.properties?.id ?? ""}`
+              ? (() => {
+                  const p = selectedFeature.properties || {}
+                  const isBoundary = String(selectedFeature.layer || "").toLowerCase().includes("boundary") || String(p?.level || "").toLowerCase().includes("state") || String(p?.level || "").toLowerCase().includes("district") || String(p?.level || "").toLowerCase().includes("tehsil")
+                  if (isBoundary) {
+                    const lbl = p._label || p.name || p.NAME || p.district || p.tehsil || p.state || "Boundary"
+                    const lvl = (p.level || selectedFeature.layer || "").toString().toLowerCase()
+                    if (lvl.includes("tehsil") || String(selectedFeature.layer).toLowerCase().includes("tehsil")) return `Tehsil: ${lbl}`
+                    if (lvl.includes("district") || String(selectedFeature.layer).toLowerCase().includes("district")) return `District: ${lbl}`
+                    if (lvl.includes("state") || String(selectedFeature.layer).toLowerCase().includes("state")) return `State: ${lbl}`
+                    return lbl
+                  }
+                  return `Claim ${p?.claim_id ?? p?.id ?? ""}`
+                })()
               : undefined
           }
         >
           {selectedFeature ? (
             <div className="space-y-4">
-              <div className="flex items-start gap-4">
-                <div>
-                  <div className="text-sm text-gray-600">
-                    {selectedFeature.properties?.village ?? ""}, {selectedFeature.properties?.district ?? ""}
+              {String(selectedFeature.layer || "").toLowerCase().includes("boundary") ? (
+                <div className="space-y-3">
+                  <div className="text-sm text-gray-600">{selectedFeature.properties?._label ?? selectedFeature.properties?.name ?? ""}</div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <div className="text-xs text-gray-500">Area</div>
+                      <div className="font-medium">
+                        {selectedFeature.properties?._area_ha ? `${Number(selectedFeature.properties._area_ha).toFixed(2)} ha` : "—"}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500">Claims inside</div>
+                      <div className="font-medium">
+                        {selectedFeature.properties?._counting ? (
+                          <span className="text-xs text-gray-500">Counting...</span>
+                        ) : (
+                          (selectedFeature.properties?.claims_count ?? "—")
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className="ml-auto flex items-center gap-2">
-                  <div
-                    className={`px-2 py-1 rounded text-xs font-medium ${String(selectedFeature.properties?.status).toLowerCase() === "approved" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}
-                  >
-                    {String(selectedFeature.properties?.status ?? "").toUpperCase()}
+              ) : (
+                <>
+                  <div className="flex items-start gap-4">
+                    <div>
+                      <div className="text-sm text-gray-600">
+                        {selectedFeature.properties?.village ?? ""}, {selectedFeature.properties?.district ?? ""}
+                      </div>
+                    </div>
+                    <div className="ml-auto flex items-center gap-2">
+                      <div
+                        className={`px-2 py-1 rounded text-xs font-medium ${String(selectedFeature.properties?.status).toLowerCase() === "approved" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}
+                      >
+                        {String(selectedFeature.properties?.status ?? "").toUpperCase()}
+                      </div>
+                      <div className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                        {String(selectedFeature.properties?.claim_type ?? "").toUpperCase()}
+                      </div>
+                    </div>
                   </div>
-                  <div className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">
-                    {String(selectedFeature.properties?.claim_type ?? "").toUpperCase()}
-                  </div>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <div className="text-xs text-gray-500">Land area</div>
-                  <div className="font-medium">{selectedFeature.properties?.land_area ?? "—"} ha</div>
-                </div>
-                <div className="space-y-2">
-                  <div className="text-xs text-gray-500">State</div>
-                  <div className="font-medium">{selectedFeature.properties?.state ?? "—"}</div>
-                </div>
-                <div className="space-y-2">
-                  <div className="text-xs text-gray-500">District</div>
-                  <div className="font-medium">{selectedFeature.properties?.district ?? "—"}</div>
-                </div>
-                <div className="space-y-2">
-                  <div className="text-xs text-gray-500">Village</div>
-                  <div className="font-medium">{selectedFeature.properties?.village ?? "—"}</div>
-                </div>
-              </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <div className="text-xs text-gray-500">Land area</div>
+                      <div className="font-medium">{selectedFeature.properties?.land_area ?? "—"} ha</div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="text-xs text-gray-500">State</div>
+                      <div className="font-medium">{selectedFeature.properties?.state ?? "—"}</div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="text-xs text-gray-500">District</div>
+                      <div className="font-medium">{selectedFeature.properties?.district ?? "—"}</div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="text-xs text-gray-500">Village</div>
+                      <div className="font-medium">{selectedFeature.properties?.village ?? "—"}</div>
+                    </div>
+                  </div>
 
-              <div className="pt-2 border-t">
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      router.push(
-                        `/atlas/${encodeURIComponent(selectedFeature.properties?.claim_id ?? selectedFeature.properties?.id ?? "")}`,
-                      )
-                    }}
-                    className="inline-flex items-center gap-2 px-3 py-1 bg-green-700 text-white rounded-md text-sm"
-                  >
-                    Open detail
-                  </button>
-                  <button
-                    onClick={() => {
-                      /* show edit modal */
-                    }}
-                    className="inline-flex items-center gap-2 px-3 py-1 border rounded-md text-sm"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => {
-                      /* report action */
-                    }}
-                    className="inline-flex items-center gap-2 px-3 py-1 border rounded-md text-sm"
-                  >
-                    Report
-                  </button>
-                  <button
-                    onClick={() => {
-                      /* verify action */
-                    }}
-                    className="inline-flex items-center gap-2 px-3 py-1 border rounded-md text-sm"
-                  >
-                    Verify
-                  </button>
-                </div>
-              </div>
+                  <div className="pt-2 border-t">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          router.push(
+                            `/atlas/${encodeURIComponent(selectedFeature.properties?.claim_id ?? selectedFeature.properties?.id ?? "")}`,
+                          )
+                        }}
+                        className="inline-flex items-center gap-2 px-3 py-1 bg-green-700 text-white rounded-md text-sm"
+                      >
+                        Open detail
+                      </button>
+                      <button
+                        onClick={() => {
+                          /* show edit modal */
+                        }}
+                        className="inline-flex items-center gap-2 px-3 py-1 border rounded-md text-sm"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => {
+                          /* report action */
+                        }}
+                        className="inline-flex items-center gap-2 px-3 py-1 border rounded-md text-sm"
+                      >
+                        Report
+                      </button>
+                      <button
+                        onClick={() => {
+                          /* verify action */
+                        }}
+                        className="inline-flex items-center gap-2 px-3 py-1 border rounded-md text-sm"
+                      >
+                        Verify
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           ) : null}
         </Modal>
