@@ -437,12 +437,27 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
     if (!map.current || !mapLoaded) return
 
     try {
-      // Find the boundaries layer id
+      // Find the boundaries layer config
       const boundariesLayer = currentLayers.find((l) => l.id === "boundaries")
       if (!boundariesLayer) return
 
-      // We may have split the boundaries into sub-layers (tehsil/district/state).
-      // Move them in sequence so final stacking is: tehsil (bottom), district (middle), state (top).
+      // We prefer boundaries to be visible but NOT on top so they do not block clicks
+      // to other interactive layers (e.g., claims). We'll move each boundaries sub-layer
+      // to sit before the first non-base, non-boundaries style layer so application
+      // layers remain above boundaries.
+      const styleLayers = map.current.getStyle()?.layers || []
+
+      // Find an anchor layer: the first style layer that is not the base raster and
+      // not a boundaries sub-layer itself. We'll place boundaries BEFORE this anchor,
+      // which keeps boundaries underneath other application layers.
+      const anchor = styleLayers.find((l: any) => {
+        const id: string = l.id || ''
+        if (id === 'base-raster-layer') return false
+        if (id.includes('layer-boundaries')) return false
+        if (id === 'measurement-line-layer') return false
+        return true
+      })
+
       const subSuffixesInOrder = ["-tehsil", "-district", "-state"]
 
       for (const s of subSuffixesInOrder) {
@@ -450,32 +465,83 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
         const subFill = `${subLayer}-fill`
         const subOutline = `${subLayer}-outline`
 
-        // Try to move outline, fill, then the main sub-layer to the top in this order.
-        // Because we move tehsil first, then district, then state, the final order will
-        // have state on top, district below it, and tehsil below both.
         try {
-          if (map.current.getLayer(subOutline)) {
-            // @ts-ignore
-            map.current.moveLayer(subOutline)
-          }
-        } catch (e) {}
-        try {
+          // Place fill and main sub-layer BEFORE the anchor so they're underneath app layers
           if (map.current.getLayer(subFill)) {
-            // @ts-ignore
-            map.current.moveLayer(subFill)
+            if (anchor && anchor.id) {
+              // @ts-ignore
+              map.current.moveLayer(subFill, anchor.id)
+            } else {
+              // fallback: move to bottom
+              // @ts-ignore
+              map.current.moveLayer(subFill)
+            }
           }
         } catch (e) {}
+
         try {
           if (map.current.getLayer(subLayer)) {
-            // @ts-ignore
-            map.current.moveLayer(subLayer)
+            if (anchor && anchor.id) {
+              // @ts-ignore
+              map.current.moveLayer(subLayer, anchor.id)
+            } else {
+              // @ts-ignore
+              map.current.moveLayer(subLayer)
+            }
+          }
+        } catch (e) {}
+
+        try {
+          // Place outline ABOVE the anchor so users can click thin boundary lines even when other
+          // application layers (e.g., claims) are present. We attempt to place it just above the
+          // anchor by moving it before the next layer after the anchor; if anchor is last, move to top.
+          if (map.current.getLayer(subOutline)) {
+            if (anchor && anchor.id) {
+              const idx = styleLayers.findIndex((l: any) => l.id === anchor.id)
+              const nextLayer = idx >= 0 ? styleLayers[idx + 1]?.id : undefined
+              try {
+                // @ts-ignore
+                if (nextLayer) map.current.moveLayer(subOutline, nextLayer)
+                else map.current.moveLayer(subOutline)
+              } catch (err) {
+                // fallback to moving to top
+                try {
+                  // @ts-ignore
+                  map.current.moveLayer(subOutline)
+                } catch (e) {}
+              }
+            } else {
+              // fallback: move outline to top
+              // @ts-ignore
+              map.current.moveLayer(subOutline)
+            }
           }
         } catch (e) {}
       }
 
-      console.log("Ensured boundaries sub-layers stacked in order: tehsil < district < state")
+      console.log('Placed boundaries sub-layers beneath application layers to keep claims clickable')
     } catch (err) {
       console.warn("Boundaries stacking enforcement failed:", err)
+    }
+    // Ensure claim layers are on top so they receive pointer events
+    try {
+      if (map.current && map.current.getStyle && map.current.getStyle().layers) {
+        const styleLayers = map.current.getStyle().layers as any[]
+        // Move any claim-related layers (ids starting with "layer-claims" or "layer-claims-") to the top
+        for (const l of styleLayers) {
+          const id: string = l.id || ''
+          if (id.startsWith('layer-claims')) {
+            try {
+              // @ts-ignore
+              map.current.moveLayer(id)
+            } catch (e) {
+              /* ignore move failures */
+            }
+          }
+        }
+      }
+    } catch (e) {
+      /* ignore */
     }
   }, [currentLayers, mapLoaded])
 
@@ -600,18 +666,20 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
             console.error('Error adding symbol point layer', layerConfig.id, ':', error)
           }
 
-          // click handlers
-          map.current!.on("click", layerConfig.id, (e) => {
-            if (e.features && e.features.length > 0 && onFeatureClick) {
-              onFeatureClick({ layer, feature: e.features[0], lngLat: e.lngLat })
-            }
-          })
-          map.current!.on("mouseenter", layerConfig.id, () => {
-            map.current!.getCanvas().style.cursor = "pointer"
-          })
-          map.current!.on("mouseleave", layerConfig.id, () => {
-            map.current!.getCanvas().style.cursor = ""
-          })
+          // click handlers (skip for boundary layer to make boundaries non-clickable)
+          if (layer.id !== "boundaries") {
+            map.current!.on("click", layerConfig.id, (e) => {
+              if (e.features && e.features.length > 0 && onFeatureClick) {
+                onFeatureClick({ layer, feature: e.features[0], lngLat: e.lngLat })
+              }
+            })
+            map.current!.on("mouseenter", layerConfig.id, () => {
+              map.current!.getCanvas().style.cursor = "pointer"
+            })
+            map.current!.on("mouseleave", layerConfig.id, () => {
+              map.current!.getCanvas().style.cursor = ""
+            })
+          }
 
           try {
             // initialize handlers storage on the map instance
@@ -699,17 +767,19 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
             console.error("Error adding line layer", layerConfig.id, ":", error)
           }
 
-          map.current!.on("click", layerConfig.id, (e) => {
-            if (e.features && e.features.length > 0 && onFeatureClick) {
-              onFeatureClick({ layer, feature: e.features[0], lngLat: e.lngLat })
-            }
-          })
-          map.current!.on("mouseenter", layerConfig.id, () => {
-            map.current!.getCanvas().style.cursor = "pointer"
-          })
-          map.current!.on("mouseleave", layerConfig.id, () => {
-            map.current!.getCanvas().style.cursor = ""
-          })
+          if (layer.id !== "boundaries") {
+            map.current!.on("click", layerConfig.id, (e) => {
+              if (e.features && e.features.length > 0 && onFeatureClick) {
+                onFeatureClick({ layer, feature: e.features[0], lngLat: e.lngLat })
+              }
+            })
+            map.current!.on("mouseenter", layerConfig.id, () => {
+              map.current!.getCanvas().style.cursor = "pointer"
+            })
+            map.current!.on("mouseleave", layerConfig.id, () => {
+              map.current!.getCanvas().style.cursor = ""
+            })
+          }
         } else if (geometryType === "Polygon" || geometryType === "MultiPolygon") {
           // For polygons, add a fill layer and a separate outline (line) layer to ensure visibility
           const fillLayerId = `${layerId}-fill`
@@ -772,19 +842,41 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
             return
           }
           // Click handlers for both fill and outline
-          ;[fillLayerId, outlineLayerId].forEach((lid) => {
-            map.current!.on("click", lid, (e) => {
-              if (e.features && e.features.length > 0 && onFeatureClick) {
-                onFeatureClick({ layer, feature: e.features[0], lngLat: e.lngLat })
-              }
+          // Register handlers: for boundaries register only on the outline layer so
+          // clicking the lines triggers boundary behavior, but clicking inside the
+          // polygon fill will fall through to layers above (like claims).
+          if (layer.id === "boundaries") {
+            // outline clickable
+            try {
+              map.current!.on("click", outlineLayerId, (e) => {
+                if (e.features && e.features.length > 0 && onFeatureClick) {
+                  onFeatureClick({ layer, feature: e.features[0], lngLat: e.lngLat })
+                }
+              })
+              map.current!.on("mouseenter", outlineLayerId, () => {
+                map.current!.getCanvas().style.cursor = "pointer"
+              })
+              map.current!.on("mouseleave", outlineLayerId, () => {
+                map.current!.getCanvas().style.cursor = ""
+              })
+            } catch (e) {
+              /* ignore */
+            }
+          } else {
+            ;[fillLayerId, outlineLayerId].forEach((lid) => {
+              map.current!.on("click", lid, (e) => {
+                if (e.features && e.features.length > 0 && onFeatureClick) {
+                  onFeatureClick({ layer, feature: e.features[0], lngLat: e.lngLat })
+                }
+              })
+              map.current!.on("mouseenter", lid, () => {
+                map.current!.getCanvas().style.cursor = "pointer"
+              })
+              map.current!.on("mouseleave", lid, () => {
+                map.current!.getCanvas().style.cursor = ""
+              })
             })
-            map.current!.on("mouseenter", lid, () => {
-              map.current!.getCanvas().style.cursor = "pointer"
-            })
-            map.current!.on("mouseleave", lid, () => {
-              map.current!.getCanvas().style.cursor = ""
-            })
-          })
+          }
         } else {
           // Default to circle for unknown or empty geometry types
           console.log("Unknown geometry type for layer", layer.id, ", using default circle type")

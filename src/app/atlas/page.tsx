@@ -679,7 +679,10 @@ export default function AtlasPage() {
                         ref={webGISRef}
                         center={(mapCenter ?? stateCenter) as [number, number]}
                         zoom={mapZoom}
-                        layers={[...layers, ...boundaryLayers]}
+                        // Ensure application layers (claims) are rendered above boundary layers so
+                        // claim clicks are not blocked. We put boundaryLayers first so WebGIS adds
+                        // them earlier and other layers are added on top.
+                        layers={[...boundaryLayers, ...layers]}
                         markers={markers}
                         onFeatureClick={handleFeatureClick}
                         onMapClick={handleMapClick}
