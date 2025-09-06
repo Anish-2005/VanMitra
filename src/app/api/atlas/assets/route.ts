@@ -361,6 +361,7 @@ export async function GET(request: Request) {
   console.log(`Assets API called for ${state}, ${district}`);
 
   // Define bounding boxes for different states (approximate)
+  // BBox fallbacks per-state; keep approximate bounds but prefer shared region centers when available
   const stateBounds: { [key: string]: string } = {
     'Madhya Pradesh': '74.0,21.0,82.0,26.0',
     'Tripura': '90.0,22.0,93.0,25.0',

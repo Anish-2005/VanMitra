@@ -361,15 +361,11 @@ export async function GET(request: Request) {
     const fraData = await fetchFRAClaims(state, district);
 
     // State center coordinates for polygon generation
-    const stateCenters: { [key: string]: [number, number] } = {
-      'Madhya Pradesh': [77.4, 23.2],
-      'Tripura': [91.2, 23.8],
-      'Odisha': [85.8, 19.8],
-      'Telangana': [78.4, 17.3],
-      'West Bengal': [88.8, 21.9]
-    };
-
-    const [centerLng, centerLat] = stateCenters[state] || stateCenters['Madhya Pradesh'];
+  // Resolve state center from shared regions metadata when available
+  // Importing here avoids circular import during edge runtime evaluation
+  const { STATES, DEFAULT_STATE } = await import('@/lib/regions');
+  const resolved = STATES.find(s => s.name === state) ?? STATES.find(s => s.name === DEFAULT_STATE);
+  const [centerLng, centerLat] = resolved?.center ?? [78.9629, 22.9734];
 
     // Convert to GeoJSON features
     const features = fraData.map((claim: any, index: number) => ({

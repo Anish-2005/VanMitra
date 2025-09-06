@@ -14,6 +14,7 @@ interface LayerManagerProps {
   onLayerUpdate: (layerId: string, updates: Partial<GISLayer>) => void;
   onMarkerUpdate?: (markerId: string, updates: Partial<GISMarker>) => void;
   onMarkerGoto?: (lng: number, lat: number) => void;
+  initiallyCollapsed?: boolean;
 }
 
 export default function LayerManager({
@@ -23,9 +24,10 @@ export default function LayerManager({
   onLayerRemove,
   onLayerUpdate,
   onMarkerUpdate,
-  onMarkerGoto
+  onMarkerGoto,
+  initiallyCollapsed = false
 }: LayerManagerProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(!initiallyCollapsed);
   const [editingLayer, setEditingLayer] = useState<string | null>(null);
   const [editingMarker, setEditingMarker] = useState<string | null>(null);
   // stagedVisibility holds local toggles until user presses Apply
@@ -96,9 +98,9 @@ export default function LayerManager({
                         className="text-gray-500 hover:text-gray-700"
                       >
                         {stagedVisibility[layer.id] ? <Eye size={14} /> : <EyeOff size={14} />}
-                      </button>
-+
-                      <span className="text-sm font-medium">{layer.name}</span>
+                        </button>
+
+                        <span className="text-sm font-medium">{layer.name}</span>
                       <span className="text-xs text-gray-500 uppercase">{layer.type}</span>
                     </div>
                     <div className="flex items-center gap-1">

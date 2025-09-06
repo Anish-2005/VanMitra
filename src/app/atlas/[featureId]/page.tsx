@@ -8,6 +8,7 @@ import DecorativeBackground from "@/components/DecorativeBackground";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import WebGIS, { GISLayer, GISMarker, WebGISRef } from "@/components/WebGIS";
 import { exportToGeoJSON } from '@/lib/gis-utils';
+import { STATES, DEFAULT_STATE } from '@/lib/regions';
 // LayerManager removed - use map's built-in controls instead
 
 interface FeatureData {
@@ -166,7 +167,7 @@ export default function FeaturePage({
             geometry: item.geometry
           };
         } else {
-          const geom = item.geometry ?? (item.lat && item.lng ? { type: 'Point', coordinates: [Number(item.lng), Number(item.lat)] } : null);
+    const geom = item.geometry ?? (item.lat && item.lng ? { type: 'Point', coordinates: [Number(item.lng), Number(item.lat)] } : null);
           featureObj = {
             area: item.land_area ?? item.area,
             type: 'Feature',
@@ -187,7 +188,8 @@ export default function FeaturePage({
               resolution_status: item.resolution_status,
               note: item.note,
             },
-            geometry: geom || { type: 'Point', coordinates: [88.8, 21.9] }
+            // fallback to the project's DEFAULT_STATE center if no geometry is available
+            geometry: geom || { type: 'Point', coordinates: (STATES.find(s => s.name === (item.state || item.properties?.state || DEFAULT_STATE))?.center ?? STATES.find(s => s.name === DEFAULT_STATE)?.center ?? [78.9629, 22.9734]) }
           };
         }
 
@@ -242,8 +244,9 @@ export default function FeaturePage({
     fetchClaim();
   }, [featureId]);
 
-  const derivedState = feature?.properties?.state || "Madhya Pradesh";
+  const derivedState = feature?.properties?.state || DEFAULT_STATE;
   const derivedDistrict = feature?.properties?.district || "Bhopal";
+  const derivedCenter = STATES.find(s => s.name === derivedState)?.center ?? STATES.find(s => s.name === DEFAULT_STATE)?.center ?? [78.9629, 22.9734];
 
   useEffect(() => {
     setLayers([
@@ -465,7 +468,7 @@ export default function FeaturePage({
                 <WebGIS
                   ref={webgisRef}
                   className="w-full h-full"
-                  center={(mapCenter ?? (feature.geometry.type === 'Point' ? (feature.geometry.coordinates as [number, number]) : [88.8, 21.9])) as [number, number]}
+                  center={(mapCenter ?? (feature.geometry.type === 'Point' ? (feature.geometry.coordinates as [number, number]) : derivedCenter)) as [number, number]}
                   zoom={mapZoom}
                   layers={layers}
                   markers={markers}

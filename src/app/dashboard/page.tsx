@@ -53,6 +53,8 @@ export default function Dashboard() {
   const [stateFilter, setStateFilter] = useState<string>(DEFAULT_STATE);
   const [districtFilter, setDistrictFilter] = useState<string>(DEFAULT_DISTRICT);
   const [villageQuery, setVillageQuery] = useState<string>("");
+  // UI: collapse filters & layer manager by default
+  const [filtersCollapsed, setFiltersCollapsed] = useState<boolean>(true);
 
   // Fetch all dashboard data
   useEffect(() => {
@@ -142,10 +144,12 @@ export default function Dashboard() {
     }
   ]);
 
+  // Default sample markers placed around the DEFAULT_STATE center (Madhya Pradesh) rather than Sundarbans
+  const defaultCenter = STATES.find(s => s.name === DEFAULT_STATE)?.center ?? [78.9629, 22.9734];
   const [markers, setMarkers] = useState<GISMarker[]>([
-    { id: 'marker-1', lng: 88.8, lat: 21.9, label: 'A', color: '#dc2626', popup: '<b>High Priority Village</b><br>Population: 1,200<br>FRA Claims: 45' },
-    { id: 'marker-2', lng: 88.6, lat: 21.7, label: 'B', color: '#f59e0b', popup: '<b>Medium Priority Village</b><br>Population: 800<br>FRA Claims: 23' },
-    { id: 'marker-3', lng: 88.9, lat: 21.8, label: 'C', color: '#16a34a', popup: '<b>Low Priority Village</b><br>Population: 600<br>FRA Claims: 12' }
+    { id: 'marker-1', lng: defaultCenter[0] - 0.5, lat: defaultCenter[1] - 0.4, label: 'A', color: '#dc2626', popup: '<b>High Priority Village</b><br>Population: 1,200<br>FRA Claims: 45' },
+    { id: 'marker-2', lng: defaultCenter[0] - 0.2, lat: defaultCenter[1] + 0.1, label: 'B', color: '#f59e0b', popup: '<b>Medium Priority Village</b><br>Population: 800<br>FRA Claims: 23' },
+    { id: 'marker-3', lng: defaultCenter[0] + 0.3, lat: defaultCenter[1] - 0.1, label: 'C', color: '#16a34a', popup: '<b>Low Priority Village</b><br>Population: 600<br>FRA Claims: 12' }
   ]);
 
   const handleLayerToggle = (layerId: string) => {
@@ -200,7 +204,7 @@ export default function Dashboard() {
 
   const [selected, setSelected] = useState<any | null>(null);
   const webGISRef = useRef<WebGISRef>(null);
-  const stateCenter = STATES.find(s => s.name === stateFilter)?.center ?? [88.8, 21.9];
+  const stateCenter = STATES.find(s => s.name === stateFilter)?.center ?? STATES.find(s => s.name === DEFAULT_STATE)?.center ?? [78.9629, 22.9734];
 
   function downloadCSV(rows: any[]) {
     if (!rows || rows.length === 0) return;
@@ -388,6 +392,7 @@ export default function Dashboard() {
             <div className="mb-6">
               <LayerManager
                 layers={layers}
+                initiallyCollapsed={true}
                 onLayerToggle={handleLayerToggle}
                 onLayerAdd={handleLayerAdd}
                 onLayerRemove={handleLayerRemove}
@@ -396,8 +401,12 @@ export default function Dashboard() {
             </div>
 
             <div className="p-6 bg-white rounded-xl shadow-md border border-green-100">
-              <h4 className="font-semibold text-green-900">Filters</h4>
-              <div className="mt-3 space-y-3 text-green-800">
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold text-green-900">Filters</h4>
+                <button onClick={() => setFiltersCollapsed(prev => !prev)} className="text-sm text-green-700">{filtersCollapsed ? 'Expand' : 'Collapse'}</button>
+              </div>
+              {!filtersCollapsed && (
+                <div className="mt-3 space-y-3 text-green-800">
                 <div>
                   <label className="block text-sm text-green-700">State</label>
                   <select value={stateFilter} onChange={(e) => setStateFilter(e.target.value)} className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50">
@@ -421,6 +430,7 @@ export default function Dashboard() {
                   <button onClick={() => { setVillageQuery(""); setDistrictFilter(DEFAULT_DISTRICT); setStateFilter(DEFAULT_STATE); }} className="w-full inline-flex items-center justify-center gap-2 bg-green-700 text-white px-4 py-2 rounded-md shadow-md hover:bg-green-600 transition-colors">Reset Filters</button>
                 </div>
               </div>
+              )}
             </div>
 
             <div className="mt-6 p-6 bg-white rounded-xl shadow-md border border-green-100">
