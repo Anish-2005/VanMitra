@@ -25,6 +25,29 @@ export async function GET(request: NextRequest) {
     // If requesting state-level boundary for Madhya Pradesh (or any state),
     // prefer the local geojson file to avoid external APIs and ensure consistent mapping.
     if (level === 'state') {
+      // If the request is for Madhya Pradesh, use the datta07 authoritative file only
+      if (state === 'Madhya Pradesh') {
+        try {
+          const stateDir = state.toUpperCase()
+          const encoded = encodeURIComponent(stateDir)
+          const url = `${GITHUB_INDIAN_SHAPEFILES}/STATES/${encoded}/${encoded}_STATE.geojson`
+          console.log(`Serving Madhya Pradesh state boundary from datta07: ${url}`)
+          const res = await fetch(url, { headers: { Accept: 'application/json', 'User-Agent': 'VanMitra/1.0' } })
+          if (res.ok) {
+            const data = await res.json()
+            if (data && data.type === 'FeatureCollection') {
+              return NextResponse.json(data)
+            }
+            console.log('datta07 Madhya Pradesh file fetched but not a FeatureCollection, falling back')
+          } else {
+            console.log('Failed to fetch datta07 Madhya Pradesh file:', res.status, res.statusText)
+          }
+        } catch (err) {
+          console.error('Error fetching datta07 Madhya Pradesh file:', err)
+        }
+        // If we reach here, fallthrough to other strategies below
+      }
+
       try {
         // Path relative to repo root
         const fs = await import('fs')
