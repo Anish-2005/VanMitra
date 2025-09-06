@@ -14,6 +14,8 @@ import {
   Shield, BarChart3, Target, Satellite, Map, Menu, X 
 } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
+import Button from "@/components/Button";
+import Card from "@/components/Card";
 import { signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import Link from "next/link";
@@ -60,7 +62,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-100 text-green-900 relative overflow-hidden">
+    <div className="min-h-screen bg-page-gradient text-green-900 relative overflow-hidden">
       <DecorativeBackground count={8} />
 
       {/* Floating leaves */}
@@ -108,21 +110,17 @@ export default function Home() {
           </div>
         </div>
         {/* desktop nav */}
-        <nav className="hidden md:flex items-center gap-6">
-          <Link href="/atlas" className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors">Atlas</Link>
-          <Link href="/dss" className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors">DSS</Link>
-          <Link href="/public" className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors">Public Data</Link>
-          <a className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors" href="#tech">Technology</a>
-          <a className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors" href="#roadmap">Roadmap</a>
-          <Link href="/dashboard" className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors">Dashboard</Link>
+        <nav className="hidden md:flex items-center gap-4">
+          <Link href="/atlas" className="nav-link">Atlas</Link>
+          <Link href="/dss" className="nav-link">DSS</Link>
+          <Link href="/public" className="nav-link">Public Data</Link>
+          <a className="nav-link" href="#tech">Technology</a>
+          <a className="nav-link" href="#roadmap">Roadmap</a>
+          <Link href="/dashboard" className="nav-link">Dashboard</Link>
           {user ? (
-            <button onClick={handleLogout} className="ml-4 inline-flex items-center gap-2 bg-green-700 text-white px-4 py-2 rounded-md shadow-md hover:bg-green-600 transition-colors">
-              Sign out
-            </button>
+            <Button onClick={handleLogout} className="ml-4">Sign out</Button>
           ) : (
-            <button onClick={() => setLoginOpen(true)} className="ml-4 inline-flex items-center gap-2 bg-green-700 text-white px-4 py-2 rounded-md shadow-md hover:bg-green-600 transition-colors">
-              Sign in
-            </button>
+            <Button onClick={() => setLoginOpen(true)} className="ml-4">Sign in</Button>
           )}
         </nav>
 
@@ -242,10 +240,10 @@ export default function Home() {
       </AnimatePresence>
 
       <main className="relative z-10 max-w-7xl mx-auto px-6 py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start hero">
           <section className="lg:col-span-7">
             <motion.div initial={{ y: 18, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6 }}>
-              <h2 className="text-4xl md:text-5xl font-extrabold leading-tight text-green-900">
+              <h2 className="hero-title font-extrabold leading-tight text-green-900">
                 Empowering Tribal Communities Through <span className="text-green-600">Technology & Data</span>
               </h2>
             </motion.div>
@@ -259,40 +257,30 @@ export default function Home() {
               </motion.div>
             </div>
 
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-              <section className="mt-8 flex flex-wrap gap-4">
-                <a href="#atlas" className="inline-flex items-center gap-2 bg-green-700 text-white px-5 py-3 rounded-lg shadow-md hover:bg-green-600 transition-colors">
-                  Explore Atlas <ArrowRight size={16} />
-                </a>
-                <a href="#demo" className="inline-flex items-center gap-2 border border-green-600 text-green-700 px-4 py-3 rounded-lg hover:bg-green-50 transition">
-                  Request Demo
-                </a>
-                <a href="#dss" className="inline-flex items-center gap-2 border border-green-600 text-green-700 px-4 py-3 rounded-lg hover:bg-green-50 transition">
-                  DSS Features
-                </a>
-              </section>
-            </motion.div>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+                <section className="mt-8 flex flex-wrap gap-4">
+                    <a href="#atlas" className="inline-flex items-center gap-2"><Button className="inline-flex items-center gap-2">Explore Atlas <ArrowRight size={16} /></Button></a>
+                    <a href="#demo" className="inline-flex items-center gap-2"><Button variant="ghost" className="inline-flex items-center gap-2">Request Demo</Button></a>
+                    <a href="#dss" className="inline-flex items-center gap-2"><Button variant="ghost" className="inline-flex items-center gap-2">DSS Features</Button></a>
+                </section>
+              </motion.div>
 
             <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 bg-white rounded-xl shadow-md border border-green-100">
+              <Card>
                 <h4 className="text-sm font-semibold text-green-900 flex items-center gap-2"><MapPin size={16} className="text-green-600"/> Claims processed</h4>
-                <div className="text-2xl font-bold text-green-800 mt-2">1,240</div>
-                <div className="text-xs text-green-600 mt-1">legacy + recent uploads</div>
-              </div>
-              <div className="p-4 bg-white rounded-xl shadow-md border border-green-100">
+                <div className="text-2xl stat mt-2">1,240</div>
+                <div className="text-xs muted mt-1">legacy + recent uploads</div>
+              </Card>
+              <Card>
                 <h4 className="text-sm font-semibold text-green-900 flex items-center gap-2"><Database size={16} className="text-green-600"/> Grants issued</h4>
-                <div className="text-2xl font-bold text-green-800 mt-2">380</div>
-                <div className="text-xs text-green-600 mt-1">verified & geo-referenced</div>
-              </div>
-              <div className="p-4 bg-white rounded-xl shadow-md border border-green-100">
+                <div className="text-2xl stat mt-2">380</div>
+                <div className="text-xs muted mt-1">verified & geo-referenced</div>
+              </Card>
+              <Card>
                 <h4 className="text-sm font-semibold text-green-900 flex items-center gap-2"><Layers size={16} className="text-green-600"/> AI assets</h4>
-                <div className="text-2xl font-bold text-green-800 mt-2">4,120</div>
-                <div className="text-xs text-green-600 mt-1">ponds, farms, homesteads</div>
-              </div>
+                <div className="text-2xl stat mt-2">4,120</div>
+                <div className="text-xs muted mt-1">ponds, farms, homesteads</div>
+              </Card>
             </div>
 
             <section id="problem" className="mt-12 p-6 bg-yellow-50 rounded-xl border border-yellow-200">
@@ -328,13 +316,14 @@ export default function Home() {
                   <div className="relative z-10">
                     <div className="flex items-center justify-between">
                       <div>
+                        {/* Use local image from public/ */}
+                        <div className="mb-2">
+                          <img src="/image.png" alt="Madhya Pradesh silhouette" className="ml-20 block rounded-md shadow-sm w-36 h-24 sm:w-48 sm:h-32 md:w-56 md:h-40 lg:w-72 lg:h-48 object-contain" />
+                        </div>
                         <div className="text-xs text-green-100">Pilot: Sundarbans Block</div>
                         <div className="text-2xl font-semibold text-white">1,240 claims • 380 granted</div>
                       </div>
-                      <div className="flex items-center gap-2 bg-white/20 px-3 py-2 rounded-md backdrop-blur-sm">
-                        <MapPin className="text-white" />
-                        <span className="text-sm text-white">Raster + Vector</span>
-                      </div>
+                    
                     </div>
 
                     <div className="mt-5 grid grid-cols-1 gap-3">

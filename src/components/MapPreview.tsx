@@ -4,7 +4,7 @@ import React, { useEffect, useRef } from "react";
 
 interface Marker { lng: number; lat: number; label?: string }
 
-type Layers = { fra?: boolean; boundaries?: boolean; assets?: boolean };
+type Layers = { fra?: boolean; boundaries?: boolean | string | string[]; assets?: boolean };
 
 export default function MapPreview({
   // Default center set to central Madhya Pradesh (approximate)
@@ -262,7 +262,20 @@ export default function MapPreview({
 
       // add initial layers per prop
       if (layers.fra) addGeoJSON('fra', '/api/atlas/fra', 'fill');
-      if (layers.boundaries) addGeoJSON('boundaries', '/api/atlas/boundaries', 'line');
+      if (layers.boundaries) {
+        // support boolean (all), string (single level) or array of levels
+        if (Array.isArray(layers.boundaries)) {
+          layers.boundaries.forEach((lvl) => {
+            const url = `/api/atlas/boundaries?level=${encodeURIComponent(lvl)}&state=Madhya Pradesh`;
+            addGeoJSON(`boundaries-${lvl}`, url, 'line');
+          });
+        } else if (typeof layers.boundaries === 'string') {
+          const url = `/api/atlas/boundaries?level=${encodeURIComponent(layers.boundaries)}&state=Madhya Pradesh`;
+          addGeoJSON(`boundaries-${layers.boundaries}`, url, 'line');
+        } else {
+          addGeoJSON('boundaries', '/api/atlas/boundaries', 'line');
+        }
+      }
       if (layers.assets) addGeoJSON('assets', '/api/atlas/assets', 'circle');
     };
 
@@ -394,7 +407,32 @@ export default function MapPreview({
     };
 
     if (prev.fra !== want.fra) { if (want.fra) ensureAdded('fra', '/api/atlas/fra', 'fill'); else removeLayer('fra'); }
-    if (prev.boundaries !== want.boundaries) { if (want.boundaries) ensureAdded('boundaries', '/api/atlas/boundaries', 'line'); else removeLayer('boundaries'); }
+
+    // boundaries: support boolean/string/array
+    const prevBound = prev.boundaries;
+    const wantBound = want.boundaries;
+    const normalize = (b: any) => {
+      if (!b) return [] as string[];
+      if (Array.isArray(b)) return b as string[];
+      if (typeof b === 'string') return [b];
+      return ['all'];
+    };
+    const prevList = normalize(prevBound);
+    const wantList = normalize(wantBound);
+    // remove boundary layers not in wantList
+    prevList.forEach((lvl) => {
+      const name = lvl === 'all' ? 'boundaries' : `boundaries-${lvl}`;
+      if (!wantList.includes(lvl)) removeLayer(name);
+    });
+    // add boundary layers in wantList that were not present
+    wantList.forEach((lvl) => {
+      const name = lvl === 'all' ? 'boundaries' : `boundaries-${lvl}`;
+      if (!prevList.includes(lvl)) {
+        if (lvl === 'all') ensureAdded('boundaries', '/api/atlas/boundaries', 'line');
+        else ensureAdded(name, `/api/atlas/boundaries?level=${encodeURIComponent(lvl)}&state=Madhya Pradesh`, 'line');
+      }
+    });
+
     if (prev.assets !== want.assets) { if (want.assets) ensureAdded('assets', '/api/atlas/assets', 'circle'); else removeLayer('assets'); }
 
     prevLayers.current = { ...want };

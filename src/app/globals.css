@@ -1,66 +1,76 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  /* Core tokens */
+  --bg: #f6fbf7; /* soft off-white greenish */
+  --fg: #0f2f1f;
+  --muted: #4b6b5a;
 
-/* Forest color tokens */
-:root {
-  --forest-50: #f3fbf5;
-  --forest-100: #daf5e4;
-  --forest-200: #bfe9c9;
-  --forest-300: #97d6a3;
-  --forest-400: #61b77a;
-  --forest-500: #3fa25b;
-  --forest-600: #2f8a44;
-  --forest-700: #236a33;
-  --forest-800: #154b23;
-  --forest-900: #0b2e14;
-}
+  /* Primary (green) scales */
+  --primary-50: #f3fbf5;
+  --primary-100: #daf5e4;
+  --primary-200: #bfe9c9;
+  --primary-300: #97d6a3;
+  --primary-400: #61b77a;
+  --primary-500: #3fa25b;
+  --primary-600: #2f8a44;
+  --primary-700: #236a33;
+  --primary-800: #154b23;
+  --primary-900: #0b2e14;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Accent & neutrals */
+  --accent-500: #16a34a;
+  --accent-600: #0f8a3a;
+  --glass: rgba(255,255,255,0.6);
+
+  /* Elevation */
+  --shadow-1: 0 6px 18px rgba(15, 23, 42, 0.06);
+  --shadow-2: 0 20px 40px rgba(15, 23, 42, 0.08);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #04120b;
+    --fg: #e6f6ec;
+    --muted: #9bb8a8;
   }
 }
 
+/* Page background helper for a pleasing gradient */
+.bg-page-gradient {
+  background: linear-gradient(180deg, var(--primary-50) 0%, #eaf8ee 30%, #e9f6ef 60%, var(--bg) 100%);
+}
+
+/* Base body */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Utility color classes referenced in components */
-.bg-forest-50 { background-color: var(--forest-50); }
-.text-forest-900 { color: var(--forest-900); }
-.text-muted-foreground { color: rgba(13, 23, 16, 0.7); }
-.bg-forest-800 { background-color: var(--forest-800); }
-.border-forest-50 { border-color: var(--forest-50); }
-.border-forest-200 { border-color: var(--forest-200); }
-.shadow-2xl { box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35); }
-.shadow-sm { box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05); }
-.rounded-2xl { border-radius: 1rem; }
+/* Reusable components */
+.btn {
+  display: inline-flex; align-items: center; gap: .5rem; border-radius: .75rem; padding: .6rem 1rem; font-weight: 600; cursor: pointer; transition: all .18s ease;
+}
+.btn-primary { background: linear-gradient(180deg,var(--primary-500),var(--primary-600)); color: white; box-shadow: var(--shadow-1); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); }
+.btn-ghost { background: transparent; border: 1px solid rgba(47,138,68,0.08); color: var(--primary-700); }
+.nav-link { color: var(--primary-700); font-weight: 600; padding: .25rem .5rem; border-radius: .5rem; transition: color .15s, background .15s; }
+.nav-link:hover { color: var(--primary-600); background: rgba(63,162,91,0.06); }
 
-/* Images should not break layout */
+.card { background: white; padding: 1rem; border-radius: 1rem; box-shadow: 0 8px 24px rgba(16,24,20,0.06); border: 1px solid rgba(34,197,94,0.06); }
+.stat { font-weight:700; color: var(--primary-800); }
+
+.hero { padding: 4rem 0; }
+.hero-title { font-size: clamp(2rem, 4.6vw, 3rem); line-height: 1.02; }
+.muted { color: var(--muted); }
+
+.glass { background: rgba(255,255,255,0.6); backdrop-filter: blur(6px); border-radius: .75rem; }
+
+/* Utility tweaks */
 img { max-width: 100%; height: auto; display: block; }
+html { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto !important; } }
 
-/* Smooth scrolling for anchors and programmatic scrolls; respect reduced motion preference */
-html {
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto !important;
-  }
-}
