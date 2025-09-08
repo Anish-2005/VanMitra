@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
+import * as turf from "@turf/turf";
 
 interface Marker { lng: number; lat: number; label?: string }
 
@@ -25,6 +26,8 @@ export default function MapPreview({
   const createdMarkers = useRef<any[]>([]);
   const createdSources = useRef<Record<string, boolean>>({});
   const createdLayers = useRef<Record<string, boolean>>({});
+  const pointerMarkerRef = useRef<any | null>(null);
+  const pointerPopupRef = useRef<any | null>(null);
   const prevLayers = useRef<any>({ ...layers });
 
   // initialize map and load maplibre once
@@ -223,37 +226,270 @@ export default function MapPreview({
 
           // attach events for feature interactions
           try {
-            map.on('click', layerId, (e: any) => {
-              if (e?.features && e.features.length) {
-                const feat = e.features[0];
-                const info = { layer: name, properties: feat.properties, geometry: feat.geometry, point: e.point, lngLat: e.lngLat };
-                if (onFeatureClick) onFeatureClick(info);
+            // decide clickable layer ids: for boundaries we create sub-layers (tehsil/district/state)
+            const clickableLayerIds: string[] = [];
+            if (name === 'boundaries' && type === 'line') {
+              const layerTehsil = `${layerId}-tehsil`;
+              const layerDistrict = `${layerId}-district`;
+              const layerState = `${layerId}-state`;
+              clickableLayerIds.push(layerTehsil, layerDistrict, layerState);
+            } else {
+              clickableLayerIds.push(layerId);
+            }
 
-                // create highlight
-                try {
-                  const hlSource = 'src-highlight';
-                  const hlLayer = 'layer-highlight';
-                  try { if (map.getLayer(hlLayer)) map.removeLayer(hlLayer); } catch (er) {}
-                  try { if (map.getSource(hlSource)) map.removeSource(hlSource); } catch (er) {}
-                  const geom = feat.geometry && Object.keys(feat.geometry).length ? feat.geometry : { type: 'Point', coordinates: [e.lngLat.lng, e.lngLat.lat] };
-                  const highlightGeojson: any = { type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: geom }] };
-                  map.addSource(hlSource, { type: 'geojson', data: highlightGeojson });
-                  createdSources.current[hlSource] = true;
-                  const hlType = geom.type === 'Point' ? 'circle' : (geom.type === 'Polygon' ? 'fill' : 'line');
-                  const hlLayerDef: any = { id: hlLayer, type: hlType, source: hlSource };
-                  if (hlType === 'circle') hlLayerDef.paint = { 'circle-radius': 10, 'circle-color': '#f97316', 'circle-opacity': 0.95, 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 };
-                  if (hlType === 'fill') hlLayerDef.paint = { 'fill-color': '#f97316', 'fill-opacity': 0.25, 'fill-outline-color': '#fb923c' };
-                  if (hlType === 'line') hlLayerDef.paint = { 'line-color': '#f97316', 'line-width': 3 };
-                  map.addLayer(hlLayerDef);
-                  createdLayers.current[hlLayer] = true;
-                } catch (err) {}
+            clickableLayerIds.forEach((lid) => {
+              try {
+                map.on('click', lid, async (e: any) => {
+                  if (!(e?.features && e.features.length)) return;
+                  const feat = e.features[0];
+                  const info = { layer: name, properties: feat.properties, geometry: feat.geometry, point: e.point, lngLat: e.lngLat };
+                  if (onFeatureClick) onFeatureClick(info);
 
-                // fly to feature
-                try { if (e.lngLat && map.flyTo) map.flyTo({ center: e.lngLat, zoom: Math.max(map.getZoom ? map.getZoom() : 12, 12), essential: true }); } catch (err) {}
-              }
+                  // create highlight (reuse existing approach)
+                  try {
+                    const hlSource = 'src-highlight';
+                    const hlLayer = 'layer-highlight';
+                    try { if (map.getLayer(hlLayer)) map.removeLayer(hlLayer); } catch (er) {}
+                    try { if (map.getSource(hlSource)) map.removeSource(hlSource); } catch (er) {}
+                    const geom = feat.geometry && Object.keys(feat.geometry).length ? feat.geometry : { type: 'Point', coordinates: [e.lngLat.lng, e.lngLat.lat] };
+                    const highlightGeojson: any = { type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: geom }] };
+                    map.addSource(hlSource, { type: 'geojson', data: highlightGeojson });
+                    createdSources.current[hlSource] = true;
+                    const hlType = geom.type === 'Point' ? 'circle' : (geom.type === 'Polygon' ? 'fill' : 'line');
+                    const hlLayerDef: any = { id: hlLayer, type: hlType, source: hlSource };
+                    if (hlType === 'circle') hlLayerDef.paint = { 'circle-radius': 10, 'circle-color': '#f97316', 'circle-opacity': 0.95, 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 };
+                    if (hlType === 'fill') hlLayerDef.paint = { 'fill-color': '#f97316', 'fill-opacity': 0.25, 'fill-outline-color': '#fb923c' };
+                    if (hlType === 'line') hlLayerDef.paint = { 'line-color': '#f97316', 'line-width': 3 };
+                    map.addLayer(hlLayerDef);
+                    createdLayers.current[hlLayer] = true;
+                  } catch (err) {}
+
+                  // fly to feature
+                  try { if (e.lngLat && map.flyTo) map.flyTo({ center: e.lngLat, zoom: Math.max(map.getZoom ? map.getZoom() : 12, 12), essential: true }); } catch (err) {}
+
+                  // If this is a tehsil (or tehsil sub-layer), show a popup with name, claim count and sample claims.
+                  try {
+                    const p = feat.properties || {};
+                    const getBoundaryLabel = (p2: any) => {
+                      if (!p2) return 'Boundary';
+                      const keys = [
+                        'name', 'NAME', 'NAME_1', 'NAME_2', 'NAME_0', 'ST_NM', 'STATE_NAME',
+                        'state', 'district', 'DISTRICT', 'tehsil', 'TEHSIL', 'subdistrict', 'SUBDIST',
+                        '_label', '_name', '_source', 'label'
+                      ];
+                      for (const k of keys) {
+                        const v = p2?.[k];
+                        if (v) return v;
+                      }
+                      // fallback: try to find a short string value in properties
+                      for (const v of Object.values(p2 || {})) {
+                        if (typeof v === 'string' && v.length > 0 && v.length < 60) return v;
+                      }
+                      return 'Boundary';
+                    };
+
+                    const label = getBoundaryLabel(p) || 'Boundary';
+                    const level = (p?.level || lid || '').toString().toLowerCase();
+                    const isTehsil = level.includes('tehsil') || String(lid).toLowerCase().includes('tehsil') || String(p?.TEHSIL || p?.tehsil).toLowerCase().includes('tehsil');
+
+                    // remove existing pointer marker/popup
+                    try { if (pointerMarkerRef.current) { pointerMarkerRef.current.remove(); pointerMarkerRef.current = null; } } catch (e) {}
+                    try { if (pointerPopupRef.current) { pointerPopupRef.current.remove(); pointerPopupRef.current = null; } } catch (e) {}
+
+                    // compute centroid for pointer (fallback to click location)
+                    let centroid: any = null;
+                    try { centroid = turf.centroid(feat); } catch (e) {}
+                    const cenCoords = centroid && centroid.geometry && centroid.geometry.coordinates ? centroid.geometry.coordinates : [e.lngLat.lng, e.lngLat.lat];
+
+                    // create a small pointer SVG (we will embed it into popup HTML so it's always visible)
+                    const pinSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' style='vertical-align:middle;margin-right:8px'><path d='M12 2C8.686 2 6 4.686 6 8c0 5.25 6 12 6 12s6-6.75 6-12c0-3.314-2.686-6-6-6z' fill='#16a34a' stroke='#fff' stroke-width='1.2'/></svg>`;
+
+                    // add a map marker at centroid for visual cue (may be behind popup depending on z-index, so also embed the pin in popup)
+                    try {
+                      const el = document.createElement('div');
+                      el.innerHTML = pinSvg;
+                      el.style.transform = 'translate(-50%, -100%)';
+                      el.style.pointerEvents = 'none';
+                      el.style.zIndex = '99999';
+                      try { if (pointerMarkerRef.current) { pointerMarkerRef.current.remove(); pointerMarkerRef.current = null; } } catch (e) {}
+                      pointerMarkerRef.current = new (window as any).maplibregl.Marker({ element: el, interactive: false }).setLngLat(cenCoords).addTo(map);
+                    } catch (err) {}
+
+                    // create popup at click location with counting placeholder and embedded pin so pointer is visible inside popup
+                    const popupHtmlId = `claims-count-${Date.now()}`;
+                    const popup = new (window as any).maplibregl.Popup({ offset: 28, maxWidth: '360px' })
+                      .setLngLat(e.lngLat)
+                      .setHTML(`<div style="min-width:200px;font-size:13px"><div style='display:flex;align-items:center'><span>${pinSvg}</span><strong style='line-height:1.1'>${label}</strong></div><div style="margin-top:6px;font-size:12px;color:#4b5563">${isTehsil ? 'Tehsil' : 'Boundary'}</div><div id='${popupHtmlId}' style='margin-top:8px;font-size:12px;color:#6b7280'>Counting claims…</div></div>`)
+                      .addTo(map);
+                    pointerPopupRef.current = popup;
+
+                    if (isTehsil) {
+                      (async () => {
+                        try {
+                          const st = p?.state || 'Madhya Pradesh';
+                          const q = new URLSearchParams();
+                          q.set('state', st);
+                          q.set('limit', '10000');
+                          const res = await fetch(`/api/claims?${q.toString()}`);
+                          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                          const data = await res.json();
+                          // Normalize API response into an array of GeoJSON Features
+                          let feats: any[] = [];
+                          if (data && data.type === 'FeatureCollection' && Array.isArray(data.features)) {
+                            feats = data.features
+                          } else if (Array.isArray(data)) {
+                            feats = data.map((item: any, idx: number) => {
+                              // If it's already a Feature
+                              if (item && item.type === 'Feature' && item.geometry) return item
+                              // If it has geometry
+                              if (item && item.geometry) return { type: 'Feature', properties: item.properties || item, geometry: item.geometry }
+                              // If it has lat/lng fields
+                              if (item && (item.lat !== undefined || item.lng !== undefined || item.latitude !== undefined || item.longitude !== undefined)) {
+                                const lng = item.lng ?? item.longitude ?? (item.lon ?? item.long ?? null)
+                                const lat = item.lat ?? item.latitude ?? null
+                                if (lng !== null && lat !== null) return { type: 'Feature', properties: item, geometry: { type: 'Point', coordinates: [Number(lng), Number(lat)] } }
+                              }
+                              // fallback skip
+                              return null
+                            }).filter(Boolean)
+                          } else if (data && data.id) {
+                            const item = data
+                            if (item.geometry) feats = [{ type: 'Feature', properties: item.properties || item, geometry: item.geometry }]
+                            else if (item.lat !== undefined && item.lng !== undefined) feats = [{ type: 'Feature', properties: item, geometry: { type: 'Point', coordinates: [Number(item.lng), Number(item.lat)] } }]
+                            else feats = []
+                          }
+
+                          // Ensure we have a polygon/multipolygon to test against. If the clicked feature is a LineString (outline), try to fetch the original tehsil polygons and match by properties
+                          let polyFeature: any = null;
+                          try {
+                            if (feat.type === 'Feature' && (feat.geometry?.type === 'Polygon' || feat.geometry?.type === 'MultiPolygon')) {
+                              polyFeature = feat;
+                            } else if (feat.geometry && (feat.geometry.type === 'Polygon' || feat.geometry.type === 'MultiPolygon')) {
+                              polyFeature = { type: 'Feature', properties: feat.properties || {}, geometry: feat.geometry };
+                            } else {
+                              // try to fetch original tehsil features and match by name/props
+                              try {
+                                const bres = await fetch(`/api/atlas/boundaries?level=tehsil&state=${encodeURIComponent(st)}`);
+                                if (bres.ok) {
+                                  const bdata = await bres.json();
+                                  const bfeatures: any[] = bdata && bdata.type === 'FeatureCollection' ? bdata.features || [] : [];
+                                  const getLabel = (p2: any) => {
+                                    if (!p2) return undefined;
+                                    return p2.name || p2.NAME || p2.TEHSIL || p2.tehsil || p2._label || p2._name || p2.district || p2.state || undefined;
+                                  };
+                                  const targetLabel = getLabel(feat.properties) || getLabel(p) || null;
+                                      if (targetLabel) {
+                                        // try exact or case-insensitive equality first
+                                        polyFeature = bfeatures.find((bf) => {
+                                          const lbl = getLabel(bf.properties) || '';
+                                          if (!lbl) return false;
+                                          const a = String(lbl).toLowerCase().trim();
+                                          const b = String(targetLabel).toLowerCase().trim();
+                                          return a === b || a.includes(b) || b.includes(a);
+                                        });
+                                      }
+                                      // If still not found, try spatial containment using centroid
+                                      if (!polyFeature) {
+                                        try {
+                                          const centroidTest = turf.centroid(feat.geometry && feat.geometry.type ? (feat.type === 'Feature' ? feat : { type: 'Feature', properties: feat.properties || {}, geometry: feat.geometry }) : { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [e.lngLat.lng, e.lngLat.lat] } });
+                                          const foundBySpatial = bfeatures.find((bf) => {
+                                            try {
+                                              if (!bf || !bf.geometry) return false;
+                                              return turf.booleanPointInPolygon(centroidTest, bf);
+                                            } catch (err) { return false; }
+                                          });
+                                          if (foundBySpatial) polyFeature = foundBySpatial;
+                                        } catch (err) {
+                                          // ignore spatial errors
+                                        }
+                                      }
+                                }
+                              } catch (e) {
+                                // ignore fetch errors, fallback below
+                              }
+                              // fallback: use clicked geometry as feature (may be a LineString) — boolean checks will likely return false but avoid throwing
+                              if (!polyFeature) polyFeature = feat.type === 'Feature' ? feat : { type: 'Feature', properties: feat.properties || {}, geometry: feat.geometry || { type: 'Point', coordinates: [e.lngLat.lng, e.lngLat.lat] } };
+                            }
+                          } catch (ee) {
+                            polyFeature = feat.type === 'Feature' ? feat : { type: 'Feature', properties: feat.properties || {}, geometry: feat.geometry || { type: 'Point', coordinates: [e.lngLat.lng, e.lngLat.lat] } };
+                          }
+
+                          const matches: any[] = [];
+                          for (const f of feats) {
+                            try {
+                              if (!f || !f.geometry) continue;
+                              const gtype = (f.geometry.type || '').toLowerCase();
+                              if (gtype === 'point' || gtype === 'multipoint') {
+                                const coords = gtype === 'point' ? f.geometry.coordinates : (f.geometry.coordinates && f.geometry.coordinates[0]);
+                                if (!coords) continue;
+                                const pt = turf.point(coords);
+                                try {
+                                  if (polyFeature && (polyFeature.geometry?.type === 'Polygon' || polyFeature.geometry?.type === 'MultiPolygon')) {
+                                    if (turf.booleanPointInPolygon(pt, polyFeature)) matches.push(f);
+                                  } else if (polyFeature) {
+                                    // if polyFeature is a linestring or unknown, use a small buffer around the linestring and test intersects
+                                    try {
+                                      const buf = turf.buffer(polyFeature as any, 0.001, { units: 'kilometers' });
+                                      if (buf && turf.booleanPointInPolygon(pt, buf as any)) matches.push(f);
+                                    } catch (e) {
+                                      // buffer failed -> skip
+                                    }
+                                  }
+                                } catch (inner) {}
+                              } else {
+                                const featB = f.type === 'Feature' ? f : { type: 'Feature', properties: f.properties || {}, geometry: f.geometry };
+                                try {
+                                    if (polyFeature && (polyFeature.geometry?.type === 'Polygon' || polyFeature.geometry?.type === 'MultiPolygon')) {
+                                      if (turf.booleanIntersects(featB, polyFeature)) matches.push(f);
+                                    } else if (polyFeature) {
+                                      try {
+                                        const buf = turf.buffer(polyFeature as any, 0.001, { units: 'kilometers' });
+                                        if (buf && turf.booleanIntersects(featB, buf as any)) matches.push(f);
+                                      } catch (e) {
+                                        // buffer failed -> skip
+                                      }
+                                    }
+                                } catch (inner) {}
+                              }
+                            } catch (e) {}
+                          }
+
+                          // build html list (limit to 10)
+                          const count = matches.length;
+                          const items = matches.slice(0, 10).map((m) => {
+                            const pid = m.properties?.claim_id ?? m.properties?.id ?? '';
+                            const vill = m.properties?.village ?? '';
+                            return `<div style='font-size:12px;padding:4px 0;border-bottom:1px dashed #eee'><a href='/atlas/${encodeURIComponent(pid)}' style='color:#0b78ff;text-decoration:none;font-weight:600'>${pid}</a><div style='font-size:11px;color:#6b7280'>${vill}</div></div>`;
+                          }).join('');
+
+                          const more = count > 10 ? `<div style='font-size:12px;margin-top:6px;color:#6b7280'>Showing 10 of ${count} claims</div>` : '';
+                          const empty = count === 0 ? `<div style='font-size:12px;color:#6b7280'>No claims found inside this tehsil</div>` : '';
+
+                          const html = `<div style="min-width:220px;font-size:13px"><div style='display:flex;align-items:center'>${pinSvg}<strong style='line-height:1.1'>${label}</strong></div><div style="margin-top:6px;font-size:12px;color:#4b5563">${count} claim${count===1?'':'s'} inside</div><div style='margin-top:8px'>${empty}${items}${more}<div style='margin-top:8px'><a href='/atlas?state=${encodeURIComponent(st)}' style='color:#0b78ff;text-decoration:none'>Open atlas</a></div></div></div>`;
+
+                          try {
+                            // update popup content (targeting the generated popup id to avoid race conditions)
+                            try {
+                              if (pointerPopupRef.current) pointerPopupRef.current.setHTML(html);
+                              else {
+                                const el = document.getElementById(popupHtmlId);
+                                if (el) el.outerHTML = html;
+                              }
+                            } catch (e) {}
+                          } catch (e) {}
+                        } catch (err) {
+                          try { if (pointerPopupRef.current) pointerPopupRef.current.setHTML(`<div style="min-width:200px;font-size:13px"><strong>${label}</strong><div style='margin-top:8px;font-size:12px;color:#6b7280'>Failed to load claims</div></div>`); } catch (ee) {}
+                        }
+                      })();
+                    }
+                  } catch (err) {
+                    /* ignore popup errors */
+                  }
+                });
+                map.on('mouseenter', lid, () => { map.getCanvas().style.cursor = 'pointer'; });
+                map.on('mouseleave', lid, () => { map.getCanvas().style.cursor = ''; });
+              } catch (err) {}
             });
-            map.on('mouseenter', layerId, () => { map.getCanvas().style.cursor = 'pointer'; });
-            map.on('mouseleave', layerId, () => { map.getCanvas().style.cursor = ''; });
           } catch (err) {}
         } catch (e) {
           // ignore

@@ -10,6 +10,7 @@ import Link from "next/link"
 import WebGIS, { type WebGISRef as WebGISRefType } from "../../components/WebGIS"
 import LayerManager from "../../components/LayerManager"
 import Modal from "../../components/Modal"
+import VillageClaimsPanel from "../../components/VillageClaimsPanel"
 import { useRouter } from "next/navigation"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 import type { GISLayer, GISMarker } from "../../components/WebGIS"
@@ -93,18 +94,18 @@ export default function AtlasPage() {
         url:
           layer.id === "fra-claims" || layer.id === "village-boundaries" || layer.id === "assets"
             ? (() => {
-                const params = new URLSearchParams()
-                if (stateFilter && stateFilter !== "all") params.set("state", stateFilter)
-                if (districtFilter && districtFilter !== "all") params.set("district", districtFilter)
-                const base =
-                  layer.id === "fra-claims"
-                    ? "/api/atlas/fra"
-                    : layer.id === "village-boundaries"
-                      ? "/api/atlas/boundaries"
-                      : "/api/atlas/assets"
-                const qs = params.toString()
-                return qs ? `${base}?${qs}` : base
-              })()
+              const params = new URLSearchParams()
+              if (stateFilter && stateFilter !== "all") params.set("state", stateFilter)
+              if (districtFilter && districtFilter !== "all") params.set("district", districtFilter)
+              const base =
+                layer.id === "fra-claims"
+                  ? "/api/atlas/fra"
+                  : layer.id === "village-boundaries"
+                    ? "/api/atlas/boundaries"
+                    : "/api/atlas/assets"
+              const qs = params.toString()
+              return qs ? `${base}?${qs}` : base
+            })()
             : layer.url,
       })),
     )
@@ -118,56 +119,56 @@ export default function AtlasPage() {
 
   useEffect(() => {
     let cancelled = false
-    ;(async () => {
-      try {
-        const res = await fetch("/api/claims?status=all&limit=1000", { headers: { Accept: "application/json" } })
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const data = await res.json()
-        const features =
-          data && data.type === "FeatureCollection" && Array.isArray(data.features)
-            ? data.features
-            : Array.isArray(data)
-              ? data
-              : []
+      ; (async () => {
+        try {
+          const res = await fetch("/api/claims?status=all&limit=1000", { headers: { Accept: "application/json" } })
+          if (!res.ok) throw new Error(`HTTP ${res.status}`)
+          const data = await res.json()
+          const features =
+            data && data.type === "FeatureCollection" && Array.isArray(data.features)
+              ? data.features
+              : Array.isArray(data)
+                ? data
+                : []
 
-        const statesSet = new Set<string>()
-        const districtsByState: Record<string, Set<string>> = {}
-        const statusesSet = new Set<string>()
-        const claimTypesSet = new Set<string>()
+          const statesSet = new Set<string>()
+          const districtsByState: Record<string, Set<string>> = {}
+          const statusesSet = new Set<string>()
+          const claimTypesSet = new Set<string>()
 
-        features.forEach((f: any) => {
-          const props = f.properties || f
-          const stateName = (props?.state ?? "").toString()
-          const districtName = (props?.district ?? "").toString()
-          const status = (props?.status ?? "").toString()
-          const ctype = (props?.claim_type ?? props?.claimType ?? "").toString()
-          if (stateName) {
-            statesSet.add(stateName)
-            if (!districtsByState[stateName]) districtsByState[stateName] = new Set()
-            if (districtName) districtsByState[stateName].add(districtName)
-          }
-          if (status) {
-            const s = status.toString().toLowerCase()
-            statusesSet.add(s)
-          }
-          if (ctype) claimTypesSet.add(ctype.toUpperCase())
-        })
-
-        if (!cancelled) {
-          const statesArr = Array.from(statesSet).sort((a, b) => a.localeCompare(b))
-          setStateOptions(statesArr)
-          const districtsObj: Record<string, string[]> = {}
-          Object.entries(districtsByState).forEach(([s, set]) => {
-            districtsObj[s] = Array.from(set).sort((a, b) => a.localeCompare(b))
+          features.forEach((f: any) => {
+            const props = f.properties || f
+            const stateName = (props?.state ?? "").toString()
+            const districtName = (props?.district ?? "").toString()
+            const status = (props?.status ?? "").toString()
+            const ctype = (props?.claim_type ?? props?.claimType ?? "").toString()
+            if (stateName) {
+              statesSet.add(stateName)
+              if (!districtsByState[stateName]) districtsByState[stateName] = new Set()
+              if (districtName) districtsByState[stateName].add(districtName)
+            }
+            if (status) {
+              const s = status.toString().toLowerCase()
+              statusesSet.add(s)
+            }
+            if (ctype) claimTypesSet.add(ctype.toUpperCase())
           })
-          setDistrictOptionsByState(districtsObj)
-          setStatusOptions((prev) => (prev.length ? prev : Array.from(statusesSet)))
-          setClaimTypeOptions((prev) => (prev.length ? prev : Array.from(claimTypesSet)))
+
+          if (!cancelled) {
+            const statesArr = Array.from(statesSet).sort((a, b) => a.localeCompare(b))
+            setStateOptions(statesArr)
+            const districtsObj: Record<string, string[]> = {}
+            Object.entries(districtsByState).forEach(([s, set]) => {
+              districtsObj[s] = Array.from(set).sort((a, b) => a.localeCompare(b))
+            })
+            setDistrictOptionsByState(districtsObj)
+            setStatusOptions((prev) => (prev.length ? prev : Array.from(statusesSet)))
+            setClaimTypeOptions((prev) => (prev.length ? prev : Array.from(claimTypesSet)))
+          }
+        } catch (err) {
+          console.warn("Could not derive filter options from API:", err)
         }
-      } catch (err) {
-        console.warn("Could not derive filter options from API:", err)
-      }
-    })()
+      })()
     return () => {
       cancelled = true
     }
@@ -367,16 +368,16 @@ export default function AtlasPage() {
         const adjustedLayers = newLayers.length
           ? newLayers
           : [
-              {
-                id: "claims",
-                name: "Claims",
-                type: "geojson",
-                url: "",
-                visible: true,
-                data: { type: "FeatureCollection", features },
-                style: { fillColor: "#16a34a", strokeColor: "#15803d", strokeWidth: 2, opacity: 0.6 },
-              },
-            ]
+            {
+              id: "claims",
+              name: "Claims",
+              type: "geojson",
+              url: "",
+              visible: true,
+              data: { type: "FeatureCollection", features },
+              style: { fillColor: "#16a34a", strokeColor: "#15803d", strokeWidth: 2, opacity: 0.6 },
+            },
+          ]
         adjustedLayers.forEach((l: any) => {
           l.style.opacity = l.style.opacity ?? 0.6
         })
@@ -472,7 +473,7 @@ export default function AtlasPage() {
       }
 
 
-  if (showDistrictBoundary) {
+      if (showDistrictBoundary) {
         try {
           const response = await fetch("/api/atlas/boundaries?level=district&state=Madhya Pradesh")
           const data = await response.json()
@@ -498,7 +499,7 @@ export default function AtlasPage() {
       }
 
 
-  if (showTehsilBoundary) {
+      if (showTehsilBoundary) {
         try {
           const response = await fetch("/api/atlas/boundaries?level=tehsil&state=Madhya Pradesh")
           const data = await response.json()
@@ -568,6 +569,11 @@ export default function AtlasPage() {
 
   const webGISRef = useRef<WebGISRefType>(null)
 
+  // Village claims panel state
+  const [villagePanelOpen, setVillagePanelOpen] = useState(false)
+  const [villageClaims, setVillageClaims] = useState<any[]>([])
+  const [villageNameSelected, setVillageNameSelected] = useState<string | null>(null)
+
   const handleLayerToggle = (layerId: string) => {
     setLayers((prev) => prev.map((layer) => (layer.id === layerId ? { ...layer, visible: !layer.visible } : layer)))
   }
@@ -612,8 +618,8 @@ export default function AtlasPage() {
         areaHa = null
       }
 
-  // default label (try multiple common property names)
-  const label = getBoundaryLabel(props) ?? "Boundary"
+      // default label (try multiple common property names)
+      const label = getBoundaryLabel(props) ?? "Boundary"
 
       // If tehsil, also compute number of claims inside it
       const level = (props?.level || layer?.id || layer?.name || "").toString().toLowerCase()
@@ -634,7 +640,7 @@ export default function AtlasPage() {
       setModalOpen(true)
 
       if (isTehsil) {
-        ;(async () => {
+        ; (async () => {
           try {
             // show counting state in modal
             setSelectedFeature((prev) => (prev ? { ...prev, properties: { ...prev.properties, _counting: true } } : prev))
@@ -688,6 +694,242 @@ export default function AtlasPage() {
     // default behavior for non-boundary features (claims)
     setSelectedFeature({ ...featureInfo, properties: featureInfo.feature?.properties })
     setModalOpen(true)
+  }
+
+  // open panel with claims for a village; try API fetch first, else filter in-memory
+  const onVillageClick = async (villageName?: string | null) => {
+    if (!villageName) return
+    setVillageNameSelected(villageName)
+    setVillagePanelOpen(true)
+    setVillageClaims([])
+
+    try {
+      const st = stateFilter === "all" ? DEFAULT_STATE : stateFilter
+      const q = new URLSearchParams()
+      q.set("village", villageName)
+      q.set("state", st)
+      q.set("limit", "1000")
+      const res = await fetch(`/api/claims?${q.toString()}`)
+      if (res.ok) {
+        const data = await res.json()
+        const features = data && data.type === "FeatureCollection" ? data.features || [] : Array.isArray(data) ? data : []
+        // filter API results defensively by village
+        const villageLower = String(villageName).toLowerCase().trim()
+        const keys = ["village", "VILLAGE", "village_name", "villageName", "habitation", "settlement", "locality", "habitation_name"]
+        const normalize = (v: any) => (v === null || typeof v === "undefined" ? "" : String(v).toLowerCase().trim())
+        const matchesVillage = (f: any) => {
+          const props = f?.properties ?? f
+          if (!props) return false
+          for (const k of keys) {
+            if (props[k] && normalize(props[k]) === villageLower) return true
+          }
+          // fallback: sometimes village stored in other fields
+          const allVals = Object.values(props || {})
+          for (const val of allVals) {
+            if (typeof val === "string" && normalize(val) === villageLower) return true
+          }
+          return false
+        }
+
+        const filtered = Array.isArray(features) ? features.filter(matchesVillage) : []
+        // dedupe by claim id
+        const byId = new Map<string, any>()
+        filtered.forEach((f: any) => {
+          const pid = String((f.properties && (f.properties.claim_id || f.properties.id)) ?? f.id ?? Math.random())
+          if (!byId.has(pid)) byId.set(pid, f)
+        })
+        setVillageClaims(Array.from(byId.values()))
+        return
+      }
+    } catch (err) {
+      // ignore and fallback to in-memory
+    }
+
+    // Fallback: filter already loaded layers for features with matching village
+    const villageLower = String(villageName).toLowerCase().trim()
+    const keys = ["village", "VILLAGE", "village_name", "villageName", "habitation", "settlement", "locality", "habitation_name"]
+    const normalize = (v: any) => (v === null || typeof v === "undefined" ? "" : String(v).toLowerCase().trim())
+    const matchesVillage = (f: any) => {
+      const props = f?.properties ?? f
+      if (!props) return false
+      for (const k of keys) {
+        if (props[k] && normalize(props[k]) === villageLower) return true
+      }
+      const allVals = Object.values(props || {})
+      for (const val of allVals) {
+        if (typeof val === "string" && normalize(val) === villageLower) return true
+      }
+      return false
+    }
+
+    const allFeatures: any[] = []
+    layers.forEach((l) => {
+      if (l.data?.features) allFeatures.push(...l.data.features)
+    })
+    // Include markers raw props as additional items
+    markers.forEach((m) => {
+      const mr = m as any
+      if (mr?.raw) {
+        allFeatures.push({ type: "Feature", properties: mr.raw, geometry: mr.geometry ?? (mr.lng && mr.lat ? { type: "Point", coordinates: [mr.lng, mr.lat] } : undefined) })
+      }
+    })
+
+    const matches = allFeatures.filter(matchesVillage)
+    // dedupe by id
+    const byId = new Map<string, any>()
+    matches.forEach((f: any) => {
+      const pid = String((f.properties && (f.properties.claim_id || f.properties.id)) ?? f.id ?? Math.random())
+      if (!byId.has(pid)) byId.set(pid, f)
+    })
+    setVillageClaims(Array.from(byId.values()))
+  }
+
+  // open panel filtered by district (same UI as village panel)
+  const onDistrictClick = async (districtName?: string | null) => {
+    if (!districtName) return
+    setVillageNameSelected(districtName)
+    setVillagePanelOpen(true)
+    setVillageClaims([])
+
+    try {
+      const st = stateFilter === "all" ? DEFAULT_STATE : stateFilter
+      const q = new URLSearchParams()
+      q.set("district", districtName)
+      q.set("state", st)
+      q.set("limit", "1000")
+      const res = await fetch(`/api/claims?${q.toString()}`)
+      if (res.ok) {
+        const data = await res.json()
+        const features = data && data.type === "FeatureCollection" ? data.features || [] : Array.isArray(data) ? data : []
+        const districtLower = String(districtName).toLowerCase().trim()
+        const keys = ["district", "DISTRICT", "district_name", "districtName"]
+        const normalize = (v: any) => (v === null || typeof v === "undefined" ? "" : String(v).toLowerCase().trim())
+        const matchesDistrict = (f: any) => {
+          const props = f?.properties ?? f
+          if (!props) return false
+          for (const k of keys) {
+            if (props[k] && normalize(props[k]) === districtLower) return true
+          }
+          const allVals = Object.values(props || {})
+          for (const val of allVals) {
+            if (typeof val === "string" && normalize(val) === districtLower) return true
+          }
+          return false
+        }
+
+        const filtered = Array.isArray(features) ? features.filter(matchesDistrict) : []
+        const byId = new Map<string, any>()
+        filtered.forEach((f: any) => {
+          const pid = String((f.properties && (f.properties.claim_id || f.properties.id)) ?? f.id ?? Math.random())
+          if (!byId.has(pid)) byId.set(pid, f)
+        })
+        setVillageClaims(Array.from(byId.values()))
+        return
+      }
+    } catch (err) {
+      // ignore and fallback
+    }
+
+    // fallback: filter in-memory
+    const districtLower = String(districtName).toLowerCase().trim()
+    const keys = ["district", "DISTRICT", "district_name", "districtName"]
+    const normalize = (v: any) => (v === null || typeof v === "undefined" ? "" : String(v).toLowerCase().trim())
+    const matchesDistrict = (f: any) => {
+      const props = f?.properties ?? f
+      if (!props) return false
+      for (const k of keys) {
+        if (props[k] && normalize(props[k]) === districtLower) return true
+      }
+      const allVals = Object.values(props || {})
+      for (const val of allVals) {
+        if (typeof val === "string" && normalize(val) === districtLower) return true
+      }
+      return false
+    }
+
+    const allFeatures: any[] = []
+    layers.forEach((l) => {
+      if (l.data?.features) allFeatures.push(...l.data.features)
+    })
+    const mrks = markers as any[]
+    mrks.forEach((mr) => {
+      if (mr?.raw) {
+        allFeatures.push({ type: "Feature", properties: mr.raw, geometry: mr.geometry ?? (mr.lng && mr.lat ? { type: "Point", coordinates: [mr.lng, mr.lat] } : undefined) })
+      }
+    })
+
+    const matches = allFeatures.filter(matchesDistrict)
+    const byId = new Map<string, any>()
+    matches.forEach((f: any) => {
+      const pid = String((f.properties && (f.properties.claim_id || f.properties.id)) ?? f.id ?? Math.random())
+      if (!byId.has(pid)) byId.set(pid, f)
+    })
+    setVillageClaims(Array.from(byId.values()))
+  }
+
+  // open panel filtered by state (reuse same panel UI)
+  const onStateClick = async (stateName?: string | null) => {
+    if (!stateName) return
+    setVillageNameSelected(stateName)
+    setVillagePanelOpen(true)
+    setVillageClaims([])
+
+    try {
+      const q = new URLSearchParams()
+      q.set("state", stateName)
+      q.set("limit", "1000")
+      const res = await fetch(`/api/claims?${q.toString()}`)
+      if (res.ok) {
+        const data = await res.json()
+        const features = data && data.type === "FeatureCollection" ? data.features || [] : Array.isArray(data) ? data : []
+        const byId = new Map<string, any>()
+        const ids = features.filter(Boolean)
+        ids.forEach((f: any) => {
+          const pid = String((f.properties && (f.properties.claim_id || f.properties.id)) ?? f.id ?? Math.random())
+          if (!byId.has(pid)) byId.set(pid, f)
+        })
+        setVillageClaims(Array.from(byId.values()))
+        return
+      }
+    } catch (err) {
+      // fallback to in-memory
+    }
+
+    // fallback: filter already loaded features and markers by state
+    const stateLower = String(stateName).toLowerCase().trim()
+    const normalize = (v: any) => (v === null || typeof v === "undefined" ? "" : String(v).toLowerCase().trim())
+    const matchesState = (f: any) => {
+      const props = f?.properties ?? f
+      if (!props) return false
+      const keys = ["state", "STATE", "state_name", "stateName"]
+      for (const k of keys) {
+        if (props[k] && normalize(props[k]) === stateLower) return true
+      }
+      const allVals = Object.values(props || {})
+      for (const val of allVals) {
+        if (typeof val === "string" && normalize(val) === stateLower) return true
+      }
+      return false
+    }
+
+    const allFeatures: any[] = []
+    layers.forEach((l) => {
+      if (l.data?.features) allFeatures.push(...l.data.features)
+    })
+    markers.forEach((m) => {
+      const mr = m as any
+      if (mr?.raw) {
+        allFeatures.push({ type: "Feature", properties: mr.raw, geometry: mr.geometry ?? (mr.lng && mr.lat ? { type: "Point", coordinates: [mr.lng, mr.lat] } : undefined) })
+      }
+    })
+
+    const matches = allFeatures.filter(matchesState)
+    const byId = new Map<string, any>()
+    matches.forEach((f: any) => {
+      const pid = String((f.properties && (f.properties.claim_id || f.properties.id)) ?? f.id ?? Math.random())
+      if (!byId.has(pid)) byId.set(pid, f)
+    })
+    setVillageClaims(Array.from(byId.values()))
   }
 
   const handleMapClick = (lngLat: { lng: number; lat: number }) => {
@@ -860,6 +1102,18 @@ export default function AtlasPage() {
 
             <aside className="lg:col-span-4">
               <div className="mb-6">
+                <VillageClaimsPanel
+                  open={villagePanelOpen}
+                  village={villageNameSelected}
+                  claims={villageClaims}
+                  onClose={() => setVillagePanelOpen(false)}
+                  onGoto={(lng, lat) => {
+                    try {
+                      webGISRef.current?.flyTo?.(lng, lat, 15)
+                    } catch (e) { }
+                  }}
+                />
+
                 <LayerManager
                   layers={[...layers, ...boundaryLayers]}
                   markers={markers}
@@ -870,7 +1124,7 @@ export default function AtlasPage() {
                   onMarkerGoto={(lng, lat) => {
                     try {
                       webGISRef.current?.flyTo?.(lng, lat, 12)
-                    } catch (e) {}
+                    } catch (e) { }
                   }}
                 />
               </div>
@@ -918,15 +1172,15 @@ export default function AtlasPage() {
                           ? districtOptionsByState[pendingStateFilter] &&
                             districtOptionsByState[pendingStateFilter].length
                             ? districtOptionsByState[pendingStateFilter].map((d) => (
-                                <option key={d} value={d}>
-                                  {d}
-                                </option>
-                              ))
+                              <option key={d} value={d}>
+                                {d}
+                              </option>
+                            ))
                             : (STATES.find((s) => s.name === pendingStateFilter)?.districts || []).map((d) => (
-                                <option key={d} value={d}>
-                                  {d}
-                                </option>
-                              ))
+                              <option key={d} value={d}>
+                                {d}
+                              </option>
+                            ))
                           : null}
                       </select>
                     </div>
@@ -1065,7 +1319,7 @@ export default function AtlasPage() {
                       // Recenter map to state center and reset zoom to a sensible default
                       try {
                         setMapCenter(stateCenter as [number, number])
-                      } catch (e) {}
+                      } catch (e) { }
                       setMapZoom(7.5)
                     }}
                     className="bg-green-700 text-white px-3 py-1 rounded-md text-sm"
@@ -1089,54 +1343,54 @@ export default function AtlasPage() {
               <div className="mt-4 p-4 bg-white rounded-xl shadow-sm border border-green-50">
                 <h5 className="text-sm font-medium text-green-900 mb-3">Legend</h5>
                 <div className="space-y-3">
-                    {claimTypeOptions.length ? (
-                      claimTypeOptions.map((ct) => {
-                        const layerId = `claims-${ct.toLowerCase()}`
-                        const layer = layers.find((l) => l.id === layerId)
-                        const visible = layer ? !!layer.visible : true
-                        const color = claimTypeColors[ct] ?? "#60a5fa"
+                  {claimTypeOptions.length ? (
+                    claimTypeOptions.map((ct) => {
+                      const layerId = `claims-${ct.toLowerCase()}`
+                      const layer = layers.find((l) => l.id === layerId)
+                      const visible = layer ? !!layer.visible : true
+                      const color = claimTypeColors[ct] ?? "#60a5fa"
 
-                        return (
-                          <div key={ct} className="space-y-2">
-                            {/* Claim area layer */}
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <span
-                                  style={{
-                                    width: 16,
-                                    height: 12,
-                                    background: color,
-                                    display: "inline-block",
-                                    borderRadius: 3,
-                                    border: "1px solid rgba(0,0,0,0.06)",
-                                  }}
-                                />
-                                <span className="text-sm">{ct} Areas</span>
-                              </div>
-                              <label className="inline-flex items-center gap-2">
-                                <input
-                                  type="checkbox"
-                                  checked={visible}
-                                  onChange={() => handleLayerToggle(layerId)}
-                                  className="rounded border-gray-200"
-                                />
-                                <span className="text-sm text-gray-600">{visible ? "Visible" : "Hidden"}</span>
-                              </label>
+                      return (
+                        <div key={ct} className="space-y-2">
+                          {/* Claim area layer */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span
+                                style={{
+                                  width: 16,
+                                  height: 12,
+                                  background: color,
+                                  display: "inline-block",
+                                  borderRadius: 3,
+                                  border: "1px solid rgba(0,0,0,0.06)",
+                                }}
+                              />
+                              <span className="text-sm">{ct} Areas</span>
                             </div>
+                            <label className="inline-flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={visible}
+                                onChange={() => handleLayerToggle(layerId)}
+                                className="rounded border-gray-200"
+                              />
+                              <span className="text-sm text-gray-600">{visible ? "Visible" : "Hidden"}</span>
+                            </label>
                           </div>
-                        )
-                      })
-                    ) : (
-                      <div className="text-xs text-gray-500">No claim types available</div>
-                    )}
+                        </div>
+                      )
+                    })
+                  ) : (
+                    <div className="text-xs text-gray-500">No claim types available</div>
+                  )}
 
-                    <div className="pt-2 border-t border-gray-100">
-                      <div className="text-xs text-gray-600">
-                        <div className="font-medium mb-1">Note:</div>
-                        <div>Symbols for claim centroids have been removed for a cleaner overview.</div>
-                        <div>Use the area layers and zoom controls to inspect claims.</div>
-                      </div>
+                  <div className="pt-2 border-t border-gray-100">
+                    <div className="text-xs text-gray-600">
+                      <div className="font-medium mb-1">Note:</div>
+                      <div>Symbols for claim centroids have been removed for a cleaner overview.</div>
+                      <div>Use the area layers and zoom controls to inspect claims.</div>
                     </div>
+                  </div>
                 </div>
               </div>
             </aside>
@@ -1152,18 +1406,18 @@ export default function AtlasPage() {
           title={
             selectedFeature
               ? (() => {
-                  const p = selectedFeature.properties || {}
-                  const isBoundary = String(selectedFeature.layer || "").toLowerCase().includes("boundary") || String(p?.level || "").toLowerCase().includes("state") || String(p?.level || "").toLowerCase().includes("district") || String(p?.level || "").toLowerCase().includes("tehsil")
-                  if (isBoundary) {
-                    const lbl = p._label || p.name || p.NAME || p.district || p.tehsil || p.state || "Boundary"
-                    const lvl = (p.level || selectedFeature.layer || "").toString().toLowerCase()
-                    if (lvl.includes("tehsil") || String(selectedFeature.layer).toLowerCase().includes("tehsil")) return `Tehsil: ${lbl}`
-                    if (lvl.includes("district") || String(selectedFeature.layer).toLowerCase().includes("district")) return `District: ${lbl}`
-                    if (lvl.includes("state") || String(selectedFeature.layer).toLowerCase().includes("state")) return `State: ${lbl}`
-                    return lbl
-                  }
-                  return `Claim ${p?.claim_id ?? p?.id ?? ""}`
-                })()
+                const p = selectedFeature.properties || {}
+                const isBoundary = String(selectedFeature.layer || "").toLowerCase().includes("boundary") || String(p?.level || "").toLowerCase().includes("state") || String(p?.level || "").toLowerCase().includes("district") || String(p?.level || "").toLowerCase().includes("tehsil")
+                if (isBoundary) {
+                  const lbl = p._label || p.name || p.NAME || p.district || p.tehsil || p.state || "Boundary"
+                  const lvl = (p.level || selectedFeature.layer || "").toString().toLowerCase()
+                  if (lvl.includes("tehsil") || String(selectedFeature.layer).toLowerCase().includes("tehsil")) return `Tehsil: ${lbl}`
+                  if (lvl.includes("district") || String(selectedFeature.layer).toLowerCase().includes("district")) return `District: ${lbl}`
+                  if (lvl.includes("state") || String(selectedFeature.layer).toLowerCase().includes("state")) return `State: ${lbl}`
+                  return lbl
+                }
+                return `Claim ${p?.claim_id ?? p?.id ?? ""}`
+              })()
               : undefined
           }
         >
@@ -1171,7 +1425,6 @@ export default function AtlasPage() {
             <div className="space-y-4">
               {String(selectedFeature.layer || "").toLowerCase().includes("boundary") ? (
                 <div className="space-y-3">
-                  <div className="text-sm text-gray-600">{selectedFeature.properties?._label ?? selectedFeature.properties?.name ?? ""}</div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <div className="text-xs text-gray-500">Area</div>
@@ -1193,40 +1446,66 @@ export default function AtlasPage() {
                 </div>
               ) : (
                 <>
-                  <div className="flex items-start gap-4">
-                    <div>
-                      <div className="text-sm text-gray-600">
-                        {selectedFeature.properties?.village ?? ""}, {selectedFeature.properties?.district ?? ""}
+                  <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-4 space-y-4">
+                    {/* Status + Claim Type */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex gap-2">
+                        <span
+                          className={`px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide ${String(selectedFeature.properties?.status).toLowerCase() === "approved"
+                              ? "bg-green-100 text-green-700 border border-green-200"
+                              : "bg-yellow-100 text-yellow-700 border border-yellow-200"
+                            }`}
+                        >
+                          {String(selectedFeature.properties?.status ?? "").toUpperCase()}
+                        </span>
+                        <span className="px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide bg-gray-100 text-gray-700 border border-gray-200">
+                          {String(selectedFeature.properties?.claim_type ?? "").toUpperCase()}
+                        </span>
                       </div>
                     </div>
-                    <div className="ml-auto flex items-center gap-2">
-                      <div
-                        className={`px-2 py-1 rounded text-xs font-medium ${String(selectedFeature.properties?.status).toLowerCase() === "approved" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}
-                      >
-                        {String(selectedFeature.properties?.status ?? "").toUpperCase()}
-                      </div>
-                      <div className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">
-                        {String(selectedFeature.properties?.claim_type ?? "").toUpperCase()}
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <div className="text-xs text-gray-500">Land area</div>
-                      <div className="font-medium">{selectedFeature.properties?.land_area ?? "—"} ha</div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="text-xs text-gray-500">State</div>
-                      <div className="font-medium">{selectedFeature.properties?.state ?? "—"}</div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="text-xs text-gray-500">District</div>
-                      <div className="font-medium">{selectedFeature.properties?.district ?? "—"}</div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="text-xs text-gray-500">Village</div>
-                      <div className="font-medium">{selectedFeature.properties?.village ?? "—"}</div>
+                    {/* Details Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-xs text-gray-500">Land area</p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {selectedFeature.properties?.land_area ?? "—"} ha
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-gray-500">State</p>
+                        <button
+                          onClick={() => onStateClick(selectedFeature.properties?.state)}
+                          className="text-sm font-semibold text-blue-600 hover:underline hover:text-blue-800 transition"
+                        >
+                          {selectedFeature.properties?.state ?? "—"}
+                        </button>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-gray-500">District</p>
+                        <button
+                          onClick={() =>
+                            onDistrictClick(selectedFeature.properties?.district)
+                          }
+                          className="text-sm font-semibold text-blue-600 hover:underline hover:text-blue-800 transition"
+                        >
+                          {selectedFeature.properties?.district ?? "—"}
+                        </button>
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-gray-500">Village</p>
+                        <button
+                          onClick={() =>
+                            onVillageClick(selectedFeature.properties?.village)
+                          }
+                          className="text-sm font-semibold text-blue-600 hover:underline hover:text-blue-800 transition"
+                        >
+                          {selectedFeature.properties?.village ?? "—"}
+                        </button>
+                      </div>
                     </div>
                   </div>
 
