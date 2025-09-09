@@ -69,7 +69,7 @@ export default function AtlasPage() {
   const [pendingStateFilter, setPendingStateFilter] = useState("all")
   const [pendingDistrictFilter, setPendingDistrictFilter] = useState("all")
   const [isApplyingFilters, setIsApplyingFilters] = useState(false)
-  const [filtersExpanded, setFiltersExpanded] = useState(true)
+  const [filtersExpanded, setFiltersExpanded] = useState(false)
 
   // Boundary layer toggles
   const [showStateBoundary, setShowStateBoundary] = useState(false)
@@ -955,6 +955,47 @@ export default function AtlasPage() {
     }
   }
 
+  // --- Add Claim modal state & handler ---
+  const [addClaimOpen, setAddClaimOpen] = useState(false)
+  const [newClaim, setNewClaim] = useState({
+    state_name: "",
+    district_name: "",
+    village_name: "",
+    claim_type: "",
+    claimant_name: "",
+    community_name: "",
+    claimed_area: 0,
+  })
+  const [submittingClaim, setSubmittingClaim] = useState(false)
+
+  const submitNewClaim = async () => {
+    try {
+      setSubmittingClaim(true)
+      const res = await fetch("https://vanmitra.onrender.com/claims", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newClaim),
+      })
+      if (!res.ok) {
+        const text = await res.text()
+        pushToast(`Failed to add claim: ${res.status} ${text}`, "error")
+        return
+      }
+      // success
+      pushToast("Claim added successfully", "info")
+      setAddClaimOpen(false)
+      // clear form
+      setNewClaim({ state_name: "", district_name: "", village_name: "", claim_type: "", claimant_name: "", community_name: "", claimed_area: 0 })
+      // trigger refresh of claims
+      setApplyCounter((c) => c + 1)
+      setMapKey((k) => k + 1)
+    } catch (err) {
+      pushToast("Failed to add claim (network error)", "error")
+    } finally {
+      setSubmittingClaim(false)
+    }
+  }
+
   const handleStartMeasurement = () => {
     setIsMeasuring(true)
     setMeasurementDistance(null)
@@ -1095,6 +1136,7 @@ export default function AtlasPage() {
                     >
                       Export Map Image
                     </button>
+                    {/* Add Claim button moved to aside */}
                   </div>
                 </div>
               </div>
@@ -1113,7 +1155,18 @@ export default function AtlasPage() {
                     } catch (e) { }
                   }}
                 />
-
+                {/* Add Claim card below LayerManager */}
+                <div className="mb-4 p-4 bg-blue-50 rounded-xl border border-blue-200 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-semibold text-blue-800">Add Claim</h4>
+                      <p className="text-xs text-blue-600">Manually add a claim to the database</p>
+                    </div>
+                    <div>
+                      <button onClick={() => setAddClaimOpen(true)} className="bg-blue-600 text-white px-3 py-1 rounded-md">Add</button>
+                    </div>
+                  </div>
+                </div>
                 <LayerManager
                   layers={[...layers, ...boundaryLayers]}
                   markers={markers}
@@ -1126,7 +1179,9 @@ export default function AtlasPage() {
                       webGISRef.current?.flyTo?.(lng, lat, 12)
                     } catch (e) { }
                   }}
+                  initiallyCollapsed={true}
                 />
+
               </div>
 
               <div className="bg-white rounded-xl shadow-md border border-green-100 overflow-hidden mb-6">
@@ -1452,8 +1507,8 @@ export default function AtlasPage() {
                       <div className="flex gap-2">
                         <span
                           className={`px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide ${String(selectedFeature.properties?.status).toLowerCase() === "approved"
-                              ? "bg-green-100 text-green-700 border border-green-200"
-                              : "bg-yellow-100 text-yellow-700 border border-yellow-200"
+                            ? "bg-green-100 text-green-700 border border-green-200"
+                            : "bg-yellow-100 text-yellow-700 border border-yellow-200"
                             }`}
                         >
                           {String(selectedFeature.properties?.status ?? "").toUpperCase()}
@@ -1551,6 +1606,46 @@ export default function AtlasPage() {
               )}
             </div>
           ) : null}
+        </Modal>
+
+        <Modal open={addClaimOpen} onClose={() => setAddClaimOpen(false)} title={"Add Claim (manual)"}>
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label className="text-xs text-gray-500">State</label>
+                <input value={newClaim.state_name} onChange={(e) => setNewClaim((s) => ({ ...s, state_name: e.target.value }))} className="mt-1 w-full rounded-md border p-2" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">District</label>
+                <input value={newClaim.district_name} onChange={(e) => setNewClaim((s) => ({ ...s, district_name: e.target.value }))} className="mt-1 w-full rounded-md border p-2" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">Village</label>
+                <input value={newClaim.village_name} onChange={(e) => setNewClaim((s) => ({ ...s, village_name: e.target.value }))} className="mt-1 w-full rounded-md border p-2" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">Claim type</label>
+                <input value={newClaim.claim_type} onChange={(e) => setNewClaim((s) => ({ ...s, claim_type: e.target.value }))} className="mt-1 w-full rounded-md border p-2" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">Claimant name</label>
+                <input value={newClaim.claimant_name} onChange={(e) => setNewClaim((s) => ({ ...s, claimant_name: e.target.value }))} className="mt-1 w-full rounded-md border p-2" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">Community name</label>
+                <input value={newClaim.community_name} onChange={(e) => setNewClaim((s) => ({ ...s, community_name: e.target.value }))} className="mt-1 w-full rounded-md border p-2" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500">Claimed area (ha)</label>
+                <input type="number" value={newClaim.claimed_area} onChange={(e) => setNewClaim((s) => ({ ...s, claimed_area: Number(e.target.value) }))} className="mt-1 w-full rounded-md border p-2" />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-3">
+              <button disabled={submittingClaim} onClick={submitNewClaim} className="bg-green-700 text-white px-3 py-1 rounded-md">{submittingClaim ? 'Submitting...' : 'Submit'}</button>
+              <button onClick={() => setAddClaimOpen(false)} className="border px-3 py-1 rounded-md">Cancel</button>
+            </div>
+          </div>
         </Modal>
 
         <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
