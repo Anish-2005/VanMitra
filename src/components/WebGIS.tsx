@@ -148,7 +148,12 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
         ],
       },
       center: center,
-      zoom: zoom,
+  zoom: zoom,
+  // Restrict map pan/zoom so the user cannot zoom out past the India extent.
+  // India approximate bbox (west,south,east,north): [66, 5, 100, 38]
+  maxBounds: [[66.0, 5.0], [100.0, 38.0]],
+  // minZoom prevents zooming out too far; set to ~3.5 to keep India visible
+  minZoom: 3.5,
       pitch: 0,
       bearing: 0,
     })
