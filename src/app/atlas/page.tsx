@@ -573,9 +573,145 @@ export default function AtlasPage() {
   const [villagePanelOpen, setVillagePanelOpen] = useState(false)
   const [villageClaims, setVillageClaims] = useState<any[]>([])
   const [villageNameSelected, setVillageNameSelected] = useState<string | null>(null)
+  const [searchVillageUid, setSearchVillageUid] = useState<string | number | null>(null)
+  const [searchStatus, setSearchStatus] = useState<string | null>("all")
+  const [searchClaimType, setSearchClaimType] = useState<string | null>(null)
+  const [searchByUidExpanded, setSearchByUidExpanded] = useState<boolean>(true)
+  // layer to show results from search-by-village-uid
+  const [searchResultsLayer, setSearchResultsLayer] = useState<any | null>(null)
+  const [searchLoading, setSearchLoading] = useState<boolean>(false)
 
   const handleLayerToggle = (layerId: string) => {
     setLayers((prev) => prev.map((layer) => (layer.id === layerId ? { ...layer, visible: !layer.visible } : layer)))
+  }
+
+  const runSearchByVillageUid = async () => {
+    if (!searchVillageUid) {
+      pushToast("Enter a village UID to search", "error")
+      return
+    }
+    // clear previous results
+    setSearchResultsLayer(null)
+    const vid = String(searchVillageUid).trim()
+    setVillagePanelOpen(true)
+    setVillageClaims([])
+    setSearchLoading(true)
+    try {
+      const q = new URLSearchParams()
+      if (searchStatus && searchStatus !== "all") q.set("status", searchStatus)
+      if (searchClaimType) q.set("claim_type", searchClaimType)
+      const qs = q.toString() ? `?${q.toString()}` : ""
+
+      // Prefer the external API first, fallback to local proxy; try several local URL shapes
+      const tryUrls = [
+        `https://vanmitra.onrender.com/claims/village/${encodeURIComponent(vid)}${qs}`,
+        // common proxy path that was used earlier
+        `/api/claims/village/${encodeURIComponent(vid)}${qs}`,
+        // some deployments expose a query endpoint instead
+        `/api/claims?village=${encodeURIComponent(vid)}${qs ? `&${q.toString()}` : ""}`,
+        `/api/claims?village_uid=${encodeURIComponent(vid)}${qs ? `&${q.toString()}` : ""}`,
+      ]
+
+      let data: any = null
+      let lastErr: any = null
+      for (const u of tryUrls) {
+        try {
+          console.debug("Searching village via:", u)
+          const res = await fetch(u)
+          if (!res.ok) {
+            lastErr = `HTTP ${res.status} for ${u}`
+            continue
+          }
+          data = await res.json()
+          break
+        } catch (e) {
+          lastErr = e
+          continue
+        }
+      }
+
+      if (!data) {
+        console.error("Village search failed (no data). Last error:", lastErr)
+        pushToast(`Village search failed: ${String(lastErr)}`, "error")
+        return
+      }
+
+      const features = data && data.type === "FeatureCollection" ? data.features || [] : Array.isArray(data) ? data : []
+
+      if (!features.length) {
+        pushToast("No claims found for this village UID", "info")
+      }
+
+      // If we have features, create a temporary map layer so results are visible
+      if (features && features.length) {
+        const layer = {
+          id: `search-results-${Date.now()}`,
+          name: `Search results for ${vid}`,
+          type: "geojson",
+          url: "",
+          visible: true,
+          data: { type: "FeatureCollection", features },
+          style: { fillColor: "#ff8c00", strokeColor: "#ff8c00", strokeWidth: 2, opacity: 0.35 },
+        }
+        setSearchResultsLayer(layer)
+
+        // Use turf to compute a centroid for reliable flying
+        try {
+          const fc: GeoJSON.FeatureCollection = { type: "FeatureCollection", features } as any
+          const cent = turf.centroid(fc)
+          if (cent && cent.geometry && cent.geometry.coordinates) {
+            const [lng, lat] = cent.geometry.coordinates
+            webGISRef.current?.flyTo?.(lng, lat, 12)
+          }
+        } catch (e) {
+          // ignore fly errors
+        }
+      }
+
+      // populate the village panel list
+      setVillageClaims(features)
+      // Attempt to extract a human-friendly village name from returned features' properties
+      const extractVillageName = (f: any) => {
+        const props = f?.properties ?? f
+        if (!props) return null
+        const candidates = [
+          'village_name',
+          'village',
+          'VILLAGE',
+          'villageName',
+          'habitation',
+          'settlement',
+          'locality',
+          'habitation_name',
+          'name',
+        ]
+        for (const k of candidates) {
+          if (props[k]) return String(props[k])
+        }
+        // fallback: sometimes village appears in other fields like 'properties.town' or 'props.NAME'
+        for (const v of Object.values(props || {})) {
+          if (typeof v === 'string' && v.length > 1 && /[A-Za-z]/.test(v)) return v
+        }
+        return null
+      }
+
+      let villageLabel: string | null = null
+      if (features && features.length) {
+        for (const f of features) {
+          const name = extractVillageName(f)
+          if (name) {
+            villageLabel = name
+            break
+          }
+        }
+      }
+      setVillageNameSelected(villageLabel ? villageLabel : `Village UID: ${vid}`)
+    } catch (err) {
+      console.error("Village search error:", err)
+      pushToast("Village search failed", "error")
+    } finally {
+      setSearchLoading(false)
+    }
   }
 
   const handleLayerRemove = (layerId: string) => {
@@ -1066,7 +1202,7 @@ export default function AtlasPage() {
                         // Ensure application layers (claims) are rendered above boundary layers so
                         // claim clicks are not blocked. We put boundaryLayers first so WebGIS adds
                         // them earlier and other layers are added on top.
-                        layers={[...boundaryLayers, ...layers]}
+                        layers={searchResultsLayer ? [searchResultsLayer, ...boundaryLayers, ...layers] : [...boundaryLayers, ...layers]}
                         markers={markers}
                         onFeatureClick={handleFeatureClick}
                         onMapClick={handleMapClick}
@@ -1166,6 +1302,32 @@ export default function AtlasPage() {
                       <button onClick={() => setAddClaimOpen(true)} className="bg-blue-600 text-white px-3 py-1 rounded-md">Add</button>
                     </div>
                   </div>
+                </div>
+                {/* Search by Village UID (collapsible) */}
+                <div className="my-4 bg-white rounded-xl border border-green-100 shadow-sm overflow-hidden">
+                  <div
+                    className="flex items-center justify-between p-3 cursor-pointer"
+                    onClick={() => setSearchByUidExpanded((s) => !s)}
+                  >
+                    <div>
+                      <h4 className="text-sm font-semibold text-green-900 mb-0">Search by Village UID</h4>
+                      <p className="text-xs text-green-600">Lookup claims by village identifier</p>
+                    </div>
+                    <div className={`transform transition-transform ${searchByUidExpanded ? "rotate-180" : ""}`}>▼</div>
+                  </div>
+                  {searchByUidExpanded && (
+                    <div className="p-4 grid grid-cols-1 gap-2">
+                      <input value={(searchVillageUid ?? '') as any} onChange={(e) => setSearchVillageUid(e.target.value)} placeholder="Village UID (integer)" className="w-full rounded-md border p-2" />
+                      <input value={searchStatus ?? ''} onChange={(e) => setSearchStatus(e.target.value)} placeholder="Status (optional)" className="w-full rounded-md border p-2" />
+                      <input value={searchClaimType ?? ''} onChange={(e) => setSearchClaimType(e.target.value)} placeholder="Claim type (optional)" className="w-full rounded-md border p-2" />
+                      <div className="flex items-center gap-2">
+                        <button disabled={searchLoading} onClick={() => runSearchByVillageUid()} className={`px-3 py-1 rounded-md ${searchLoading ? 'bg-gray-300 text-gray-700 cursor-not-allowed' : 'bg-green-700 text-white'}`}>
+                          {searchLoading ? 'Searching...' : 'Search'}
+                        </button>
+                        <button onClick={() => { setSearchVillageUid(''); setSearchStatus('all'); setSearchClaimType(''); setSearchResultsLayer(null); setVillagePanelOpen(false); setSearchLoading(false); }} className="border px-3 py-1 rounded-md">Clear</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <LayerManager
                   layers={[...layers, ...boundaryLayers]}

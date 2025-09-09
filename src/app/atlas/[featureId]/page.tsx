@@ -114,13 +114,39 @@ export default function FeaturePage({
       setLoading(true);
       setError(null);
       try {
-        // Try to fetch claim by id via claims API
-        const params = new URLSearchParams();
-        params.set('id', featureId);
-        const url = `/api/claims?${params.toString()}`;
-        const resp = await fetch(url, { headers: { Accept: 'application/json' } });
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const data = await resp.json();
+        // Try to fetch claim by id via claims API. Use a few fallback URL shapes
+        // because environments may expose different proxy routes.
+        const tryUrls = [
+          `/api/claims?id=${encodeURIComponent(featureId)}`,
+          `/api/claims?claim_id=${encodeURIComponent(featureId)}`,
+          `/api/claims/${encodeURIComponent(featureId)}`,
+          `/api/claims/village/${encodeURIComponent(featureId)}`,
+          `https://vanmitra.onrender.com/claims?id=${encodeURIComponent(featureId)}`,
+          `https://vanmitra.onrender.com/claims/${encodeURIComponent(featureId)}`,
+          `https://vanmitra.onrender.com/claims?village=${encodeURIComponent(featureId)}`,
+        ];
+
+        let data: any = null;
+        let lastErr: any = null;
+        for (const u of tryUrls) {
+          try {
+            // Prefer using fetchWithRetry for noisy networks for the external host only
+            if (u.startsWith('http')) {
+              data = await fetchWithRetry(u, 3, 400);
+            } else {
+              const r = await fetch(u, { headers: { Accept: 'application/json' } });
+              if (!r.ok) throw new Error(`HTTP ${r.status} for ${u}`);
+              data = await r.json();
+            }
+            if (data) break;
+          } catch (err) {
+            lastErr = err;
+            // try next
+            console.warn('Claim fetch attempt failed for', u, err);
+          }
+        }
+
+        if (!data) throw lastErr || new Error('No data returned from claim endpoints');
 
         // Data may be a GeoJSON FeatureCollection or an array/object
         let item: FeatureData | null = null;
