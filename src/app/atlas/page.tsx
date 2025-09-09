@@ -642,34 +642,6 @@ export default function AtlasPage() {
         pushToast("No claims found for this village UID", "info")
       }
 
-      // If we have features, create a temporary map layer so results are visible
-      if (features && features.length) {
-        const layer = {
-          id: `search-results-${Date.now()}`,
-          name: `Search results for ${vid}`,
-          type: "geojson",
-          url: "",
-          visible: true,
-          data: { type: "FeatureCollection", features },
-          style: { fillColor: "#ff8c00", strokeColor: "#ff8c00", strokeWidth: 2, opacity: 0.35 },
-        }
-        setSearchResultsLayer(layer)
-
-        // Use turf to compute a centroid for reliable flying
-        try {
-          const fc: GeoJSON.FeatureCollection = { type: "FeatureCollection", features } as any
-          const cent = turf.centroid(fc)
-          if (cent && cent.geometry && cent.geometry.coordinates) {
-            const [lng, lat] = cent.geometry.coordinates
-            webGISRef.current?.flyTo?.(lng, lat, 12)
-          }
-        } catch (e) {
-          // ignore fly errors
-        }
-      }
-
-      // populate the village panel list
-      setVillageClaims(features)
       // Attempt to extract a human-friendly village name from returned features' properties
       const extractVillageName = (f: any) => {
         const props = f?.properties ?? f
@@ -688,7 +660,6 @@ export default function AtlasPage() {
         for (const k of candidates) {
           if (props[k]) return String(props[k])
         }
-        // fallback: sometimes village appears in other fields like 'properties.town' or 'props.NAME'
         for (const v of Object.values(props || {})) {
           if (typeof v === 'string' && v.length > 1 && /[A-Za-z]/.test(v)) return v
         }
@@ -705,7 +676,65 @@ export default function AtlasPage() {
           }
         }
       }
+
+      // If we can derive a village label, filter returned features to only claims that match that village name
+      const normalize = (v: any) => (v === null || typeof v === 'undefined' ? '' : String(v).toLowerCase().trim())
+      const villageLower = villageLabel ? normalize(villageLabel) : null
+      const villageKeys = ['village', 'VILLAGE', 'village_name', 'villageName', 'habitation', 'settlement', 'locality', 'habitation_name', 'name']
+      const matchesVillage = (f: any) => {
+        const props = f?.properties ?? f
+        if (!props) return false
+        if (!villageLower) return false
+        for (const k of villageKeys) {
+          if (props[k] && normalize(props[k]) === villageLower) return true
+        }
+        // fallback: check other string values
+        for (const val of Object.values(props || {})) {
+          if (typeof val === 'string' && normalize(val) === villageLower) return true
+        }
+        return false
+      }
+
+      // If derived village name is available, prefer showing only matched claims; else show all returned features
+      const filteredFeatures = villageLower ? features.filter(matchesVillage) : features
+
+      // If villageLabel not found, set a friendly fallback label
       setVillageNameSelected(villageLabel ? villageLabel : `Village UID: ${vid}`)
+
+      // If we have features (post-filter), create a temporary map layer so results are visible
+      if (filteredFeatures && filteredFeatures.length) {
+        const layer = {
+          id: `search-results-${Date.now()}`,
+          name: `Search results for ${villageLabel ? villageLabel : vid}`,
+          type: 'geojson',
+          url: '',
+          visible: true,
+          data: { type: 'FeatureCollection', features: filteredFeatures },
+          style: { fillColor: '#ff8c00', strokeColor: '#ff8c00', strokeWidth: 2, opacity: 0.35 },
+        }
+        setSearchResultsLayer(layer)
+
+        // Use turf to compute a centroid for reliable flying
+        try {
+          const fc: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: filteredFeatures } as any
+          const cent = turf.centroid(fc)
+          if (cent && cent.geometry && cent.geometry.coordinates) {
+            const [lng, lat] = cent.geometry.coordinates
+            webGISRef.current?.flyTo?.(lng, lat, 12)
+          }
+        } catch (e) {
+          // ignore fly errors
+        }
+      }
+
+      // populate the village panel list with deduped features
+      const toShow = (filteredFeatures && filteredFeatures.length) ? filteredFeatures : features
+      const byId = new Map<string, any>()
+      toShow.forEach((f: any, idx: number) => {
+        const pid = String((f.properties && (f.properties.claim_id || f.properties.id)) ?? f.id ?? `uid-${vid}-${idx}`)
+        if (!byId.has(pid)) byId.set(pid, f)
+      })
+      setVillageClaims(Array.from(byId.values()))
     } catch (err) {
       console.error("Village search error:", err)
       pushToast("Village search failed", "error")

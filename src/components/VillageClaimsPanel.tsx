@@ -1,6 +1,7 @@
 "use client"
 
 import React from "react"
+import * as turf from '@turf/turf'
 import Link from "next/link"
 
 interface Props {
@@ -34,8 +35,27 @@ export default function VillageClaimsPanel({ open, village, claims, onClose, onG
             {claims.map((c: any) => {
               const props = c.properties ?? c
               const id = props?.claim_id ?? props?.id ?? ""
-              const lat = (props?.lat ?? (c.geometry?.type === "Point" ? c.geometry.coordinates[1] : undefined))
-              const lng = (props?.lng ?? (c.geometry?.type === "Point" ? c.geometry.coordinates[0] : undefined))
+              // Compute coordinates: prefer explicit lat/lng in properties, else centroid for polygons
+              let lat: number | undefined = undefined
+              let lng: number | undefined = undefined
+              if (props?.lat !== undefined && props?.lng !== undefined) {
+                lat = Number(props.lat)
+                lng = Number(props.lng)
+              } else if (c.geometry && c.geometry.type === 'Point') {
+                lng = Number(c.geometry.coordinates[0])
+                lat = Number(c.geometry.coordinates[1])
+              } else if (c.geometry) {
+                try {
+                  const cent = turf.centroid(c)
+                  if (cent && cent.geometry && cent.geometry.coordinates) {
+                    lng = Number(cent.geometry.coordinates[0])
+                    lat = Number(cent.geometry.coordinates[1])
+                  }
+                } catch (e) {
+                  // ignore centroid errors
+                }
+              }
+
               return (
                 <li key={id} className="p-2 rounded hover:bg-green-50">
                   <div className="flex items-center justify-between">
@@ -44,13 +64,23 @@ export default function VillageClaimsPanel({ open, village, claims, onClose, onG
                       <div className="text-xs text-gray-600">{String(props?.claim_type ?? "").toUpperCase()} — {props?.land_area ?? "—"} ha</div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {lat && lng ? (
-                        <button
-                          onClick={() => onGoto && onGoto(Number(lng), Number(lat))}
-                          className="text-xs px-2 py-1 border rounded text-green-700"
-                        >
-                          Fly
-                        </button>
+                      {lat !== undefined && lng !== undefined ? (
+                        <>
+                          <button
+                            onClick={() => onGoto && onGoto(Number(lng), Number(lat))}
+                            className="text-xs px-2 py-1 border rounded text-green-700"
+                            aria-label={`Fly to claim ${id}`}
+                          >
+                            Fly
+                          </button>
+                          <button
+                            onClick={() => onGoto && onGoto(Number(lng), Number(lat))}
+                            className="text-xs px-2 py-1 border rounded text-green-700"
+                            aria-label={`Locate claim ${id} on map`}
+                          >
+                            Locate
+                          </button>
+                        </>
                       ) : null}
                       <Link href={`/atlas/${encodeURIComponent(String(id))}`} className="text-xs px-2 py-1 border rounded text-blue-600">
                         Open
