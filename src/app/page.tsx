@@ -29,6 +29,35 @@ export default function Home() {
 
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // Claims summary (dynamic)
+  const [claimsSummaryLoading, setClaimsSummaryLoading] = useState(false)
+  const [claimsSummaryError, setClaimsSummaryError] = useState<string | null>(null)
+  const [claimsTotal, setClaimsTotal] = useState<number | null>(null)
+  const [claimsGranted, setClaimsGranted] = useState<number | null>(null)
+
+  React.useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      try {
+        setClaimsSummaryLoading(true)
+        setClaimsSummaryError(null)
+        const res = await fetch('/api/claims?status=all&limit=1000', { headers: { Accept: 'application/json' } })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const data = await res.json()
+        const features = data && data.type === 'FeatureCollection' && Array.isArray(data.features) ? data.features : Array.isArray(data) ? data : []
+        if (!mounted) return
+        setClaimsTotal(features.length)
+        setClaimsGranted(features.filter((f: any) => String((f.properties?.status ?? '').toLowerCase()) === 'granted').length)
+      } catch (err: any) {
+        if (!mounted) return
+        setClaimsSummaryError(err?.message || 'Failed to load claims summary')
+      } finally {
+        if (mounted) setClaimsSummaryLoading(false)
+      }
+    })()
+    return () => { mounted = false }
+  }, [])
+
   const [loginOpen, setLoginOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -268,12 +297,12 @@ export default function Home() {
             <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card>
                 <h4 className="text-sm font-semibold text-green-900 flex items-center gap-2"><MapPin size={16} className="text-green-600"/> Claims processed</h4>
-                <div className="text-2xl stat mt-2">1,240</div>
+                <div className="text-2xl stat mt-2">{claimsSummaryLoading ? 'Loading…' : (claimsSummaryError ? '—' : (claimsTotal ?? '—'))}</div>
                 <div className="text-xs muted mt-1">legacy + recent uploads</div>
               </Card>
               <Card>
                 <h4 className="text-sm font-semibold text-green-900 flex items-center gap-2"><Database size={16} className="text-green-600"/> Grants issued</h4>
-                <div className="text-2xl stat mt-2">380</div>
+                <div className="text-2xl stat mt-2">{claimsSummaryLoading ? 'Loading…' : (claimsSummaryError ? '—' : (claimsGranted ?? '—'))}</div>
                 <div className="text-xs muted mt-1">verified & geo-referenced</div>
               </Card>
               <Card>
@@ -320,8 +349,8 @@ export default function Home() {
                         <div className="mb-2">
                           <img src="/image.png" alt="Madhya Pradesh silhouette" className="ml-20 block rounded-md shadow-sm w-36 h-24 sm:w-48 sm:h-32 md:w-56 md:h-40 lg:w-72 lg:h-48 object-contain" />
                         </div>
-                        <div className="text-xs text-green-100">Pilot: Sundarbans Block</div>
-                        <div className="text-2xl font-semibold text-white">1,240 claims • 380 granted</div>
+                        <div className="text-xs text-green-100">Pilot: Madhya Pradesh</div>
+                        <div className="text-2xl font-semibold text-white">{claimsSummaryLoading ? 'Loading…' : (claimsSummaryError ? '—' : `${claimsTotal ?? '—'} claims • ${claimsGranted ?? '—'} granted`)}</div>
                       </div>
                     
                     </div>
