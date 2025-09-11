@@ -11,7 +11,7 @@ import WebGIS, { type WebGISRef as WebGISRefType } from "../../components/WebGIS
 import LayerManager from "../../components/LayerManager"
 import Modal from "../../components/Modal"
 import VillageClaimsPanel from "../../components/VillageClaimsPanel"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 import type { GISLayer, GISMarker } from "../../components/WebGIS"
 import { exportToGeoJSON } from "../../lib/gis-utils"
@@ -50,6 +50,9 @@ export default function AtlasPage() {
   const [claimTypeOptions, setClaimTypeOptions] = useState<string[]>([])
   const [stateOptions, setStateOptions] = useState<string[]>([])
   const [districtOptionsByState, setDistrictOptionsByState] = useState<Record<string, string[]>>({})
+  const [villageOptions, setVillageOptions] = useState<string[]>([])
+  const [villageOptionsByState, setVillageOptionsByState] = useState<Record<string, string[]>>({})
+  const [villageOptionsByStateAndDistrict, setVillageOptionsByStateAndDistrict] = useState<Record<string, Record<string, string[]>>>({})
 
   const claimTypeColors: Record<string, string> = {
     IFR: "#16a34a",
@@ -65,6 +68,7 @@ export default function AtlasPage() {
 
   const [pendingStateFilter, setPendingStateFilter] = useState("all")
   const [pendingDistrictFilter, setPendingDistrictFilter] = useState("all")
+  const [pendingVillageFilter, setPendingVillageFilter] = useState("all")
   const [isApplyingFilters, setIsApplyingFilters] = useState(false)
   const [filtersExpanded, setFiltersExpanded] = useState(false)
 
@@ -79,6 +83,8 @@ export default function AtlasPage() {
   const [pendingShowTehsilBoundary, setPendingShowTehsilBoundary] = useState(showTehsilBoundary)
   // simple counter to re-run loading effect when user applies
   const [applyCounter, setApplyCounter] = useState(0)
+
+  const [villageFilter, setVillageFilter] = useState("all")
 
   // If no specific state is selected, default to the project's default state (Madhya Pradesh)
   const effectiveState = stateFilter === "all" ? DEFAULT_STATE : stateFilter
@@ -109,16 +115,59 @@ export default function AtlasPage() {
     setMapKey((prev) => prev + 1)
   }, [stateFilter, districtFilter])
 
+  const searchParams = useSearchParams()
+
+  // Initialize pending + committed filters from URL search params (if present).
+  // This allows the filters panel to reflect the querystring and for the
+  // initial /api/claims request used to derive options to match the URL.
   useEffect(() => {
-    setPendingStateFilter(stateFilter)
-    setPendingDistrictFilter(districtFilter)
-  }, [])
+    try {
+      const sp = searchParams
+      const s = sp?.get("state") ?? stateFilter
+      const d = sp?.get("district") ?? districtFilter
+  const v = sp?.get("village") ?? villageFilter
+      const st = sp?.get("status") ?? statusFilter ?? "all"
+      const ct = sp?.get("claim_type") ?? (claimTypeFilter ?? null)
+
+      setPendingStateFilter(s)
+      setPendingDistrictFilter(d)
+  setPendingVillageFilter(v)
+      setPendingStatusFilter(st)
+      setPendingClaimTypeFilter(ct ?? null)
+
+      // Also commit the filters so the main claims fetch matches the URL on load
+      setStateFilter(s)
+      setDistrictFilter(d)
+  setVillageFilter(v)
+      setStatusFilter(st)
+      setClaimTypeFilter(ct ?? null)
+    } catch (e) {
+      // noop
+    }
+    // Intentionally depend on searchParams so updates to the URL reflect in UI
+  }, [searchParams])
 
   useEffect(() => {
     let cancelled = false
       ; (async () => {
         try {
-          const res = await fetch("/api/claims?status=all&limit=1000", { headers: { Accept: "application/json" } })
+          // Build API URL using the current page's querystring so filter options
+          // reflect the data present for the same URL that the user may have.
+          const params = new URLSearchParams()
+          // copy existing search params from the page
+          try {
+            for (const k of searchParams?.keys() || []) {
+              const v = searchParams?.get(k)
+              if (v) params.set(k, v)
+            }
+          } catch (ee) {
+            // fallback: ignore
+          }
+          if (!params.has("limit")) params.set("limit", "1000")
+          // default status handling to 'all' if missing
+          if (!params.has("status")) params.set("status", "all")
+          const qs = params.toString() ? `?${params.toString()}` : ""
+          const res = await fetch(`/api/claims${qs}`, { headers: { Accept: "application/json" } })
           if (!res.ok) throw new Error(`HTTP ${res.status}`)
           const data = await res.json()
           const features =
@@ -132,18 +181,32 @@ export default function AtlasPage() {
           const districtsByState: Record<string, Set<string>> = {}
           const statusesSet = new Set<string>()
           const claimTypesSet = new Set<string>()
+          const villagesByState: Record<string, Set<string>> = {}
+          const villagesByStateAndDistrict: Record<string, Record<string, Set<string>>> = {}
+          const villagesSet = new Set<string>()
 
           features.forEach((f: any) => {
             const props = f.properties || f
-            const stateName = (props?.state ?? "").toString()
-            const districtName = (props?.district ?? "").toString()
+            const stateName = (props?.state ?? props?.state_name ?? "").toString()
+            const districtName = (props?.district ?? props?.district_name ?? "").toString()
+            const villageName = (props?.village ?? props?.village_name ?? props?.villageName ?? "").toString()
             const status = (props?.status ?? "").toString()
             const ctype = (props?.claim_type ?? props?.claimType ?? "").toString()
+
             if (stateName) {
               statesSet.add(stateName)
               if (!districtsByState[stateName]) districtsByState[stateName] = new Set()
               if (districtName) districtsByState[stateName].add(districtName)
+              if (!villagesByState[stateName]) villagesByState[stateName] = new Set()
+              if (villageName) villagesByState[stateName].add(villageName)
+
+              if (!villagesByStateAndDistrict[stateName]) villagesByStateAndDistrict[stateName] = {}
+              const byDistrict = villagesByStateAndDistrict[stateName]
+              const dkey = districtName || "_unknown"
+              if (!byDistrict[dkey]) byDistrict[dkey] = new Set()
+              if (villageName) byDistrict[dkey].add(villageName)
             }
+            if (villageName) villagesSet.add(villageName)
             if (status) {
               const s = status.toString().toLowerCase()
               statusesSet.add(s)
@@ -151,7 +214,7 @@ export default function AtlasPage() {
             if (ctype) claimTypesSet.add(ctype.toUpperCase())
           })
 
-          if (!cancelled) {
+            if (!cancelled) {
             const statesArr = Array.from(statesSet).sort((a, b) => a.localeCompare(b))
             setStateOptions(statesArr)
             const districtsObj: Record<string, string[]> = {}
@@ -159,8 +222,27 @@ export default function AtlasPage() {
               districtsObj[s] = Array.from(set).sort((a, b) => a.localeCompare(b))
             })
             setDistrictOptionsByState(districtsObj)
-            setStatusOptions((prev) => (prev.length ? prev : Array.from(statusesSet)))
-            setClaimTypeOptions((prev) => (prev.length ? prev : Array.from(claimTypesSet)))
+
+            const villagesObj: Record<string, string[]> = {}
+            Object.entries(villagesByState).forEach(([s, set]) => {
+              villagesObj[s] = Array.from(set).sort((a, b) => a.localeCompare(b))
+            })
+            setVillageOptionsByState(villagesObj)
+            setVillageOptions(Array.from(villagesSet).sort((a, b) => a.localeCompare(b)))
+
+            // build nested mapping state -> district -> villages
+            const nested: Record<string, Record<string, string[]>> = {}
+            Object.entries(villagesByStateAndDistrict).forEach(([s, districts]) => {
+              nested[s] = {}
+              Object.entries(districts).forEach(([d, set]) => {
+                nested[s][d] = Array.from(set).sort((a, b) => a.localeCompare(b))
+              })
+            })
+            setVillageOptionsByStateAndDistrict(nested)
+            // Always replace option lists with values derived from API so the
+            // filters panel shows options present in the current API response
+            setStatusOptions(Array.from(statusesSet))
+            setClaimTypeOptions(Array.from(claimTypesSet))
           }
         } catch (err) {
           console.warn("Could not derive filter options from API:", err)
@@ -178,7 +260,8 @@ export default function AtlasPage() {
         setLoadingClaims(true)
         const params = new URLSearchParams()
         if (stateFilter && stateFilter !== "all") params.set("state", stateFilter)
-        if (districtFilter && districtFilter !== "all") params.set("district", districtFilter)
+  if (districtFilter && districtFilter !== "all") params.set("district", districtFilter)
+  if (villageFilter && villageFilter !== "all") params.set("village", villageFilter)
         if (statusFilter === "" || statusFilter === "all") {
           params.set("status", "all")
         } else if (statusFilter) {
@@ -436,7 +519,7 @@ export default function AtlasPage() {
     }
     fetchClaims()
     return () => controller.abort()
-  }, [stateFilter, districtFilter, statusFilter, claimTypeFilter])
+  }, [stateFilter, districtFilter, statusFilter, claimTypeFilter, villageFilter])
 
   // Effect to handle boundary layer loading
   useEffect(() => {
@@ -548,6 +631,20 @@ export default function AtlasPage() {
     setStatusFilter(pendingStatusFilter ?? "all")
     setClaimTypeFilter(pendingClaimTypeFilter ?? null)
 
+    // Update URL search params so current filter selection is reflected in the URL
+    try {
+      const params = new URLSearchParams()
+      if (pendingStateFilter && pendingStateFilter !== "all") params.set("state", pendingStateFilter)
+      if (pendingDistrictFilter && pendingDistrictFilter !== "all") params.set("district", pendingDistrictFilter)
+  if (pendingVillageFilter && pendingVillageFilter !== "all") params.set("village", pendingVillageFilter)
+      if (pendingStatusFilter && pendingStatusFilter !== "all") params.set("status", pendingStatusFilter)
+      if (pendingClaimTypeFilter) params.set("claim_type", pendingClaimTypeFilter)
+      const qs = params.toString() ? `?${params.toString()}` : ""
+      router.push(`/atlas${qs}`)
+    } catch (e) {
+      // ignore navigation errors
+    }
+
     // Reset loading state after a short delay
     setTimeout(() => setIsApplyingFilters(false), 1000)
   }
@@ -565,6 +662,56 @@ export default function AtlasPage() {
   const [measurementDistance, setMeasurementDistance] = useState<number | null>(null)
 
   const webGISRef = useRef<WebGISRefType>(null)
+
+  // Extract a robust boundary label from feature properties. Hoisted to component scope
+  // so multiple UI paths can reuse it (feature click, previews, modals).
+  const getBoundaryLabel = (p: any) => {
+    if (!p) return undefined
+  const keys = [
+      'tehsil',
+      'TEHSIL',
+      'tehsil_name',
+      'TEHSIL_NM',
+      'subdistrict',
+      'SUBDIST',
+      'NAME_2',
+      'name',
+      'NAME',
+      'NAME_1',
+      'NAME_0',
+      'ST_NM',
+      'state',
+      'district',
+      'DISTRICT',
+      'state_name',
+      'STATE_NAME',
+      'name_en',
+      'name_local',
+      'label',
+    ]
+    for (const k of keys) {
+      const v = p?.[k]
+      if (v && typeof v === 'string' && v.trim().length) {
+        const candidate = v.trim()
+        // If the candidate equals a known state name and this feature has a state-like prop,
+        // avoid returning the state as the tehsil/district label. Use STATES list for comparison.
+        const isStateName = STATES.some((s) => s.name.toLowerCase() === candidate.toLowerCase())
+        if (isStateName) continue
+        return candidate
+      }
+    }
+    for (const [k, v] of Object.entries(p || {})) {
+      if (typeof v === 'string' && v.trim().length && k.toLowerCase().includes('tehsil')) {
+        const cand = v.trim()
+        if (!STATES.some((s) => s.name.toLowerCase() === cand.toLowerCase())) return cand
+      }
+      if (typeof v === 'string' && v.trim().length && k.toLowerCase().includes('name')) {
+        const cand = v.trim()
+        if (!STATES.some((s) => s.name.toLowerCase() === cand.toLowerCase())) return cand
+      }
+    }
+    return undefined
+  }
 
   // Village claims panel state
   const [villagePanelOpen, setVillagePanelOpen] = useState(false)
@@ -756,12 +903,7 @@ export default function AtlasPage() {
     const { layer, feature, lngLat } = featureInfo as any
     const props = feature?.properties || {}
 
-    const getBoundaryLabel = (p: any) => {
-      if (!p) return undefined
-      return (
-        p.name || p.NAME || p.NAME_1 || p.NAME_2 || p.ST_NM || p.STATE_NAME || p.state || p.district || p.DISTRICT || p.tehsil || p.TEHSIL || p.subdistrict || p.SUBDIST || p._label || p._name || p._source || (p?.NAME_0) || undefined
-      )
-    }
+    
 
     const isBoundary = String(layer?.id ?? layer?.name ?? "").toLowerCase().includes("boundary") ||
       String(props?.level ?? "").toLowerCase().includes("state") ||
@@ -1452,6 +1594,43 @@ export default function AtlasPage() {
                     </div>
 
                     <div>
+                      <label className="block text-sm text-green-700">Village</label>
+                      <select
+                        value={pendingVillageFilter}
+                        onChange={(e) => setPendingVillageFilter(e.target.value)}
+                        className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
+                      >
+                        <option value="all">All</option>
+                        {pendingDistrictFilter && pendingDistrictFilter !== "all"
+                          ? // Prefer district-scoped villages when district is selected
+                            (villageOptionsByStateAndDistrict[pendingStateFilter] && villageOptionsByStateAndDistrict[pendingStateFilter][pendingDistrictFilter]
+                              ? villageOptionsByStateAndDistrict[pendingStateFilter][pendingDistrictFilter].map((v) => (
+                                  <option key={v} value={v}>
+                                    {v}
+                                  </option>
+                                ))
+                              : // fallback to state-wide villages for the selected state
+                                (villageOptionsByState[pendingStateFilter] || []).map((v) => (
+                                  <option key={v} value={v}>
+                                    {v}
+                                  </option>
+                                )))
+                          : // no district selected: show state-wide list if available otherwise global list
+                          (pendingStateFilter !== "all"
+                            ? (villageOptionsByState[pendingStateFilter] || []).map((v) => (
+                                <option key={v} value={v}>
+                                  {v}
+                                </option>
+                              ))
+                            : villageOptions.map((v) => (
+                                <option key={v} value={v}>
+                                  {v}
+                                </option>
+                              )))}
+                      </select>
+                    </div>
+
+                    <div>
                       <label className="block text-sm text-green-700">Claim type</label>
                       <select
                         value={pendingClaimTypeFilter ?? ""}
@@ -1651,7 +1830,7 @@ export default function AtlasPage() {
                 const p = selectedFeature.properties || {}
                 const isBoundary = String(selectedFeature.layer || "").toLowerCase().includes("boundary") || String(p?.level || "").toLowerCase().includes("state") || String(p?.level || "").toLowerCase().includes("district") || String(p?.level || "").toLowerCase().includes("tehsil")
                 if (isBoundary) {
-                  const lbl = p._label || p.name || p.NAME || p.district || p.tehsil || p.state || "Boundary"
+                  const lbl = getBoundaryLabel(p) || p._label || p.name || p.NAME || p.district || p.tehsil || p.state || "Boundary"
                   const lvl = (p.level || selectedFeature.layer || "").toString().toLowerCase()
                   if (lvl.includes("tehsil") || String(selectedFeature.layer).toLowerCase().includes("tehsil")) return `Tehsil: ${lbl}`
                   if (lvl.includes("district") || String(selectedFeature.layer).toLowerCase().includes("district")) return `District: ${lbl}`
