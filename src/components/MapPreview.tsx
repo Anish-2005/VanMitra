@@ -3,9 +3,22 @@
 import React, { useEffect, useRef } from "react";
 import * as turf from "@turf/turf";
 
-interface Marker { lng: number; lat: number; label?: string; size?: number }
+interface Marker { lng: number; lat: number; label?: string; size?: number; color?: string; outline?: string; maxDiameterMeters?: number }
 
 type Layers = { fra?: boolean; boundaries?: boolean | string | string[]; assets?: boolean };
+
+const createMarkerElement = (m: any) => {
+  const el = document.createElement("div");
+  const size = m.size ?? 24; // default larger for SVG
+  const color = (m as any).color || "#16a34a";
+  const outline = (m as any).outline || '#ecfccb';
+  
+  el.style.transform = 'translate(-50%, -100%)'; // pin should point to location
+  el.style.zIndex = '9999';
+  el.dataset.baseSize = String(size);
+  el.dataset.outline = outline;
+  return el;
+};
 
 export default function MapPreview({
   // Default center set to central Madhya Pradesh (approximate)
@@ -13,12 +26,14 @@ export default function MapPreview({
   zoom = 8,
   markers = [],
   layers = { fra: false, boundaries: false, assets: false },
+  showCenterMarker = false,
   onFeatureClick,
 }: {
   center?: [number, number];
   zoom?: number;
   markers?: Marker[];
   layers?: Layers;
+  showCenterMarker?: boolean;
   onFeatureClick?: (info: any) => void;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
@@ -77,22 +92,21 @@ export default function MapPreview({
 
       mapRef.current = map;
 
-  // add initial markers
+      // add initial markers
       try {
-        markers.forEach((m) => {
-          const el = document.createElement("div");
-          const size = m.size ?? 12;
-          el.dataset.baseSize = String(size);
-          el.dataset.outline = (m as any).outline || '#ecfccb';
-          el.style.width = `${size}px`;
-          el.style.height = `${size}px`;
-          el.style.borderRadius = "50%";
-          el.style.background = (m as any).color || "#16a34a";
-          const outline = (m as any).outline || '#ecfccb';
-          const borderThickness = Math.max(1, Math.round(size * 0.12));
-          el.style.border = `${borderThickness}px solid ${outline}`;
-          el.style.zIndex = '9999';
-          el.style.transform = 'translate(-50%, -50%)';
+        const allMarkers = [...markers];
+        if (showCenterMarker) {
+          allMarkers.push({
+            lng: center[0],
+            lat: center[1],
+            label: 'Center',
+            size: 32,
+            color: '#ef4444', // red color for center marker
+            outline: '#ffffff'
+          });
+        }
+        allMarkers.forEach((m) => {
+          const el = createMarkerElement(m);
           const marker = new maplibregl.Marker({ element: el }).setLngLat([m.lng, m.lat]).addTo(map);
           // attach marker metadata
           try { (marker as any).__markerData = { maxDiameterMeters: (m as any).maxDiameterMeters || 50000 }; } catch (e) {}
@@ -100,9 +114,7 @@ export default function MapPreview({
         });
       } catch (e) {
         // ignore marker errors
-      }
-
-      // zoom-based dynamic sizing for preview markers
+      }      // zoom-based dynamic sizing for preview markers
       const metersPerPixelAt = (lat: number, zoomLevel: number) => {
         return 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoomLevel);
       };
@@ -116,16 +128,16 @@ export default function MapPreview({
             try {
               const el = mk.getElement && mk.getElement();
               if (!el) return;
-              const base = Number(el.dataset?.baseSize) || parseInt(el.style.width || '12', 10) || 12;
-              const outline = el.dataset?.outline || '#ecfccb';
+              const base = Number(el.dataset?.baseSize) || 24;
               const meta = (mk as any).__markerData || { maxDiameterMeters: 50000 };
               const pixelDiameter = Math.max(1, Math.round(meta.maxDiameterMeters / metersPerPixel));
               const pixelRadius = Math.max(3, Math.round(pixelDiameter / 2));
               const clampedSize = Math.max(Math.round(base * 0.6), Math.min(pixelRadius * 2, Math.round(base * 3)));
-              el.style.width = `${clampedSize}px`;
-              el.style.height = `${clampedSize}px`;
-              const borderThickness = Math.max(1, Math.round(clampedSize * 0.12));
-              el.style.border = `${borderThickness}px solid ${outline}`;
+              const svg = el.querySelector('svg');
+              if (svg) {
+                svg.setAttribute('width', clampedSize.toString());
+                svg.setAttribute('height', clampedSize.toString());
+              }
             } catch (err) {}
           });
         } catch (err) {}
@@ -302,12 +314,11 @@ export default function MapPreview({
                     const cenCoords = centroid && centroid.geometry && centroid.geometry.coordinates ? centroid.geometry.coordinates : [e.lngLat.lng, e.lngLat.lat];
 
                     // create a small pointer SVG (we will embed it into popup HTML so it's always visible)
-                    const pinSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' style='vertical-align:middle;margin-right:8px'><path d='M12 2C8.686 2 6 4.686 6 8c0 5.25 6 12 6 12s6-6.75 6-12c0-3.314-2.686-6-6-6z' fill='#16a34a' stroke='#fff' stroke-width='1.2'/></svg>`;
+                    
 
                     // add a map marker at centroid for visual cue (may be behind popup depending on z-index, so also embed the pin in popup)
                     try {
                       const el = document.createElement('div');
-                      el.innerHTML = pinSvg;
                       el.style.transform = 'translate(-50%, -100%)';
                       el.style.pointerEvents = 'none';
                       el.style.zIndex = '99999';
@@ -319,7 +330,7 @@ export default function MapPreview({
                     const popupHtmlId = `claims-count-${Date.now()}`;
                     const popup = new (window as any).maplibregl.Popup({ offset: 28, maxWidth: '360px' })
                       .setLngLat(e.lngLat)
-                      .setHTML(`<div style="min-width:200px;font-size:13px"><div style='display:flex;align-items:center'><span>${pinSvg}</span><strong style='line-height:1.1'>${label}</strong></div><div style="margin-top:6px;font-size:12px;color:#4b5563">${isTehsil ? 'Tehsil' : 'Boundary'}</div><div id='${popupHtmlId}' style='margin-top:8px;font-size:12px;color:#6b7280'>Counting claims…</div></div>`)
+                      .setHTML(`<div style="min-width:200px;font-size:13px"><div style='display:flex;align-items:center'><strong style='line-height:1.1'>${label}</strong></div><div style="margin-top:6px;font-size:12px;color:#4b5563">${isTehsil ? 'Tehsil' : 'Boundary'}</div><div id='${popupHtmlId}' style='margin-top:8px;font-size:12px;color:#6b7280'>Counting claims…</div></div>`)
                       .addTo(map);
                     pointerPopupRef.current = popup;
 
@@ -465,7 +476,7 @@ export default function MapPreview({
                           const more = count > 10 ? `<div style='font-size:12px;margin-top:6px;color:#6b7280'>Showing 10 of ${count} claims</div>` : '';
                           const empty = count === 0 ? `<div style='font-size:12px;color:#6b7280'>No claims found inside this tehsil</div>` : '';
 
-                          const html = `<div style="min-width:220px;font-size:13px"><div style='display:flex;align-items:center'>${pinSvg}<strong style='line-height:1.1'>${label}</strong></div><div style="margin-top:6px;font-size:12px;color:#4b5563">${count} claim${count===1?'':'s'} inside</div><div style='margin-top:8px'>${empty}${items}${more}<div style='margin-top:8px'><a href='/atlas?state=${encodeURIComponent(st)}' style='color:#0b78ff;text-decoration:none'>Open atlas</a></div></div></div>`;
+                          const html = `<div style="min-width:220px;font-size:13px"><div style='display:flex;align-items:center'><strong style='line-height:1.1'>${label}</strong></div><div style="margin-top:6px;font-size:12px;color:#4b5563">${count} claim${count===1?'':'s'} inside</div><div style='margin-top:8px'>${empty}${items}${more}<div style='margin-top:8px'><a href='/atlas?state=${encodeURIComponent(st)}' style='color:#0b78ff;text-decoration:none'>Open atlas</a></div></div></div>`;
 
                           try {
                             // update popup content (targeting the generated popup id to avoid race conditions)
@@ -538,7 +549,7 @@ export default function MapPreview({
       if (appended && script && script.parentNode) script.parentNode.removeChild(script);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [JSON.stringify(center), zoom, JSON.stringify(markers), showCenterMarker]);
 
   // dynamic layer diff
   useEffect(() => {
@@ -685,23 +696,26 @@ export default function MapPreview({
       createdMarkers.current = [];
       // @ts-ignore
       const maplibregl = (window as any).maplibregl;
-      markers.forEach((m: any) => {
+      const allMarkers = [...markers];
+      if (showCenterMarker) {
+        allMarkers.push({
+          lng: center[0],
+          lat: center[1],
+          label: 'Center',
+          size: 32,
+          color: '#ef4444', // red color for center marker
+          outline: '#ffffff'
+        });
+      }
+      allMarkers.forEach((m: any) => {
         try {
-            const el = document.createElement("div");
-            const size = m.size ?? 12;
-            el.style.width = `${size}px`;
-            el.style.height = `${size}px`;
-            el.style.borderRadius = "50%";
-            el.style.background = (m as any).color || "#16a34a";
-            const outline = (m as any).outline || '#ecfccb';
-            const borderThickness = Math.max(1, Math.round(size * 0.12));
-            el.style.border = `${borderThickness}px solid ${outline}`;
+            const el = createMarkerElement(m);
             const marker = new maplibregl.Marker({ element: el }).setLngLat([m.lng, m.lat]).addTo(map);
             createdMarkers.current.push(marker);
           } catch (err) {}
       });
     } catch (e) {}
-  }, [JSON.stringify(center), zoom, JSON.stringify(markers.map((m: any) => [m.lng, m.lat]))]);
+  }, [JSON.stringify(center), zoom, JSON.stringify(markers.map((m: any) => [m.lng, m.lat])), showCenterMarker]);
 
   return <div ref={ref} className="w-full h-full rounded-md overflow-hidden" />;
 }

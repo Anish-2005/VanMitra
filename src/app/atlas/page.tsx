@@ -1000,9 +1000,7 @@ export default function AtlasPage() {
     // Handle claim area dragging
     if (featureInfo.layer === "claim-area" && addClaimOpen) {
       setIsDraggingArea(true)
-      // For now, just show a message. Full drag implementation would require
-      // modifying the WebGIS component to support dragging
-      pushToast("Click and drag to move the claim area", "info")
+      pushToast("Dragging claim area - drag to move it to a new location", "info")
       return
     }
 
@@ -1381,14 +1379,26 @@ export default function AtlasPage() {
   }
 
   const handleMapClick = (lngLat: { lng: number; lat: number }) => {
+    console.log("Map clicked at:", lngLat, "isDraggingArea:", isDraggingArea, "addClaimOpen:", addClaimOpen, "claimAreaVisible:", claimAreaVisible)
+
     // If dragging claim area, update its position
     if (isDraggingArea && addClaimOpen) {
+      console.log("Updating claim area center from drag:", lngLat)
       setClaimAreaCenter([lngLat.lng, lngLat.lat])
       setIsDraggingArea(false)
       pushToast("Claim area moved to new location", "info")
       return
     }
-    
+
+    // Handle marker drag completion (when marker is dragged and dropped)
+    // This is called from WebGIS when claim-area-center marker is dragged
+    if (addClaimOpen && claimAreaVisible) {
+      console.log("Updating claim area center from marker drag:", lngLat)
+      setClaimAreaCenter([lngLat.lng, lngLat.lat])
+      pushToast("Claim area moved to new location", "info")
+      return
+    }
+
     console.log("Map clicked at:", lngLat)
   }
 
@@ -1954,6 +1964,9 @@ export default function AtlasPage() {
                                     setClaimAreaCenter(currentCenter as [number, number])
                                   }
                                 }
+
+                                // Automatically show claim area when area is entered
+                                setClaimAreaVisible(true)
                               } else {
                                 // Clear claim area when area is 0 or empty
                                 setClaimAreaVisible(false)
@@ -1964,45 +1977,23 @@ export default function AtlasPage() {
                             className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
                             placeholder="Enter area in hectares"
                           />
-                          {newClaim.claimed_area > 0 && (
-                            <div className="mt-2 flex gap-2">
-                              {!claimAreaVisible ? (
-                                <button
-                                  onClick={() => {
-                                    console.log("Show on Map button clicked")
-                                    if (newClaim.claimed_area > 0) {
-                                      console.log("Setting claim area center and visibility")
-                                      // Set center to current map view center if not already set
-                                      if (!claimAreaCenter) {
-                                        const currentCenter = mapCenter ?? stateCenter
-                                        if (currentCenter) {
-                                          console.log("Setting claim area center to:", currentCenter)
-                                          setClaimAreaCenter(currentCenter as [number, number])
-                                        }
-                                      }
-                                      console.log("Setting claimAreaVisible to true")
-                                      setClaimAreaVisible(true)
-                                    }
-                                  }}
-                                  className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm"
-                                >
-                                  Show on Map
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => {
-                                    console.log("Hide from Map button clicked")
-                                    console.log("Setting claimAreaVisible to false")
-                                    setClaimAreaVisible(false)
-                                  }}
-                                  className="flex-1 bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors text-sm"
-                                >
-                                  Hide from Map
-                                </button>
-                              )}
-                            </div>
-                          )}
+
                         </div>
+
+                        {claimAreaVisible && claimAreaCenter && (
+                          <div>
+                            <label className="block text-sm text-green-700">Claim Center Coordinates</label>
+                            <div className="mt-1 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                              <div className="text-sm text-blue-800 font-mono">
+                                <div><strong>Longitude:</strong> {claimAreaCenter[0].toFixed(6)}</div>
+                                <div><strong>Latitude:</strong> {claimAreaCenter[1].toFixed(6)}</div>
+                              </div>
+                              <div className="text-xs text-blue-600 mt-1">
+                                Drag the red marker on the map to change these coordinates
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
                         <div>
                           <label className="block text-sm text-green-700">Claimant name</label>

@@ -6,7 +6,7 @@ import { useRef, useEffect, useState, useCallback, forwardRef, useImperativeHand
 import maplibregl, { type Map, type Marker, type Popup, type GeoJSONSource } from "maplibre-gl"
 import type MaplibreGeocoder from "@maplibre/maplibre-gl-geocoder"
 import * as turf from "@turf/turf"
-import { Layers, Ruler } from "lucide-react"
+import { Layers, Ruler, MapPin } from "lucide-react"
 
 // Types
 export interface GISLayer {
@@ -114,6 +114,9 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
   const [mapLoaded, setMapLoaded] = useState(false)
   const [mapError, setMapError] = useState<string | null>(null)
   const [isLoadingData, setIsLoadingData] = useState(false)
+  // Draggable marker state
+  const [draggedMarker, setDraggedMarker] = useState<string | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
 
   // Initialize map
   useEffect(() => {
@@ -575,13 +578,12 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
             // create a small svg string for the pin image using the layer color
             const color = layer.style.fillColor || "#ff4444"
             const outline = (layer.style && (layer.style as any).strokeColor) || "#ffffff"
-            const pinPath = "M12 2C8.686 2 6 4.686 6 8c0 5.25 6 12 6 12s6-6.75 6-12c0-3.314-2.686-6-6-6z"
-            const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='${pinPath}' fill='${color}' stroke='${outline}' stroke-width='1.5' stroke-linejoin='round'/><circle cx='12' cy='8' r='2.3' fill='white'/></svg>`
+            const svgString = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"></path><circle cx="12" cy="10" r="3" fill="${color}"></circle></svg>`
+
             // add image to map style if not present
             if (!map.current.hasImage(iconName)) {
               const img = new Image()
-              const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' })
-              const url = URL.createObjectURL(svgBlob)
+              img.src = `data:image/svg+xml;base64,${btoa(svgString)}`
               img.onload = () => {
                 try {
                   map.current && map.current.addImage && map.current.addImage(iconName, img)
@@ -589,7 +591,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
                   console.error('Failed to add image to map style:', err)
                 } finally {
                   try {
-                    URL.revokeObjectURL(url)
+                    
                   } catch (e) {}
                 }
 
@@ -622,7 +624,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
               img.onerror = (e) => {
                 console.error('Failed to load svg for icon', e)
                 try {
-                  URL.revokeObjectURL(url)
+                
                 } catch (ee) {}
                 // fallback to circle layer if image fails
                 layerConfig.type = 'circle'
@@ -642,7 +644,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
                   console.error('Fallback add circle layer failed', err)
                 }
               }
-              img.src = URL.createObjectURL(svgBlob)
+             
             } else {
               const symbolLayer = {
                 id: layerConfig.id,
@@ -704,33 +706,12 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
             const updateFn = () => {
               try {
                 if (!map.current) return
-                const center = map.current.getCenter()
-                const z = map.current.getZoom()
-                const metersPerPixel = metersPerPixelAt(center.lat, z)
-
-                // Enhanced sizing calculation with better zoom responsiveness
-                const pixelDiameter = Math.max(1, Math.round(maxDiameterMeters / metersPerPixel))
-                let pixelRadius = Math.round(pixelDiameter / 2)
-
-                // Apply zoom-based scaling with smooth transitions
-                if (z < 6) {
-                  // Country/state level - larger symbols
-                  pixelRadius = Math.max(minRadiusPx * 2, Math.min(maxRadiusPx, pixelRadius))
-                } else if (z < 10) {
-                  // Regional level - medium symbols
-                  pixelRadius = Math.max(minRadiusPx * 1.5, Math.min(maxRadiusPx * 0.8, pixelRadius))
-                } else {
-                  // Local level - smaller symbols
-                  pixelRadius = Math.max(minRadiusPx, Math.min(maxRadiusPx * 0.6, pixelRadius))
-                }
-
-                // Apply to layer with enhanced stroke width scaling
+                // Keep point layers at fixed size regardless of zoom level
                 if (map.current.getLayer(layerConfig.id)) {
                   try {
-                    map.current.setPaintProperty(layerConfig.id, "circle-radius", pixelRadius)
-                    // Scale stroke width proportionally
-                    const strokeWidth = Math.max(2, Math.round(pixelRadius * 0.2))
-                    map.current.setPaintProperty(layerConfig.id, "circle-stroke-width", strokeWidth)
+                    // Use fixed radius instead of dynamic calculation
+                    map.current.setPaintProperty(layerConfig.id, "circle-radius", 8)
+                    map.current.setPaintProperty(layerConfig.id, "circle-stroke-width", 2)
                   } catch (e) {}
                 }
               } catch (e) {
@@ -918,38 +899,57 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
       console.log("🗺️ Marker details:", marker.id, marker.lng, marker.lat, marker.color, marker.popup)
     })
 
-    // Clear existing markers
-    console.log("🗺️ Clearing existing markers:", markersRef.current.length)
-    markersRef.current.forEach((marker) => marker.remove())
-    markersRef.current = []
+    // Get existing marker IDs
+    const existingMarkerIds = new Set(markersRef.current.map(m => (m as any)._markerId))
+    const newMarkerIds = new Set(markers.map(m => m.id))
 
-    // Clear existing popups
-    popupsRef.current.forEach((popup) => popup.remove())
-    popupsRef.current = []
+    console.log("🗺️ Existing marker IDs:", Array.from(existingMarkerIds))
+    console.log("🗺️ New marker IDs:", Array.from(newMarkerIds))
 
-    // Simple clustering by rounding coordinates: group markers that are very close and show a count.
-    const clusterBuckets: Record<string, { lng: number; lat: number; markers: any[] }> = {}
-    markers.forEach((marker) => {
-      const key = `${marker.lng.toFixed(5)},${marker.lat.toFixed(5)}`
-      if (!clusterBuckets[key]) clusterBuckets[key] = { lng: marker.lng, lat: marker.lat, markers: [] }
-      clusterBuckets[key].markers.push(marker)
-      console.log("🗺️ Added marker to bucket:", key, "marker ID:", marker.id, "total in bucket:", clusterBuckets[key].markers.length)
+    // Remove markers that are no longer in the new markers array
+    const markersToRemove = markersRef.current.filter(marker => !newMarkerIds.has((marker as any)._markerId))
+    console.log("🗺️ Removing markers:", markersToRemove.map(m => (m as any)._markerId))
+    markersToRemove.forEach((marker) => marker.remove())
+
+    // Keep markers that are still in the new array
+    const markersToKeep = markersRef.current.filter(marker => newMarkerIds.has((marker as any)._markerId))
+    console.log("🗺️ Keeping markers:", markersToKeep.map(m => (m as any)._markerId))
+
+    // Create new markers for IDs that don't exist yet
+    const markersToCreate = markers.filter(marker => !existingMarkerIds.has(marker.id))
+    console.log("🗺️ Creating new markers:", markersToCreate.map(m => m.id))
+
+    // Update existing markers with new data
+    const markersToUpdate = markers.filter(marker => existingMarkerIds.has(marker.id))
+    console.log("🗺️ Updating markers:", markersToUpdate.map(m => m.id))
+
+    // Clear popups for removed markers
+    markersToRemove.forEach((marker) => {
+      const popup = popupsRef.current.find(p => (p as any)._markerId === (marker as any)._markerId)
+      if (popup) popup.remove()
     })
 
-    Object.values(clusterBuckets).forEach((bucket) => {
-      const count = bucket.markers.length
-      console.log("🗺️ Processing marker bucket:", bucket.lng, bucket.lat, "count:", count, "markers:", bucket.markers.map(m => m.id))
-      // pick display color from first marker
-      const first = bucket.markers[0]
-      // Make markers much larger and more visible
-      const baseSize = Math.max(50, first.size ?? 50)
-      const color = first.color || "#16a34a"
-      const outline = (first as any).outline || "#ffffff"
+    // Update popups ref
+    popupsRef.current = popupsRef.current.filter(popup => {
+      return markersToKeep.some(marker => (marker as any)._markerId === (popup as any)._markerId) ||
+             markersToUpdate.some(marker => marker.id === (popup as any)._markerId)
+    })
 
-      console.log("🗺️ Processing bucket with", count, "markers, first marker:", first.id, "baseSize:", baseSize, "color:", color)
+    // Create new markers
+    const newCreatedMarkers: maplibregl.Marker[] = []
+
+    markersToCreate.forEach((marker) => {
+      console.log("🗺️ Creating marker:", marker.id, marker.lng, marker.lat)
+      // Make markers much larger and more visible
+      const baseSize = Math.max(50, marker.size ?? 50)
+      const color = marker.color || "#16a34a"
+      const outline = (marker as any).outline || "#ffffff"
+
+      console.log("🗺️ Processing marker with", marker.id, "baseSize:", baseSize, "color:", color)
 
       const el = document.createElement("div")
       el.className = "marker"
+      el.dataset.markerId = marker.id // Add marker ID for drag detection
       el.dataset.baseSize = String(baseSize)
       el.dataset.outline = outline
       el.style.width = `${baseSize}px`
@@ -961,26 +961,20 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
       el.style.transform = "translate(-50%, -100%)"
       el.style.pointerEvents = "auto"
       el.style.position = "absolute"
-      el.style.background = "rgba(255, 0, 0, 0.5)" // Temporary background for debugging
-      el.style.border = "2px solid blue" // Temporary border for debugging
 
       console.log("🗺️ Created marker element:", el, "styles:", el.style.cssText)
 
-      // lucide MapPin path (extracted from lucide icons)
-      const pinPath = "M12 2C8.686 2 6 4.686 6 8c0 5.25 6 12 6 12s6-6.75 6-12c0-3.314-2.686-6-6-6z"
-      const innerCircle = "M12 8a2.3 2.3 0 1 0 0.001 0z"
-
       // Build SVG with optional count label in the center
-      const labelText = count > 1 ? String(count) : ""
-  const fontSize = Math.max(9, Math.round(baseSize * 0.35))
-      const svg = `<?xml version='1.0' encoding='UTF-8'?><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='${baseSize}' height='${baseSize}'><path d='${pinPath}' fill='${color}' stroke='${outline}' stroke-width='1.5' stroke-linejoin='round'/><circle cx='12' cy='8' r='2.3' fill='white'/>${labelText ? `<text x='12' y='9.8' font-family='Arial, Helvetica, sans-serif' font-size='${fontSize}' font-weight='700' fill='${color}' text-anchor='middle' dominant-baseline='central'>${labelText}</text>` : ''}</svg>`
+      const labelText = "" // Single marker, no count
+      const fontSize = Math.max(9, Math.round(baseSize * 0.35))
+      const svg = `<?xml version='1.0' encoding='UTF-8'?><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='${baseSize}' height='${baseSize}'><path d='M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z' fill='${color}' stroke='${outline}' stroke-width='1.5'/><circle cx='12' cy='10' r='2.5' fill='white'/>${labelText ? `<text x='12' y='11.5' font-family='Arial, Helvetica, sans-serif' font-size='${fontSize}' font-weight='700' fill='${color}' text-anchor='middle' dominant-baseline='central'>${labelText}</text>` : ''}</svg>`
 
       el.innerHTML = svg
       console.log("🗺️ Created marker element with SVG:", svg.substring(0, 100) + "...")
 
-      // Add a text fallback for debugging
+      // Add a text fallback for debugging with MapPin icon
       const textFallback = document.createElement("div")
-      textFallback.textContent = count > 1 ? count.toString() : "📍"
+      textFallback.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`
       textFallback.style.cssText = `
         position: absolute;
         top: 0;
@@ -998,10 +992,32 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
         z-index: 10000;
       `
       el.appendChild(textFallback)
-      console.log("🗺️ Added text fallback to marker")
-      const mapMarker = new maplibregl.Marker({ element: el, anchor: "bottom" }).setLngLat([bucket.lng, bucket.lat]).addTo(map.current!)
 
-      console.log("🗺️ Added marker to map:", bucket.lng, bucket.lat, "Element:", el)
+      // Create marker with custom element
+      let mapMarker: maplibregl.Marker
+
+      try {
+        mapMarker = new maplibregl.Marker({ element: el, anchor: "bottom", draggable: true })
+        mapMarker.setLngLat([marker.lng, marker.lat])
+
+        // Add marker to map
+        if (typeof (mapMarker as any).addTo === 'function') {
+          (mapMarker as any).addTo(map.current!)
+        } else {
+          throw new Error('addTo method not available')
+        }
+      } catch (markerError) {
+        console.warn('Custom marker failed, falling back to standard marker:', markerError)
+        // Fallback to standard marker
+        mapMarker = new maplibregl.Marker({ color: marker.color || "#16a34a" })
+          .setLngLat([marker.lng, marker.lat])
+        ;(mapMarker as any).addTo(map.current!)
+      }
+
+      // Store marker ID for tracking
+      (mapMarker as any)._markerId = marker.id
+
+      console.log("🗺️ Added marker to map:", marker.lng, marker.lat, "Element:", el)
       console.log("🗺️ Marker element in DOM:", document.body.contains(el))
       console.log("🗺️ Marker element visibility:", el.style.display, el.style.visibility)
       console.log("🗺️ Marker position on map:", mapMarker.getLngLat())
@@ -1009,36 +1025,75 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
       console.log("🗺️ Map zoom:", map.current!.getZoom())
       console.log("🗺️ Map bounds:", map.current!.getBounds())
 
-      // Check if marker is removed immediately
-      setTimeout(() => {
-        console.log("🗺️ Marker still exists after 1s:", bucket.lng, bucket.lat, "Element in DOM:", document.body.contains(el))
-        console.log("🗺️ Marker element after 1s:", el, "parent:", el.parentElement)
-      }, 1000)
-
-      // Check again after 3 seconds
-      setTimeout(() => {
-        console.log("🗺️ Marker still exists after 3s:", bucket.lng, bucket.lat, "Element in DOM:", document.body.contains(el))
-        console.log("🗺️ Marker element after 3s:", el, "parent:", el.parentElement)
-      }, 3000)
-
-      // popup from first marker
-      if (first.popup) {
-        const popup = new maplibregl.Popup({ offset: 25 }).setHTML(first.popup)
-        mapMarker.setPopup(popup)
-        console.log("🗺️ Added popup to marker:", first.popup)
+      // popup from marker
+      if (marker.popup) {
+        const popup = new maplibregl.Popup({ offset: 25 })
+        popup.setHTML(marker.popup)
+        ;(mapMarker as any).setPopup(popup)
+        // Store marker ID for popup tracking
+        ;(popup as any)._markerId = marker.id
+        popupsRef.current.push(popup)
       }
 
-      try {
-        ;(mapMarker as any).__markerData = { maxDiameterMeters: (first as any).maxDiameterMeters, baseSize }
-      } catch (e) {}
-      markersRef.current.push(mapMarker)
-      console.log("🗺️ Total markers on map:", markersRef.current.length)
-
-      // Add removal logging
-      mapMarker.on('remove', () => {
-        console.log("🗺️ Marker removed:", bucket.lng, bucket.lat)
+      // Add drag event handlers for the marker
+      ;(mapMarker as any).on("dragstart", () => {
+        setDraggedMarker(marker.id)
+        setIsDragging(true)
+        map.current!.getCanvas().style.cursor = "grabbing"
+        ;(map.current as any).dragPan.disable() // Disable map dragging while dragging marker
       })
+
+      ;(mapMarker as any).on("drag", () => {
+        // Update cursor during drag
+        map.current!.getCanvas().style.cursor = "grabbing"
+      })
+
+      ;(mapMarker as any).on("dragend", (e: any) => {
+        console.log("Marker dragend event:", marker.id, e.target.getLngLat())
+        setDraggedMarker(null)
+        setIsDragging(false)
+        map.current!.getCanvas().style.cursor = ""
+        ;(map.current as any).dragPan.enable() // Re-enable map dragging
+
+        // If this is the claim area marker, update the claim area center
+        if (marker.id === "claim-area-center" && onMapClick) {
+          console.log("Calling onMapClick with:", e.target.getLngLat())
+          onMapClick(e.target.getLngLat())
+        }
+      })
+
+      newCreatedMarkers.push(mapMarker)
     })
+
+    // Update existing markers
+    markersToUpdate.forEach((marker) => {
+      const existingMarker = markersRef.current.find(m => (m as any)._markerId === marker.id)
+      if (existingMarker) {
+        console.log("🗺️ Updating existing marker:", marker.id, "to:", marker.lng, marker.lat)
+        ;(existingMarker as any).setLngLat([marker.lng, marker.lat])
+
+        // Update popup if it changed
+        if (marker.popup) {
+          const existingPopup = popupsRef.current.find(p => (p as any)._markerId === marker.id)
+          if (existingPopup) {
+            ;(existingPopup as any).setHTML(marker.popup)
+          } else {
+            const popup = new maplibregl.Popup({ offset: 25 })
+            popup.setHTML(marker.popup)
+            ;(existingMarker as any).setPopup(popup)
+            // Store marker ID for popup tracking
+            ;(popup as any)._markerId = marker.id
+            popupsRef.current.push(popup)
+          }
+        }
+      }
+    })
+
+    // Update markers ref with kept + new markers
+    markersRef.current = [...markersToKeep, ...newCreatedMarkers]
+
+    console.log("🗺️ Final markers count:", markersRef.current.length)
+    console.log("🗺️ Final marker IDs:", markersRef.current.map(m => (m as any)._markerId))
 
     // Zoom/move based dynamic sizing: compute pixel diameter for the desired
     // real-world max diameter (50 km default) so DOM markers match vector layer.
@@ -1049,30 +1104,20 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
     const updateMarkerSizes = () => {
       if (!map.current) return
       try {
-        const center = map.current.getCenter()
-        const z = map.current.getZoom()
-        const metersPerPixel = metersPerPixelAt(center.lat, z)
+        // Keep markers at fixed size regardless of zoom level
         markersRef.current.forEach((mk) => {
           try {
             const el = (mk as any).getElement?.()
             if (!el) return
-            // base size is preferred visual size; marker may also have maxDiameterMeters override
+            // Use fixed base size instead of dynamic calculation
             const base = Number(el.dataset.baseSize) || 24
-            const outline = el.dataset.outline || "#ffffff"
-            const markerObj = (mk as any).__markerData || null
-            const maxDiameterMeters =
-              markerObj?.maxDiameterMeters || markerObj?.maxDiameterMeters === 0 ? markerObj.maxDiameterMeters : 50000 // 50km default
-            const pixelDiameter = Math.max(1, Math.round(maxDiameterMeters / metersPerPixel))
-            // target size in px for the icon
-            // tighter clamp so icons don't grow excessively
-            const targetPx = Math.max(Math.round(base * 0.6), Math.min(pixelDiameter, Math.round(base * 1.6)))
-            el.style.width = `${targetPx}px`
-            el.style.height = `${targetPx}px`
+            el.style.width = `${base}px`
+            el.style.height = `${base}px`
             // update inner svg size if present
             const svgEl = el.querySelector("svg")
             if (svgEl) {
-              svgEl.setAttribute("width", String(targetPx))
-              svgEl.setAttribute("height", String(targetPx))
+              svgEl.setAttribute("width", String(base))
+              svgEl.setAttribute("height", String(base))
             }
           } catch (e) {
             /* per-marker error */
@@ -1104,8 +1149,6 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
       } catch (e) {}
     }
   }, [markers, mapLoaded])
-
-  // Measurement functions
   const startMeasurement = useCallback(() => {
     if (externalStartMeasurement) {
       externalStartMeasurement()
