@@ -13,7 +13,7 @@ import WebGIS, { type WebGISRef as WebGISRefType } from "../../components/WebGIS
 import LayerManager from "../../components/LayerManager"
 import Modal from "../../components/Modal"
 import VillageClaimsPanel from "../../components/VillageClaimsPanel"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 import type { GISLayer, GISMarker } from "../../components/WebGIS"
 import { exportToGeoJSON } from "../../lib/gis-utils"
@@ -117,7 +117,24 @@ export default function AtlasPage() {
     setMapKey((prev) => prev + 1)
   }, [stateFilter, districtFilter])
 
-  const searchParams = useSearchParams()
+  // Use a client-side URLSearchParams snapshot instead of next/navigation's
+  // useSearchParams to avoid CSR-bailout / suspense errors during prerender.
+  const [searchParams, setSearchParams] = useState<URLSearchParams | null>(null)
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const readParams = () => {
+      try {
+        setSearchParams(new URLSearchParams(window.location.search))
+      } catch (e) {
+        setSearchParams(null)
+      }
+    }
+    readParams()
+    const onPop = () => readParams()
+    window.addEventListener("popstate", onPop)
+    return () => window.removeEventListener("popstate", onPop)
+  }, [])
 
   // Initialize pending + committed filters from URL search params (if present).
   // This allows the filters panel to reflect the querystring and for the
@@ -158,9 +175,11 @@ export default function AtlasPage() {
           const params = new URLSearchParams()
           // copy existing search params from the page
           try {
-            for (const k of searchParams?.keys() || []) {
-              const v = searchParams?.get(k)
-              if (v) params.set(k, v)
+            if (searchParams) {
+              for (const k of searchParams.keys()) {
+                const v = searchParams.get(k)
+                if (v) params.set(k, v)
+              }
             }
           } catch (ee) {
             // fallback: ignore
