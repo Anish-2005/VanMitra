@@ -6,7 +6,7 @@ import { useState, useRef, useEffect } from "react"
 import * as turf from "@turf/turf"
 import { STATES, DEFAULT_STATE } from "../../lib/regions"
 import { motion } from "framer-motion"
-import { Layers, Ruler, Download } from "lucide-react"
+import { Layers, Ruler, Download, MapPin, Copy, ZoomIn, FileDown } from "lucide-react"
 import DecorativeBackground from "@/components/DecorativeBackground"
 import Link from "next/link"
 import WebGIS, { type WebGISRef as WebGISRefType } from "../../components/WebGIS"
@@ -732,6 +732,69 @@ export default function AtlasPage() {
       }
     }
     return undefined
+  }
+
+  // Small display helpers
+  const formatNumber = (v: any) => {
+    if (v === null || typeof v === 'undefined' || v === '') return '—'
+    const n = Number(v)
+    if (Number.isNaN(n)) return String(v)
+    // show two decimals for fractional values, otherwise no decimals
+    const options: Intl.NumberFormatOptions = Math.abs(n) < 1 ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { maximumFractionDigits: 2 }
+    try {
+      return new Intl.NumberFormat(undefined, options).format(n)
+    } catch (e) {
+      return n.toFixed(2)
+    }
+  }
+
+  const formatArea = (ha: any) => {
+    if (ha === null || typeof ha === 'undefined' || ha === '') return '—'
+    const n = Number(ha)
+    if (Number.isNaN(n)) return String(ha)
+    const haFmt = formatNumber(n) + ' ha'
+    const km2 = n * 0.01
+    const km2Fmt = formatNumber(km2) + ' km²'
+    return `${haFmt} (${km2Fmt})`
+  }
+
+  const humanizeKey = (k: string) => {
+    if (!k) return k
+    const map: Record<string, string> = {
+      STNAME: 'State',
+      STNAME_SH: 'State (short)',
+      STCODE11: 'State code',
+      stname: 'State',
+      stcode11: 'State code',
+      dtname: 'District',
+      dtcode11: 'District code',
+      sdtname: 'Tehsil',
+      sdtcode11: 'Tehsil code',
+      Shape_Area: 'Shape area (raw)',
+      Shape_Length: 'Shape length (raw)',
+      OBJECTID: 'Object ID',
+      _label: 'Label',
+      _area_ha: 'Area (ha)',
+      _counting: 'Counting',
+      claims_count: 'Claims inside',
+    }
+    if (map[k]) return map[k]
+    // fallback: replace underscores and camelcase -> Title Case
+    const s = k.replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2')
+    return s
+      .split(' ')
+      .map((w) => (w.length > 2 ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w.toUpperCase()))
+      .join(' ')
+  }
+
+  const friendlyLevel = (raw: string) => {
+    if (!raw) return 'Boundary'
+    const r = String(raw).toLowerCase()
+    if (r.includes('state')) return 'State boundary'
+    if (r.includes('district')) return 'District boundary'
+    if (r.includes('tehsil') || r.includes('subdist') || r.includes('subdistrict')) return 'Tehsil boundary'
+    // fall back to cleaned-up string
+    return r.replace(/-/g, ' ')
   }
 
   // Village claims panel state
@@ -1904,23 +1967,91 @@ export default function AtlasPage() {
           {selectedFeature ? (
             <div className="space-y-4">
               {String(selectedFeature.layer || "").toLowerCase().includes("boundary") ? (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between">
                     <div>
+                      <h3 className="text-lg font-semibold text-gray-900">{selectedFeature.properties?._label ?? "Boundary"}</h3>
+                      <p className="text-sm text-gray-500">{String(selectedFeature.properties?.level || selectedFeature.layer || "").replace(/-/g, " ")}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          try {
+                            const geom = selectedFeature.feature?.geometry ?? selectedFeature.feature
+                            const fc = geom.type === 'Feature' ? geom : { type: 'Feature', properties: {}, geometry: geom }
+                            const bbox = turf.bbox(fc)
+                            const centerLng = (bbox[0] + bbox[2]) / 2
+                            const centerLat = (bbox[1] + bbox[3]) / 2
+                            webGISRef.current?.flyTo?.(centerLng, centerLat, 12)
+                          } catch (e) {
+                            // ignore
+                          }
+                        }}
+                        className="inline-flex items-center gap-2 text-sm px-3 py-1 bg-white border border-gray-200 rounded-md hover:bg-gray-50"
+                      >
+                        <ZoomIn size={16} />
+                        <span>Zoom</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          try {
+                            const props = { ...selectedFeature.properties }
+                            navigator.clipboard?.writeText(JSON.stringify(props, null, 2))
+                            pushToast('Boundary properties copied to clipboard', 'info')
+                          } catch (e) {
+                            pushToast('Copy failed', 'error')
+                          }
+                        }}
+                        className="inline-flex items-center gap-2 text-sm px-3 py-1 bg-white border border-gray-200 rounded-md hover:bg-gray-50"
+                      >
+                        <Copy size={16} />
+                        <span>Copy</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          try {
+                            const data = selectedFeature.feature?.type === 'Feature' ? selectedFeature.feature : { type: 'Feature', properties: selectedFeature.properties, geometry: selectedFeature.feature }
+                            exportToGeoJSON([data], `${(selectedFeature.properties?._label || 'boundary').replace(/\s+/g, '_')}.geojson`)
+                          } catch (e) {
+                            pushToast('Export failed', 'error')
+                          }
+                        }}
+                        className="inline-flex items-center gap-2 text-sm px-3 py-1 bg-green-700 text-white rounded-md hover:bg-green-600"
+                      >
+                        <FileDown size={16} />
+                        <span>Export</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="p-3 bg-gray-50 rounded-md">
                       <div className="text-xs text-gray-500">Area</div>
-                      <div className="font-medium">
-                        {selectedFeature.properties?._area_ha ? `${Number(selectedFeature.properties._area_ha).toFixed(2)} ha` : "—"}
+                      <div className="mt-1 text-lg font-semibold text-gray-900">
+                        {formatArea(selectedFeature.properties?._area_ha ?? selectedFeature.properties?.Shape_Area ? Number(selectedFeature.properties?._area_ha ?? (selectedFeature.properties?.Shape_Area / 10000)) : null)}
                       </div>
                     </div>
-                    <div>
+                    <div className="p-3 bg-gray-50 rounded-md">
                       <div className="text-xs text-gray-500">Claims inside</div>
-                      <div className="font-medium">
-                        {selectedFeature.properties?._counting ? (
-                          <span className="text-xs text-gray-500">Counting...</span>
-                        ) : (
-                          (selectedFeature.properties?.claims_count ?? "—")
-                        )}
+                      <div className="mt-1 text-lg font-semibold text-gray-900">
+                        {selectedFeature.properties?._counting ? <span className="text-sm text-gray-500">Counting...</span> : (formatNumber(selectedFeature.properties?.claims_count ?? null))}
                       </div>
+                    </div>
+                    <div className="p-3 bg-gray-50 rounded-md">
+                      <div className="text-xs text-gray-500">Level</div>
+                      <div className="mt-1 text-sm text-gray-700">{friendlyLevel(selectedFeature.properties?.level ?? selectedFeature.layer)}</div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t">
+                    <h4 className="text-sm font-semibold text-gray-900 mb-2">Properties</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-700 max-h-48 overflow-auto">
+                      {selectedFeature.properties && Object.entries(selectedFeature.properties).slice(0, 50).map(([k, v]) => (
+                        <div key={k} className="flex justify-between gap-2 border-b border-gray-100 py-1">
+                          <div className="text-gray-500">{humanizeKey(k)}</div>
+                          <div className="font-medium break-words text-right">{k === '_area_ha' || k === 'Shape_Area' ? formatArea(v) : String(v)}</div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
