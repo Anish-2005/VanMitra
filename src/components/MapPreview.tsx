@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import * as turf from "@turf/turf";
 
-interface Marker { lng: number; lat: number; label?: string }
+interface Marker { lng: number; lat: number; label?: string; size?: number }
 
 type Layers = { fra?: boolean; boundaries?: boolean | string | string[]; assets?: boolean };
 
@@ -81,7 +81,7 @@ export default function MapPreview({
       try {
         markers.forEach((m) => {
           const el = document.createElement("div");
-          const size = typeof (m as any).size === 'number' ? (m as any).size : 12;
+          const size = m.size ?? 12;
           el.dataset.baseSize = String(size);
           el.dataset.outline = (m as any).outline || '#ecfccb';
           el.style.width = `${size}px`;
@@ -688,7 +688,7 @@ export default function MapPreview({
       markers.forEach((m: any) => {
         try {
             const el = document.createElement("div");
-            const size = typeof (m as any).size === 'number' ? (m as any).size : 12;
+            const size = m.size ?? 12;
             el.style.width = `${size}px`;
             el.style.height = `${size}px`;
             el.style.borderRadius = "50%";

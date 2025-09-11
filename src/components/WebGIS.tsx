@@ -31,6 +31,7 @@ export interface GISMarker {
   label?: string
   color?: string
   popup?: string
+  size?: number
 }
 
 export interface WebGISProps {
@@ -912,7 +913,13 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
   useEffect(() => {
     if (!map.current || !mapLoaded) return
 
+    console.log("🗺️ Processing markers:", markers.length)
+    markers.forEach(marker => {
+      console.log("🗺️ Marker details:", marker.id, marker.lng, marker.lat, marker.color, marker.popup)
+    })
+
     // Clear existing markers
+    console.log("🗺️ Clearing existing markers:", markersRef.current.length)
     markersRef.current.forEach((marker) => marker.remove())
     markersRef.current = []
 
@@ -926,16 +933,20 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
       const key = `${marker.lng.toFixed(5)},${marker.lat.toFixed(5)}`
       if (!clusterBuckets[key]) clusterBuckets[key] = { lng: marker.lng, lat: marker.lat, markers: [] }
       clusterBuckets[key].markers.push(marker)
+      console.log("🗺️ Added marker to bucket:", key, "marker ID:", marker.id, "total in bucket:", clusterBuckets[key].markers.length)
     })
 
     Object.values(clusterBuckets).forEach((bucket) => {
       const count = bucket.markers.length
+      console.log("🗺️ Processing marker bucket:", bucket.lng, bucket.lat, "count:", count, "markers:", bucket.markers.map(m => m.id))
       // pick display color from first marker
       const first = bucket.markers[0]
-      // smaller default pin
-      const baseSize = typeof (first as any).size === "number" ? (first as any).size : 22
+      // Make markers much larger and more visible
+      const baseSize = Math.max(50, first.size ?? 50)
       const color = first.color || "#16a34a"
       const outline = (first as any).outline || "#ffffff"
+
+      console.log("🗺️ Processing bucket with", count, "markers, first marker:", first.id, "baseSize:", baseSize, "color:", color)
 
       const el = document.createElement("div")
       el.className = "marker"
@@ -949,6 +960,11 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
       el.style.zIndex = "9999"
       el.style.transform = "translate(-50%, -100%)"
       el.style.pointerEvents = "auto"
+      el.style.position = "absolute"
+      el.style.background = "rgba(255, 0, 0, 0.5)" // Temporary background for debugging
+      el.style.border = "2px solid blue" // Temporary border for debugging
+
+      console.log("🗺️ Created marker element:", el, "styles:", el.style.cssText)
 
       // lucide MapPin path (extracted from lucide icons)
       const pinPath = "M12 2C8.686 2 6 4.686 6 8c0 5.25 6 12 6 12s6-6.75 6-12c0-3.314-2.686-6-6-6z"
@@ -960,18 +976,68 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
       const svg = `<?xml version='1.0' encoding='UTF-8'?><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='${baseSize}' height='${baseSize}'><path d='${pinPath}' fill='${color}' stroke='${outline}' stroke-width='1.5' stroke-linejoin='round'/><circle cx='12' cy='8' r='2.3' fill='white'/>${labelText ? `<text x='12' y='9.8' font-family='Arial, Helvetica, sans-serif' font-size='${fontSize}' font-weight='700' fill='${color}' text-anchor='middle' dominant-baseline='central'>${labelText}</text>` : ''}</svg>`
 
       el.innerHTML = svg
+      console.log("🗺️ Created marker element with SVG:", svg.substring(0, 100) + "...")
+
+      // Add a text fallback for debugging
+      const textFallback = document.createElement("div")
+      textFallback.textContent = count > 1 ? count.toString() : "📍"
+      textFallback.style.cssText = `
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: ${baseSize}px;
+        height: ${baseSize}px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: ${Math.max(12, baseSize * 0.4)}px;
+        color: white;
+        background: ${color};
+        border-radius: 50%;
+        border: 2px solid white;
+        z-index: 10000;
+      `
+      el.appendChild(textFallback)
+      console.log("🗺️ Added text fallback to marker")
       const mapMarker = new maplibregl.Marker({ element: el, anchor: "bottom" }).setLngLat([bucket.lng, bucket.lat]).addTo(map.current!)
+
+      console.log("🗺️ Added marker to map:", bucket.lng, bucket.lat, "Element:", el)
+      console.log("🗺️ Marker element in DOM:", document.body.contains(el))
+      console.log("🗺️ Marker element visibility:", el.style.display, el.style.visibility)
+      console.log("🗺️ Marker position on map:", mapMarker.getLngLat())
+      console.log("🗺️ Map center:", map.current!.getCenter())
+      console.log("🗺️ Map zoom:", map.current!.getZoom())
+      console.log("🗺️ Map bounds:", map.current!.getBounds())
+
+      // Check if marker is removed immediately
+      setTimeout(() => {
+        console.log("🗺️ Marker still exists after 1s:", bucket.lng, bucket.lat, "Element in DOM:", document.body.contains(el))
+        console.log("🗺️ Marker element after 1s:", el, "parent:", el.parentElement)
+      }, 1000)
+
+      // Check again after 3 seconds
+      setTimeout(() => {
+        console.log("🗺️ Marker still exists after 3s:", bucket.lng, bucket.lat, "Element in DOM:", document.body.contains(el))
+        console.log("🗺️ Marker element after 3s:", el, "parent:", el.parentElement)
+      }, 3000)
 
       // popup from first marker
       if (first.popup) {
         const popup = new maplibregl.Popup({ offset: 25 }).setHTML(first.popup)
         mapMarker.setPopup(popup)
+        console.log("🗺️ Added popup to marker:", first.popup)
       }
 
       try {
         ;(mapMarker as any).__markerData = { maxDiameterMeters: (first as any).maxDiameterMeters, baseSize }
       } catch (e) {}
       markersRef.current.push(mapMarker)
+      console.log("🗺️ Total markers on map:", markersRef.current.length)
+
+      // Add removal logging
+      mapMarker.on('remove', () => {
+        console.log("🗺️ Marker removed:", bucket.lng, bucket.lat)
+      })
     })
 
     // Zoom/move based dynamic sizing: compute pixel diameter for the desired

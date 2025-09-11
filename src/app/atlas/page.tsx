@@ -6,7 +6,7 @@ import { useState, useRef, useEffect } from "react"
 import * as turf from "@turf/turf"
 import { STATES, DEFAULT_STATE } from "../../lib/regions"
 import { motion } from "framer-motion"
-import { Layers, Ruler, Download, MapPin, Copy, ZoomIn, FileDown } from "lucide-react"
+import { Layers, Ruler, Download, MapPin, Copy, ZoomIn, FileDown, Plus } from "lucide-react"
 import DecorativeBackground from "@/components/DecorativeBackground"
 import Link from "next/link"
 import WebGIS, { type WebGISRef as WebGISRefType } from "../../components/WebGIS"
@@ -33,6 +33,20 @@ export default function AtlasPage() {
         strokeColor: "#15803d",
         strokeWidth: 2,
         opacity: 0.7,
+      },
+    },
+    {
+      id: "claim-area",
+      name: "Claim Area",
+      type: "geojson",
+      url: "",
+      visible: false,
+      data: undefined,
+      style: {
+        fillColor: "#fbbf24",
+        strokeColor: "#f59e0b",
+        strokeWidth: 3,
+        opacity: 0.6,
       },
     },
   ])
@@ -983,6 +997,15 @@ export default function AtlasPage() {
   }
 
   const handleFeatureClick = (featureInfo: { layer: string; feature: any; lngLat: any }) => {
+    // Handle claim area dragging
+    if (featureInfo.layer === "claim-area" && addClaimOpen) {
+      setIsDraggingArea(true)
+      // For now, just show a message. Full drag implementation would require
+      // modifying the WebGIS component to support dragging
+      pushToast("Click and drag to move the claim area", "info")
+      return
+    }
+
     // If a boundary layer was clicked, compute area and (for tehsil) claims count
     const { layer, feature, lngLat } = featureInfo as any
     const props = feature?.properties || {}
@@ -1358,6 +1381,14 @@ export default function AtlasPage() {
   }
 
   const handleMapClick = (lngLat: { lng: number; lat: number }) => {
+    // If dragging claim area, update its position
+    if (isDraggingArea && addClaimOpen) {
+      setClaimAreaCenter([lngLat.lng, lngLat.lat])
+      setIsDraggingArea(false)
+      pushToast("Claim area moved to new location", "info")
+      return
+    }
+    
     console.log("Map clicked at:", lngLat)
   }
 
@@ -1393,13 +1424,111 @@ export default function AtlasPage() {
   })
   const [submittingClaim, setSubmittingClaim] = useState(false)
 
+  // Draggable claim area state
+  const [claimAreaVisible, setClaimAreaVisible] = useState(false)
+  const [claimAreaCenter, setClaimAreaCenter] = useState<[number, number] | null>(null)
+  const [claimAreaRadius, setClaimAreaRadius] = useState<number>(0) // in meters
+  const [isDraggingArea, setIsDraggingArea] = useState(false)
+
+  // Update claim area layer when state changes
+  useEffect(() => {
+    console.log("=== CLAIM AREA useEffect triggered ===")
+    console.log("claimAreaVisible:", claimAreaVisible)
+    console.log("claimAreaCenter:", claimAreaCenter)
+    console.log("claimAreaRadius:", claimAreaRadius)
+    console.log("area:", newClaim.claimed_area)
+    console.log("Current map center:", mapCenter)
+    console.log("🗺️ [Atlas] Current markers count:", markers.length)
+
+    if (claimAreaVisible && claimAreaCenter && claimAreaRadius > 0) {
+      console.log("=== SHOWING CLAIM AREA ===")
+      // Create a circle polygon for the claim area
+      const circle = turf.circle(claimAreaCenter, claimAreaRadius / 1000, { steps: 64, units: 'kilometers' })
+      console.log("Created circle:", circle)
+
+      setLayers((prevLayers) =>
+        prevLayers.map((layer) =>
+          layer.id === "claim-area"
+            ? {
+                ...layer,
+                visible: true,
+                data: { type: "FeatureCollection", features: [circle] },
+              }
+            : layer
+        )
+      )
+
+      // Update marker position when claim area center changes
+      const area = newClaim.claimed_area
+      if (area > 0) {
+        const areaM2 = area * 10000
+        const radiusM = Math.sqrt(areaM2 / Math.PI)
+
+        const claimMarker: GISMarker = {
+          id: "claim-area-center",
+          lng: claimAreaCenter[0],
+          lat: claimAreaCenter[1],
+          label: `New Claim (${area} ha)`,
+          color: "#ef4444",
+          popup: `<div style="min-width:200px;font-size:13px"><strong>New Claim Area</strong><div>Area: ${area} ha</div><div>Radius: ${(radiusM / 1000).toFixed(2)} km</div><div style="margin-top:6px;color:#ef4444;"><em>Drag the circle to reposition</em></div></div>`,
+          size: Math.max(100, Math.min(200, Math.sqrt(area) * 10)) // Size proportional to area, min 100px, max 200px
+        }
+
+        console.log("Creating marker:", claimMarker)
+        console.log("Marker coordinates vs map center:", {
+          markerLng: claimMarker.lng,
+          markerLat: claimMarker.lat,
+          mapCenterLng: mapCenter ? mapCenter[0] : null,
+          mapCenterLat: mapCenter ? mapCenter[1] : null,
+          distance: mapCenter ? turf.distance(turf.point(claimAreaCenter), turf.point(mapCenter), { units: 'kilometers' }) : null
+        })
+
+        setMarkers((prev) => {
+          const filtered = prev.filter(m => m.id !== "claim-area-center")
+          const newMarkers = [...filtered, claimMarker]
+          console.log("Updated markers array:", newMarkers.length, "markers")
+          console.log("All marker IDs:", newMarkers.map(m => m.id))
+          return newMarkers
+        })
+      }
+    } else {
+      console.log("=== HIDING CLAIM AREA ===")
+      // Hide the claim area layer
+      setLayers((prevLayers) =>
+        prevLayers.map((layer) =>
+          layer.id === "claim-area"
+            ? { ...layer, visible: false, data: undefined }
+            : layer
+        )
+      )
+      // Remove claim area marker
+      setMarkers((prev) => {
+        const filtered = prev.filter(m => m.id !== "claim-area-center")
+        console.log("Removed claim marker, remaining markers:", filtered.length)
+        return filtered
+      })
+    }
+    console.log("=== END CLAIM AREA useEffect ===")
+  }, [claimAreaVisible, claimAreaCenter, claimAreaRadius, newClaim.claimed_area, mapCenter])
+
   const submitNewClaim = async () => {
     try {
       setSubmittingClaim(true)
+      
+      // Include claim area geometry in the submission
+      const claimData = {
+        ...newClaim,
+        geometry: claimAreaVisible && claimAreaCenter ? {
+          type: "Point",
+          coordinates: claimAreaCenter
+        } : null,
+        claim_area_radius: claimAreaRadius
+      }
+      
   const res = await fetch("/api/claims", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newClaim),
+        body: JSON.stringify(claimData),
       })
       if (!res.ok) {
         const text = await res.text()
@@ -1409,8 +1538,17 @@ export default function AtlasPage() {
       // success
       pushToast("Claim added successfully", "info")
       setAddClaimOpen(false)
-      // clear form
+      // clear form and claim area
       setNewClaim({ state_name: "", district_name: "", village_name: "", claim_type: "", claimant_name: "", community_name: "", claimed_area: 0 })
+      setClaimAreaVisible(false)
+      setClaimAreaCenter(null)
+      setClaimAreaRadius(0)
+      // Remove claim area marker
+      setMarkers((prev) => {
+        const filtered = prev.filter(m => m.id !== "claim-area-center")
+        console.log("Removed claim marker, remaining markers:", filtered.length)
+        return filtered
+      })
       // trigger refresh of claims
       setApplyCounter((c) => c + 1)
       setMapKey((k) => k + 1)
@@ -1418,6 +1556,77 @@ export default function AtlasPage() {
       pushToast("Failed to add claim (network error)", "error")
     } finally {
       setSubmittingClaim(false)
+    }
+  }
+
+  // Function to fetch village coordinates and zoom to area
+  const goToVillageArea = async () => {
+    if (!newClaim.village_name || !newClaim.state_name) {
+      pushToast("Please enter village and state first", "error")
+      return
+    }
+
+    try {
+      // Try to find village coordinates from existing claims data
+      const q = new URLSearchParams()
+      q.set("village", newClaim.village_name)
+      q.set("state", newClaim.state_name)
+      q.set("limit", "100")
+
+      const res = await fetch(`/api/claims?${q.toString()}`)
+      if (res.ok) {
+        const data = await res.json()
+        const features = data && data.type === "FeatureCollection" ? data.features || [] : Array.isArray(data) ? data : []
+
+        if (features.length > 0) {
+          // Calculate centroid of all village claims
+          const points: Array<[number, number]> = []
+          features.forEach((f: any) => {
+            if (f.geometry?.type === "Point" && f.geometry.coordinates) {
+              points.push([f.geometry.coordinates[0], f.geometry.coordinates[1]])
+            } else if (f.geometry?.type === "Polygon" && f.geometry.coordinates) {
+              // Use centroid of polygon
+              try {
+                const poly = turf.polygon(f.geometry.coordinates)
+                const centroid = turf.centroid(poly)
+                if (centroid.geometry.coordinates) {
+                  points.push([centroid.geometry.coordinates[0], centroid.geometry.coordinates[1]])
+                }
+              } catch (e) {
+                // ignore
+              }
+            }
+          })
+
+          if (points.length > 0) {
+            // Calculate average center
+            const avgLng = points.reduce((sum, p) => sum + p[0], 0) / points.length
+            const avgLat = points.reduce((sum, p) => sum + p[1], 0) / points.length
+            
+            // Set claim area center
+            setClaimAreaCenter([avgLng, avgLat])
+            
+            // Zoom to the village area
+            webGISRef.current?.flyTo?.(avgLng, avgLat, 14)
+            
+            pushToast(`Zoomed to ${newClaim.village_name}`, "info")
+            return
+          }
+        }
+      }
+
+      // Fallback: use state center if village not found
+      const stateData = STATES.find((s) => s.name === newClaim.state_name)
+      if (stateData) {
+        setClaimAreaCenter([stateData.center[0], stateData.center[1]])
+        webGISRef.current?.flyTo?.(stateData.center[0], stateData.center[1], 10)
+        pushToast(`Village not found, zoomed to ${newClaim.state_name} center`, "info")
+      } else {
+        pushToast("Could not find village location", "error")
+      }
+    } catch (err) {
+      console.error("Error fetching village coordinates:", err)
+      pushToast("Failed to find village location", "error")
     }
   }
 
@@ -1580,17 +1789,280 @@ export default function AtlasPage() {
                     } catch (e) { }
                   }}
                 />
-                {/* Add Claim card below LayerManager */}
-                <div className="mb-4 p-4 bg-blue-50 rounded-xl border border-blue-200 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="text-sm font-semibold text-blue-800">Add Claim</h4>
-                      <p className="text-xs text-blue-600">Manually add a claim to the database</p>
+                {/* Add Claim section (collapsible) */}
+                <div className="mb-4 bg-white rounded-xl shadow-md border border-green-100 overflow-hidden">
+                  <div
+                    className="flex items-center justify-between p-3 bg-gray-50 cursor-pointer"
+                    onClick={() => setAddClaimOpen((prev) => !prev)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Plus size={16} />
+                      <span className="font-medium">Add Claim</span>
+                      <span className="text-sm text-gray-500">(manual entry)</span>
                     </div>
-                    <div>
-                      <button onClick={() => setAddClaimOpen(true)} className="bg-blue-600 text-white px-3 py-1 rounded-md">Add</button>
-                    </div>
+                    <div className={`transform transition-transform ${addClaimOpen ? "rotate-180" : ""}`}>▼</div>
                   </div>
+
+                  {addClaimOpen && (
+                    <div className="p-4 space-y-3">
+                      <div className="grid grid-cols-1 gap-3">
+                        <div>
+                          <label className="block text-sm text-green-700">State</label>
+                          <select
+                            value={newClaim.state_name}
+                            onChange={(e) => {
+                              const stateName = e.target.value
+                              setNewClaim((s) => ({ ...s, state_name: stateName, district_name: "", village_name: "" }))
+                              // Reset district and village when state changes
+                              setPendingDistrictFilter("")
+                              setPendingVillageFilter("")
+                            }}
+                            className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
+                          >
+                            <option value="">Select State</option>
+                            {(stateOptions.length ? stateOptions : STATES.map((s) => s.name)).map((s) => (
+                              <option key={s} value={s}>
+                                {s}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm text-green-700">District</label>
+                          <select
+                            value={newClaim.district_name}
+                            onChange={(e) => {
+                              const districtName = e.target.value
+                              setNewClaim((s) => ({ ...s, district_name: districtName, village_name: "" }))
+                              // Reset village when district changes
+                              setPendingVillageFilter("")
+                            }}
+                            className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
+                            disabled={!newClaim.state_name}
+                          >
+                            <option value="">Select District</option>
+                            {newClaim.state_name && districtOptionsByState[newClaim.state_name] &&
+                              districtOptionsByState[newClaim.state_name].length
+                              ? districtOptionsByState[newClaim.state_name].map((d) => (
+                                <option key={d} value={d}>
+                                  {d}
+                                </option>
+                              ))
+                              : (STATES.find((s) => s.name === newClaim.state_name)?.districts || []).map((d) => (
+                                <option key={d} value={d}>
+                                  {d}
+                                </option>
+                              ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm text-green-700">Village</label>
+                          <div className="flex gap-2">
+                            <select
+                              value={newClaim.village_name}
+                              onChange={(e) => setNewClaim((s) => ({ ...s, village_name: e.target.value }))}
+                              className="mt-1 flex-1 rounded-md border border-green-100 p-2 bg-green-50"
+                              disabled={!newClaim.district_name}
+                            >
+                              <option value="">Select Village</option>
+                              {newClaim.district_name && newClaim.state_name
+                                ? // Prefer district-scoped villages when district is selected
+                                  (villageOptionsByStateAndDistrict[newClaim.state_name] && villageOptionsByStateAndDistrict[newClaim.state_name][newClaim.district_name]
+                                    ? villageOptionsByStateAndDistrict[newClaim.state_name][newClaim.district_name].map((v) => (
+                                      <option key={v} value={v}>
+                                        {v}
+                                      </option>
+                                    ))
+                                    : // fallback to state-wide villages for the selected state
+                                      (villageOptionsByState[newClaim.state_name] || []).map((v) => (
+                                        <option key={v} value={v}>
+                                          {v}
+                                        </option>
+                                      )))
+                                : // no district selected: show state-wide list if available otherwise global list
+                                (newClaim.state_name
+                                  ? (villageOptionsByState[newClaim.state_name] || []).map((v) => (
+                                      <option key={v} value={v}>
+                                        {v}
+                                      </option>
+                                    ))
+                                  : villageOptions.map((v) => (
+                                      <option key={v} value={v}>
+                                        {v}
+                                      </option>
+                                    )))}
+                            </select>
+                            <button
+                              onClick={goToVillageArea}
+                              disabled={!newClaim.village_name || !newClaim.state_name}
+                              className="mt-1 bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              type="button"
+                            >
+                              Go to Area
+                            </button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm text-green-700">Claim type</label>
+                          <select
+                            value={newClaim.claim_type}
+                            onChange={(e) => setNewClaim((s) => ({ ...s, claim_type: e.target.value }))}
+                            className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
+                          >
+                            <option value="">Select Claim Type</option>
+                            {claimTypeOptions.length ? (
+                              claimTypeOptions.map((ct) => (
+                                <option key={ct} value={ct}>
+                                  {ct}
+                                </option>
+                              ))
+                            ) : (
+                              <>
+                                <option value="IFR">IFR</option>
+                                <option value="CR">CR</option>
+                                <option value="CFR">CFR</option>
+                              </>
+                            )}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm text-green-700">Claimed area (ha)</label>
+                          <input
+                            type="number"
+                            value={newClaim.claimed_area}
+                            onChange={(e) => {
+                              const area = Number(e.target.value)
+                              setNewClaim((s) => ({ ...s, claimed_area: area }))
+
+                              // Calculate radius from area (assuming circular area)
+                              // Area = πr², so r = sqrt(area/π)
+                              // Convert hectares to square meters: area_m2 = area * 10000
+                              // r = sqrt(area_m2 / π)
+                              if (area > 0) {
+                                const areaM2 = area * 10000
+                                const radiusM = Math.sqrt(areaM2 / Math.PI)
+                                setClaimAreaRadius(radiusM)
+
+                                // Set center to current map view center if not already set
+                                if (!claimAreaCenter) {
+                                  const currentCenter = mapCenter ?? stateCenter
+                                  if (currentCenter) {
+                                    setClaimAreaCenter(currentCenter as [number, number])
+                                  }
+                                }
+                              } else {
+                                // Clear claim area when area is 0 or empty
+                                setClaimAreaVisible(false)
+                                setClaimAreaCenter(null)
+                                setClaimAreaRadius(0)
+                              }
+                            }}
+                            className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
+                            placeholder="Enter area in hectares"
+                          />
+                          {newClaim.claimed_area > 0 && (
+                            <div className="mt-2 flex gap-2">
+                              {!claimAreaVisible ? (
+                                <button
+                                  onClick={() => {
+                                    console.log("Show on Map button clicked")
+                                    if (newClaim.claimed_area > 0) {
+                                      console.log("Setting claim area center and visibility")
+                                      // Set center to current map view center if not already set
+                                      if (!claimAreaCenter) {
+                                        const currentCenter = mapCenter ?? stateCenter
+                                        if (currentCenter) {
+                                          console.log("Setting claim area center to:", currentCenter)
+                                          setClaimAreaCenter(currentCenter as [number, number])
+                                        }
+                                      }
+                                      console.log("Setting claimAreaVisible to true")
+                                      setClaimAreaVisible(true)
+                                    }
+                                  }}
+                                  className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm"
+                                >
+                                  Show on Map
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    console.log("Hide from Map button clicked")
+                                    console.log("Setting claimAreaVisible to false")
+                                    setClaimAreaVisible(false)
+                                  }}
+                                  className="flex-1 bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors text-sm"
+                                >
+                                  Hide from Map
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="block text-sm text-green-700">Claimant name</label>
+                          <input
+                            value={newClaim.claimant_name}
+                            onChange={(e) => setNewClaim((s) => ({ ...s, claimant_name: e.target.value }))}
+                            className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
+                            placeholder="Enter claimant name"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm text-green-700">Community name</label>
+                          <input
+                            value={newClaim.community_name}
+                            onChange={(e) => setNewClaim((s) => ({ ...s, community_name: e.target.value }))}
+                            className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
+                            placeholder="Enter community name"
+                          />
+                        </div>
+                      </div>
+
+                      {claimAreaVisible && (
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                          <p className="text-sm text-yellow-800">
+                            Claim area is now visible on the map with a red marker at the center. You can drag it to adjust the location.
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-2 pt-3">
+                        <button
+                          disabled={submittingClaim || !newClaim.state_name || !newClaim.district_name || !newClaim.village_name || !newClaim.claim_type || !newClaim.claimed_area}
+                          onClick={submitNewClaim}
+                          className="bg-green-700 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {submittingClaim ? 'Submitting...' : 'Submit Claim'}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setAddClaimOpen(false)
+                            setClaimAreaVisible(false)
+                            setClaimAreaCenter(null)
+                            setClaimAreaRadius(0)
+                            setNewClaim({ state_name: "", district_name: "", village_name: "", claim_type: "", claimant_name: "", community_name: "", claimed_area: 0 })
+                            // Remove claim area marker
+                            setMarkers((prev) => {
+                              const filtered = prev.filter(m => m.id !== "claim-area-center")
+                              console.log("Cancel button: Removed claim marker, remaining markers:", filtered.length)
+                              console.log("Cancel button: Removed marker IDs:", prev.filter(m => m.id === "claim-area-center").map(m => m.id))
+                              return filtered
+                            })
+                          }}
+                          className="border border-green-200 text-green-700 px-4 py-2 rounded-md hover:bg-green-50 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 {/* Search by Village UID (collapsible) */}
                 <div className="my-4 bg-white rounded-xl border border-green-100 shadow-sm overflow-hidden">
@@ -2162,46 +2634,6 @@ export default function AtlasPage() {
               )}
             </div>
           ) : null}
-        </Modal>
-
-        <Modal open={addClaimOpen} onClose={() => setAddClaimOpen(false)} title={"Add Claim (manual)"}>
-          <div className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <div>
-                <label className="text-xs text-gray-500">State</label>
-                <input value={newClaim.state_name} onChange={(e) => setNewClaim((s) => ({ ...s, state_name: e.target.value }))} className="mt-1 w-full rounded-md border p-2" />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500">District</label>
-                <input value={newClaim.district_name} onChange={(e) => setNewClaim((s) => ({ ...s, district_name: e.target.value }))} className="mt-1 w-full rounded-md border p-2" />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500">Village</label>
-                <input value={newClaim.village_name} onChange={(e) => setNewClaim((s) => ({ ...s, village_name: e.target.value }))} className="mt-1 w-full rounded-md border p-2" />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500">Claim type</label>
-                <input value={newClaim.claim_type} onChange={(e) => setNewClaim((s) => ({ ...s, claim_type: e.target.value }))} className="mt-1 w-full rounded-md border p-2" />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500">Claimant name</label>
-                <input value={newClaim.claimant_name} onChange={(e) => setNewClaim((s) => ({ ...s, claimant_name: e.target.value }))} className="mt-1 w-full rounded-md border p-2" />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500">Community name</label>
-                <input value={newClaim.community_name} onChange={(e) => setNewClaim((s) => ({ ...s, community_name: e.target.value }))} className="mt-1 w-full rounded-md border p-2" />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500">Claimed area (ha)</label>
-                <input type="number" value={newClaim.claimed_area} onChange={(e) => setNewClaim((s) => ({ ...s, claimed_area: Number(e.target.value) }))} className="mt-1 w-full rounded-md border p-2" />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 pt-3">
-              <button disabled={submittingClaim} onClick={submitNewClaim} className="bg-green-700 text-white px-3 py-1 rounded-md">{submittingClaim ? 'Submitting...' : 'Submit'}</button>
-              <button onClick={() => setAddClaimOpen(false)} className="border px-3 py-1 rounded-md">Cancel</button>
-            </div>
-          </div>
         </Modal>
 
   {/* Toast UI removed */}
