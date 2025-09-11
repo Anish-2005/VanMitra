@@ -1532,13 +1532,29 @@ export default function AtlasPage() {
           type: "Point",
           coordinates: claimAreaCenter
         } : null,
-        claim_area_radius: claimAreaRadius
+        claim_area_radius: claimAreaRadius,
+        // Add latitude and longitude from claim area center
+        latitude: claimAreaCenter ? claimAreaCenter[1] : null,
+        longitude: claimAreaCenter ? claimAreaCenter[0] : null
       }
+
+      console.log("Submitting claim with data:", claimData)
       
-  const res = await fetch("/api/claims", {
+      const res = await fetch("/api/claims", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(claimData),
+      })
+
+      console.log("POST request to /api/claims:", {
+        method: "POST",
+        url: "/api/claims",
+        body: claimData,
+        response: {
+          status: res.status,
+          statusText: res.statusText,
+          ok: res.ok
+        }
       })
       if (!res.ok) {
         const text = await res.text()
