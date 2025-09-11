@@ -956,27 +956,65 @@ export default function AtlasPage() {
             const res = await fetch(`/api/claims?${q.toString()}`)
             if (!res.ok) throw new Error(`HTTP ${res.status}`)
             const data = await res.json()
-            const features: any[] = data && data.type === "FeatureCollection" ? data.features || [] : Array.isArray(data) ? data : []
+            const rawList: any[] = data && data.type === "FeatureCollection" ? data.features || [] : Array.isArray(data) ? data : []
+
+            // Normalize claim items to GeoJSON Features with geometry where possible
+            const normalized: any[] = []
+            for (const it of rawList) {
+              try {
+                if (!it) continue
+                if (it.type === 'Feature' && it.geometry) {
+                  normalized.push(it)
+                  continue
+                }
+                // if plain object with geometry field
+                if (it.geometry && (it.geometry.type === 'Point' || it.geometry.type === 'Polygon' || it.geometry.type === 'MultiPolygon')) {
+                  normalized.push({ type: 'Feature', properties: it.properties || it, geometry: it.geometry })
+                  continue
+                }
+                // try lat/lng fields
+                const lat = Number(it.lat ?? it.latitude ?? it.LAT ?? it.LATITUDE)
+                const lng = Number(it.lng ?? it.lon ?? it.longitude ?? it.LON ?? it.LONG)
+                if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
+                  normalized.push({ type: 'Feature', properties: it, geometry: { type: 'Point', coordinates: [lng, lat] } })
+                  continue
+                }
+                // try properties wrapper
+                const props = it.properties ?? it
+                const plat = Number(props.lat ?? props.latitude ?? props.LAT)
+                const plong = Number(props.lng ?? props.lon ?? props.longitude ?? props.LON)
+                if (!Number.isNaN(plat) && !Number.isNaN(plong)) {
+                  normalized.push({ type: 'Feature', properties: props, geometry: { type: 'Point', coordinates: [plong, plat] } })
+                }
+              } catch (e) {
+                // ignore malformed items
+              }
+            }
 
             // Prepare polygon feature for intersection checks
             const polyFeature = feature.type === 'Feature' ? feature : { type: 'Feature', properties: {}, geometry: feature }
 
             let count = 0
-            for (const f of features) {
+            for (const f of normalized) {
               try {
                 if (!f || !f.geometry) continue
-
                 const gtype = (f.geometry.type || '').toLowerCase()
-
                 if (gtype === 'point' || gtype === 'multipoint') {
                   const coords = gtype === 'point' ? f.geometry.coordinates : (f.geometry.coordinates && f.geometry.coordinates[0])
-                  if (!coords) continue
+                  if (!coords || coords.length < 2) continue
                   const pt = turf.point(coords)
                   if (turf.booleanPointInPolygon(pt, polyFeature)) count++
-                } else {
-                  // For polygon/multipolygon or unknown geometries, use booleanIntersects
+                } else if (gtype === 'polygon' || gtype === 'multipolygon') {
                   const feat = f.type === 'Feature' ? f : { type: 'Feature', properties: f.properties || {}, geometry: f.geometry }
                   if (turf.booleanIntersects(feat, polyFeature)) count++
+                } else {
+                  // unknown geometry: attempt to use bbox/centroid if present
+                  try {
+                    const feat = f.type === 'Feature' ? f : { type: 'Feature', properties: f.properties || {}, geometry: f.geometry }
+                    if (turf.booleanIntersects(feat, polyFeature)) count++
+                  } catch (e) {
+                    // ignore
+                  }
                 }
               } catch (e) {
                 // ignore per-feature errors
