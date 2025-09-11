@@ -1,5 +1,7 @@
 "use client"
 
+export const dynamic = 'force-dynamic'
+
 import { useState, useRef, useEffect } from "react"
 import * as turf from "@turf/turf"
 import { STATES, DEFAULT_STATE } from "../../lib/regions"
