@@ -602,19 +602,18 @@ export default function AtlasPage() {
       if (searchClaimType) q.set("claim_type", searchClaimType)
       const qs = q.toString() ? `?${q.toString()}` : ""
 
-      // Prefer the external API first, fallback to local proxy; try several local URL shapes
+      // Try local API endpoints for UID lookup; prefer explicit village_uid query first
+      // These call our server-side proxies (avoid direct cross-origin requests)
       const tryUrls = [
-        `https://vanmitra.onrender.com/claims/village/${encodeURIComponent(vid)}${qs}`,
-        // common proxy path that was used earlier
-        `/api/claims/village/${encodeURIComponent(vid)}${qs}`,
-        // some deployments expose a query endpoint instead
-        `/api/claims?village=${encodeURIComponent(vid)}${qs ? `&${q.toString()}` : ""}`,
         `/api/claims?village_uid=${encodeURIComponent(vid)}${qs ? `&${q.toString()}` : ""}`,
+        `/api/claims/village/${encodeURIComponent(vid)}${qs}`,
+        `/api/claims?village=${encodeURIComponent(vid)}${qs ? `&${q.toString()}` : ""}`,
       ]
 
-      let data: any = null
-      let lastErr: any = null
-      for (const u of tryUrls) {
+    let data: any = null
+    let lastErr: any = null
+    let usedUrl: string | null = null
+    for (const u of tryUrls) {
         try {
           console.debug("Searching village via:", u)
           const res = await fetch(u)
@@ -623,6 +622,7 @@ export default function AtlasPage() {
             continue
           }
           data = await res.json()
+      usedUrl = u
           break
         } catch (e) {
           lastErr = e
@@ -640,9 +640,11 @@ export default function AtlasPage() {
 
       if (!features.length) {
         pushToast("No claims found for this village UID", "info")
+        setSearchLoading(false)
+        return
       }
 
-      // Attempt to extract a human-friendly village name from returned features' properties
+      // Derive village label directly from returned features (no other API calls)
       const extractVillageName = (f: any) => {
         const props = f?.properties ?? f
         if (!props) return null
@@ -667,70 +669,54 @@ export default function AtlasPage() {
       }
 
       let villageLabel: string | null = null
-      if (features && features.length) {
-        for (const f of features) {
-          const name = extractVillageName(f)
-          if (name) {
-            villageLabel = name
-            break
-          }
+      for (const f of features) {
+        const n = extractVillageName(f)
+        if (n) {
+          villageLabel = n
+          break
         }
       }
 
-      // If we can derive a village label, filter returned features to only claims that match that village name
-      const normalize = (v: any) => (v === null || typeof v === 'undefined' ? '' : String(v).toLowerCase().trim())
-      const villageLower = villageLabel ? normalize(villageLabel) : null
-      const villageKeys = ['village', 'VILLAGE', 'village_name', 'villageName', 'habitation', 'settlement', 'locality', 'habitation_name', 'name']
-      const matchesVillage = (f: any) => {
-        const props = f?.properties ?? f
-        if (!props) return false
-        if (!villageLower) return false
-        for (const k of villageKeys) {
-          if (props[k] && normalize(props[k]) === villageLower) return true
-        }
-        // fallback: check other string values
-        for (const val of Object.values(props || {})) {
-          if (typeof val === 'string' && normalize(val) === villageLower) return true
-        }
-        return false
-      }
-
-      // If derived village name is available, prefer showing only matched claims; else show all returned features
-      const filteredFeatures = villageLower ? features.filter(matchesVillage) : features
-
-      // If villageLabel not found, set a friendly fallback label
       setVillageNameSelected(villageLabel ? villageLabel : `Village UID: ${vid}`)
 
-      // If we have features (post-filter), create a temporary map layer so results are visible
-      if (filteredFeatures && filteredFeatures.length) {
+      // Debug helper: show which URL returned results and which claim IDs are present
+      try {
+        const ids = features
+          .map((f: any) => (f?.properties?.claim_id ?? f?.properties?.id ?? null))
+          .filter(Boolean)
+          .slice(0, 10)
+          .join(", ")
+        pushToast(`UID ${vid} → ${villageLabel ?? 'unknown'} (claims: ${ids || 'none'}) via ${usedUrl || 'unknown'}`, "info")
+      } catch (e) {
+        // ignore toast errors
+      }
+
+      // Create search result layer and center map on combined centroid
+      try {
         const layer = {
           id: `search-results-${Date.now()}`,
           name: `Search results for ${villageLabel ? villageLabel : vid}`,
           type: 'geojson',
           url: '',
           visible: true,
-          data: { type: 'FeatureCollection', features: filteredFeatures },
+          data: { type: 'FeatureCollection', features },
           style: { fillColor: '#ff8c00', strokeColor: '#ff8c00', strokeWidth: 2, opacity: 0.35 },
         }
         setSearchResultsLayer(layer)
 
-        // Use turf to compute a centroid for reliable flying
-        try {
-          const fc: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: filteredFeatures } as any
-          const cent = turf.centroid(fc)
-          if (cent && cent.geometry && cent.geometry.coordinates) {
-            const [lng, lat] = cent.geometry.coordinates
-            webGISRef.current?.flyTo?.(lng, lat, 12)
-          }
-        } catch (e) {
-          // ignore fly errors
+        const fc: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features } as any
+        const cent = turf.centroid(fc)
+        if (cent && cent.geometry && cent.geometry.coordinates) {
+          const [lng, lat] = cent.geometry.coordinates
+          webGISRef.current?.flyTo?.(lng, lat, 12)
         }
+      } catch (e) {
+        // ignore
       }
 
-      // populate the village panel list with deduped features
-      const toShow = (filteredFeatures && filteredFeatures.length) ? filteredFeatures : features
+      // Populate village claims (dedupe by claim id)
       const byId = new Map<string, any>()
-      toShow.forEach((f: any, idx: number) => {
+      features.forEach((f: any, idx: number) => {
         const pid = String((f.properties && (f.properties.claim_id || f.properties.id)) ?? f.id ?? `uid-${vid}-${idx}`)
         if (!byId.has(pid)) byId.set(pid, f)
       })
@@ -1136,7 +1122,7 @@ export default function AtlasPage() {
   const submitNewClaim = async () => {
     try {
       setSubmittingClaim(true)
-      const res = await fetch("https://vanmitra.onrender.com/claims", {
+  const res = await fetch("/api/claims", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newClaim),
