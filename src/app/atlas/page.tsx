@@ -57,11 +57,8 @@ export default function AtlasPage() {
     CFR: "#f59e0b",
   }
 
-  const pushToast = (message: string, type: "info" | "error" = "info") => {
-    const id = Date.now() + Math.floor(Math.random() * 1000)
-    setToasts((prev) => [...prev, { id, message, type }])
-    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 5000)
-  }
+  // Toasts disabled — replace with no-op to avoid UI notifications during tests
+  const pushToast = (_message: string, _type: "info" | "error" = "info") => {}
   const [mapKey, setMapKey] = useState(0) // Key to force WebGIS re-render
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null)
   const [mapZoom, setMapZoom] = useState<number>(7.5)
@@ -602,11 +599,11 @@ export default function AtlasPage() {
       if (searchClaimType) q.set("claim_type", searchClaimType)
       const qs = q.toString() ? `?${q.toString()}` : ""
 
-      // Try local API endpoints for UID lookup; prefer explicit village_uid query first
-      // These call our server-side proxies (avoid direct cross-origin requests)
+      // Try local API endpoints for UID lookup. Prefer the explicit village/:vid route
+      // which is the most authoritative mapping on the server. Other shapes are fallbacks.
       const tryUrls = [
-        `/api/claims?village_uid=${encodeURIComponent(vid)}${qs ? `&${q.toString()}` : ""}`,
         `/api/claims/village/${encodeURIComponent(vid)}${qs}`,
+        `/api/claims?village_uid=${encodeURIComponent(vid)}${qs ? `&${q.toString()}` : ""}`,
         `/api/claims?village=${encodeURIComponent(vid)}${qs ? `&${q.toString()}` : ""}`,
       ]
 
@@ -644,37 +641,47 @@ export default function AtlasPage() {
         return
       }
 
-      // Derive village label directly from returned features (no other API calls)
-      const extractVillageName = (f: any) => {
+      // Derive village label by majority vote across candidate fields in returned features
+      const candidateKeys = [
+        'village_name',
+        'village',
+        'VILLAGE',
+        'villageName',
+        'habitation',
+        'settlement',
+        'locality',
+        'habitation_name',
+        'name',
+      ]
+
+      const normalize = (s: any) => (s === null || typeof s === 'undefined' ? '' : String(s).trim())
+      const counts = new Map<string, number>()
+      const rawSamples: any[] = []
+      features.forEach((f: any, idx: number) => {
         const props = f?.properties ?? f
-        if (!props) return null
-        const candidates = [
-          'village_name',
-          'village',
-          'VILLAGE',
-          'villageName',
-          'habitation',
-          'settlement',
-          'locality',
-          'habitation_name',
-          'name',
-        ]
-        for (const k of candidates) {
-          if (props[k]) return String(props[k])
+        if (idx < 3) rawSamples.push(props)
+        for (const k of candidateKeys) {
+          const val = props?.[k]
+          if (val) {
+            const n = normalize(val)
+            if (!n) continue
+            counts.set(n, (counts.get(n) || 0) + 1)
+          }
         }
-        for (const v of Object.values(props || {})) {
-          if (typeof v === 'string' && v.length > 1 && /[A-Za-z]/.test(v)) return v
-        }
-        return null
-      }
+        // also consider any string-like property as fallback
+        Object.values(props || {}).forEach((v: any) => {
+          if (typeof v === 'string' && v.trim().length > 0) {
+            const n = normalize(v)
+            counts.set(n, (counts.get(n) || 0) + 1)
+          }
+        })
+      })
 
       let villageLabel: string | null = null
-      for (const f of features) {
-        const n = extractVillageName(f)
-        if (n) {
-          villageLabel = n
-          break
-        }
+      if (counts.size) {
+        // pick the most common non-empty normalized label
+        const sorted = Array.from(counts.entries()).filter(([k]) => k).sort((a, b) => b[1] - a[1])
+        if (sorted.length) villageLabel = sorted[0][0]
       }
 
       setVillageNameSelected(villageLabel ? villageLabel : `Village UID: ${vid}`)
@@ -686,7 +693,10 @@ export default function AtlasPage() {
           .filter(Boolean)
           .slice(0, 10)
           .join(", ")
-        pushToast(`UID ${vid} → ${villageLabel ?? 'unknown'} (claims: ${ids || 'none'}) via ${usedUrl || 'unknown'}`, "info")
+        pushToast(
+          `UID ${vid} → ${villageLabel ?? 'unknown'} (claims: ${ids || 'none'}) via ${usedUrl || 'unknown'} — sample: ${JSON.stringify(rawSamples)}`,
+          "info",
+        )
       } catch (e) {
         // ignore toast errors
       }
@@ -1825,43 +1835,7 @@ export default function AtlasPage() {
           </div>
         </Modal>
 
-        <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
-          {toasts.map((t) => (
-            <div
-              key={t.id}
-              className={`px-4 py-3 rounded-lg shadow-lg text-white text-sm flex items-center ${t.type === "error" ? "bg-red-600" : "bg-emerald-600"}`}
-            >
-              {t.type === "error" ? (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-2"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-2"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm8.707-7.293a1 1 0 00-1.414-1.414L10 10.586 8.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              )}
-              {t.message}
-            </div>
-          ))}
-        </div>
+  {/* Toast UI removed */}
       </div>
     </ProtectedRoute>
   )

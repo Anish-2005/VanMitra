@@ -1,9 +1,9 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 
-export async function GET(req: NextRequest, { params }: { params: { vid: string } }) {
+export async function GET(req: NextRequest, ctx: any) {
   try {
-    const vid = params?.vid
+    const vid = ctx?.params?.vid ?? ''
     const url = new URL(req.url)
     // preserve any query string params
     const qs = url.search || ''
