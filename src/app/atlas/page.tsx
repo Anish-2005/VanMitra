@@ -497,12 +497,14 @@ export default function AtlasPage() {
           l.style.opacity = l.style.opacity ?? 0.6
         })
         setLayers(adjustedLayers as GISLayer[])
-        setMarkers(
-          newMarkers.map((m) => ({
-            ...m,
-            color: claimTypeColors[(m.raw?.claim_type ?? m.raw?.claimType ?? "").toUpperCase()] ?? "#16a34a",
-          })),
-        )
+        // Removed markers to clean up the map view - claim dots removed
+        // setMarkers(
+        //   newMarkers.map((m) => ({
+        //     ...m,
+        //     color: claimTypeColors[(m.raw?.claim_type ?? m.raw?.claimType ?? "").toUpperCase()] ?? "#16a34a",
+        //   })),
+        // )
+        setMarkers([]) // Clear any existing markers
         setMapKey((k) => k + 1)
         if (!features.length) pushToast("No claims found for selected filters", "info")
 
@@ -2393,7 +2395,7 @@ export default function AtlasPage() {
                   <div className="pt-2 border-t border-gray-100">
                     <div className="text-xs text-gray-600">
                       <div className="font-medium mb-1">Note:</div>
-                      <div>Symbols for claim centroids have been removed for a cleaner overview.</div>
+                      <div>Individual claim markers have been removed for a cleaner map view.</div>
                       <div>Use the area layers and zoom controls to inspect claims.</div>
                     </div>
                   </div>
