@@ -2433,7 +2433,7 @@ export default function AtlasPage() {
                 if (isBoundary) {
                   const lbl = getBoundaryLabel(p) || p._label || p.name || p.NAME || p.district || p.tehsil || p.state || "Boundary"
                   const lvl = (p.level || selectedFeature.layer || "").toString().toLowerCase()
-                  if (lvl.includes("tehsil") || String(selectedFeature.layer).toLowerCase().includes("tehsil")) return `Tehsil: ${lbl}`
+                  if (lvl.includes("tehsil") || String(selectedFeature.layer).toLowerCase().includes("tehsil")) return ` ${lbl}`
                   if (lvl.includes("district") || String(selectedFeature.layer).toLowerCase().includes("district")) return `District: ${lbl}`
                   if (lvl.includes("state") || String(selectedFeature.layer).toLowerCase().includes("state")) return `State: ${lbl}`
                   return lbl
