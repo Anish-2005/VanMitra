@@ -497,14 +497,12 @@ export default function AtlasPage() {
           l.style.opacity = l.style.opacity ?? 0.6
         })
         setLayers(adjustedLayers as GISLayer[])
-        // Removed markers to clean up the map view - claim dots removed
-        // setMarkers(
-        //   newMarkers.map((m) => ({
-        //     ...m,
-        //     color: claimTypeColors[(m.raw?.claim_type ?? m.raw?.claimType ?? "").toUpperCase()] ?? "#16a34a",
-        //   })),
-        // )
-        setMarkers([]) // Clear any existing markers
+        setMarkers(
+          newMarkers.map((m) => ({
+            ...m,
+            color: claimTypeColors[(m.raw?.claim_type ?? m.raw?.claimType ?? "").toUpperCase()] ?? "#16a34a",
+          })),
+        )
         setMapKey((k) => k + 1)
         if (!features.length) pushToast("No claims found for selected filters", "info")
 
@@ -2395,7 +2393,7 @@ export default function AtlasPage() {
                   <div className="pt-2 border-t border-gray-100">
                     <div className="text-xs text-gray-600">
                       <div className="font-medium mb-1">Note:</div>
-                      <div>Individual claim markers have been removed for a cleaner map view.</div>
+                      <div>Symbols for claim centroids have been removed for a cleaner overview.</div>
                       <div>Use the area layers and zoom controls to inspect claims.</div>
                     </div>
                   </div>
@@ -2497,18 +2495,11 @@ export default function AtlasPage() {
                       </div>
                     </div>
                     <div className="p-3 bg-gray-50 rounded-md">
-                    <div className="text-xs text-gray-500">Claims inside</div>
-                    <div className="mt-1 text-lg font-semibold text-gray-900">
-                      {selectedFeature.properties?._counting ? (
-                        <span className="text-sm text-gray-500">Counting...</span>
-                      ) : (
-                        selectedFeature.properties?.claims_count != null
-                          ? Number(selectedFeature.properties.claims_count) 
-                          : "-"
-                      )}
+                      <div className="text-xs text-gray-500">Claims inside</div>
+                      <div className="mt-1 text-lg font-semibold text-gray-900">
+                        {selectedFeature.properties?._counting ? <span className="text-sm text-gray-500">Counting...</span> : (formatNumber(selectedFeature.properties?.claims_count ?? null))}
+                      </div>
                     </div>
-                  </div>
-
                     <div className="p-3 bg-gray-50 rounded-md">
                       <div className="text-xs text-gray-500">Level</div>
                       <div className="mt-1 text-sm text-gray-700">{friendlyLevel(selectedFeature.properties?.level ?? selectedFeature.layer)}</div>
