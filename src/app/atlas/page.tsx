@@ -1593,62 +1593,46 @@ export default function AtlasPage() {
     }
 
     try {
-      // Try to find village coordinates from existing claims data
-      const q = new URLSearchParams()
-      q.set("village", newClaim.village_name)
-      q.set("state", newClaim.state_name)
-      q.set("limit", "100")
+      // Use OpenStreetMap Nominatim API to search for village
+      const query = `${newClaim.village_name}, ${newClaim.state_name}, India`
+      const encodedQuery = encodeURIComponent(query)
+      const apiUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodedQuery}&limit=1&countrycodes=IN`
 
-      const res = await fetch(`/api/claims?${q.toString()}`)
-      if (res.ok) {
-        const data = await res.json()
-        const features = data && data.type === "FeatureCollection" ? data.features || [] : Array.isArray(data) ? data : []
+      console.log("Searching for village:", query)
+      console.log("API URL:", apiUrl)
 
-        if (features.length > 0) {
-          // Calculate centroid of all village claims
-          const points: Array<[number, number]> = []
-          features.forEach((f: any) => {
-            if (f.geometry?.type === "Point" && f.geometry.coordinates) {
-              points.push([f.geometry.coordinates[0], f.geometry.coordinates[1]])
-            } else if (f.geometry?.type === "Polygon" && f.geometry.coordinates) {
-              // Use centroid of polygon
-              try {
-                const poly = turf.polygon(f.geometry.coordinates)
-                const centroid = turf.centroid(poly)
-                if (centroid.geometry.coordinates) {
-                  points.push([centroid.geometry.coordinates[0], centroid.geometry.coordinates[1]])
-                }
-              } catch (e) {
-                // ignore
-              }
-            }
-          })
-
-          if (points.length > 0) {
-            // Calculate average center
-            const avgLng = points.reduce((sum, p) => sum + p[0], 0) / points.length
-            const avgLat = points.reduce((sum, p) => sum + p[1], 0) / points.length
-            
-            // Set claim area center
-            setClaimAreaCenter([avgLng, avgLat])
-            
-            // Zoom to the village area
-            webGISRef.current?.flyTo?.(avgLng, avgLat, 14)
-            
-            pushToast(`Zoomed to ${newClaim.village_name}`, "info")
-            return
-          }
-        }
+      const res = await fetch(apiUrl)
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`)
       }
 
-      // Fallback: use state center if village not found
-      const stateData = STATES.find((s) => s.name === newClaim.state_name)
-      if (stateData) {
-        setClaimAreaCenter([stateData.center[0], stateData.center[1]])
-        webGISRef.current?.flyTo?.(stateData.center[0], stateData.center[1], 10)
-        pushToast(`Village not found, zoomed to ${newClaim.state_name} center`, "info")
+      const data = await res.json()
+      console.log("Nominatim API Response:", data)
+
+      if (data && data.length > 0) {
+        const result = data[0]
+        const lat = parseFloat(result.lat)
+        const lon = parseFloat(result.lon)
+
+        console.log("Found village coordinates:", { lat, lon })
+
+        // Set claim area center
+        setClaimAreaCenter([lon, lat])
+
+        // Zoom to the village location
+        webGISRef.current?.flyTo?.(lon, lat, 14)
+
+        pushToast(`Zoomed to ${newClaim.village_name}, ${newClaim.state_name}`, "info")
       } else {
-        pushToast("Could not find village location", "error")
+        // Fallback: use state center if village not found
+        const stateData = STATES.find((s) => s.name === newClaim.state_name)
+        if (stateData) {
+          setClaimAreaCenter([stateData.center[0], stateData.center[1]])
+          webGISRef.current?.flyTo?.(stateData.center[0], stateData.center[1], 10)
+          pushToast(`Village not found, zoomed to ${newClaim.state_name} center`, "info")
+        } else {
+          pushToast("Could not find village location", "error")
+        }
       }
     } catch (err) {
       console.error("Error fetching village coordinates:", err)
