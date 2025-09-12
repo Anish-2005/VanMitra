@@ -128,7 +128,6 @@ export default function AtlasPage() {
             : layer.url,
       })),
     )
-    setMapKey((prev) => prev + 1)
   }, [stateFilter, districtFilter])
 
   // Use a client-side URLSearchParams snapshot instead of next/navigation's
@@ -331,7 +330,7 @@ export default function AtlasPage() {
                     id: pid,
                     lng,
                     lat,
-                    label: String(f.properties?.claim_id ?? f.properties?.id ?? ""),
+                    label: String(f.properties?.community_name ?? f.properties?.claim_id ?? f.properties?.id ?? ""),
                     color: "#16a34a",
                     popup: ppopup,
                     raw: f.properties,
@@ -369,7 +368,7 @@ export default function AtlasPage() {
                       id: pid,
                       lng,
                       lat,
-                      label: String(f.properties?.claim_id ?? f.properties?.id ?? ""),
+                      label: String(f.properties?.community_name ?? f.properties?.claim_id ?? f.properties?.id ?? ""),
                       color: "#16a34a",
                       popup: ppopup,
                       raw: f.properties,
@@ -398,7 +397,7 @@ export default function AtlasPage() {
                       id: String(f.properties?.claim_id ?? f.properties?.id ?? `claim-${idx}`),
                       lng,
                       lat,
-                      label: String(f.properties?.claim_id ?? f.properties?.id ?? ""),
+                      label: String(f.properties?.community_name ?? f.properties?.claim_id ?? f.properties?.id ?? ""),
                       color: "#16a34a",
                       popup: f.properties,
                       raw: f.properties,
@@ -424,7 +423,7 @@ export default function AtlasPage() {
                   id: String(item.claim_id ?? item.id ?? `claim-${idx}`),
                   lng: geom.coordinates[0],
                   lat: geom.coordinates[1],
-                  label: String(item.claim_id ?? item.id ?? ""),
+                  label: String(item.community_name ?? item.claim_id ?? item.id ?? ""),
                   color: "#16a34a",
                   popup: item,
                   raw: item,
@@ -444,7 +443,7 @@ export default function AtlasPage() {
                 id: String(item.claim_id ?? item.id),
                 lng: geom.coordinates[0],
                 lat: geom.coordinates[1],
-                label: String(item.claim_id ?? item.id),
+                label: String(item.community_name ?? item.claim_id ?? item.id),
                 color: "#16a34a",
                 popup: item,
                 raw: item,
@@ -503,7 +502,6 @@ export default function AtlasPage() {
             color: claimTypeColors[(m.raw?.claim_type ?? m.raw?.claimType ?? "").toUpperCase()] ?? "#16a34a",
           })),
         )
-        setMapKey((k) => k + 1)
         if (!features.length) pushToast("No claims found for selected filters", "info")
 
         // populate filter options
@@ -1524,62 +1522,70 @@ export default function AtlasPage() {
   const submitNewClaim = async () => {
     try {
       setSubmittingClaim(true)
-      
-      // Include claim area geometry in the submission
+
+      // Prepare claim data with exact fields required by external API
       const claimData = {
-        ...newClaim,
-        geometry: claimAreaVisible && claimAreaCenter ? {
-          type: "Point",
-          coordinates: claimAreaCenter
-        } : null,
-        claim_area_radius: claimAreaRadius,
-        // Add latitude and longitude from claim area center
+        state_name: newClaim.state_name,
+        district_name: newClaim.district_name,
+        village_name: newClaim.village_name,
+        claim_type: newClaim.claim_type,
+        claimant_name: newClaim.claimant_name,
+        community_name: newClaim.community_name,
+        claimed_area: newClaim.claimed_area,
         latitude: claimAreaCenter ? claimAreaCenter[1] : null,
         longitude: claimAreaCenter ? claimAreaCenter[0] : null
       }
 
-      console.log("Submitting claim with data:", claimData)
-      
+      console.log("Submitting claim with exact fields for database storage:", claimData)
+
       const res = await fetch("/api/claims", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(claimData),
       })
 
-      console.log("POST request to /api/claims:", {
-        method: "POST",
-        url: "/api/claims",
-        body: claimData,
-        response: {
-          status: res.status,
-          statusText: res.statusText,
-          ok: res.ok
-        }
-      })
+      console.log("API response status:", res.status)
+
       if (!res.ok) {
-        const text = await res.text()
-        pushToast(`Failed to add claim: ${res.status} ${text}`, "error")
+        const errorText = await res.text()
+        console.error("Claim submission failed:", res.status, errorText)
+        pushToast(`Failed to submit claim: ${res.status} ${errorText}`, "error")
         return
       }
-      // success
-      pushToast("Claim added successfully", "info")
+
+      const responseData = await res.json()
+      console.log("Claim successfully stored in Firebase:", responseData)
+
+      pushToast("Claim submitted successfully and stored in database", "info")
+
+      // Clear form and reset state
       setAddClaimOpen(false)
-      // clear form and claim area
-      setNewClaim({ state_name: "", district_name: "", village_name: "", claim_type: "", claimant_name: "", community_name: "", claimed_area: 0 })
+      setNewClaim({
+        state_name: "",
+        district_name: "",
+        village_name: "",
+        claim_type: "",
+        claimant_name: "",
+        community_name: "",
+        claimed_area: 0
+      })
       setClaimAreaVisible(false)
       setClaimAreaCenter(null)
       setClaimAreaRadius(0)
+
       // Remove claim area marker
       setMarkers((prev) => {
         const filtered = prev.filter(m => m.id !== "claim-area-center")
         console.log("Removed claim marker, remaining markers:", filtered.length)
         return filtered
       })
-      // trigger refresh of claims
+
+      // Refresh claims data
       setApplyCounter((c) => c + 1)
-      setMapKey((k) => k + 1)
+
     } catch (err) {
-      pushToast("Failed to add claim (network error)", "error")
+      console.error("Claim submission error:", err)
+      pushToast("Failed to submit claim (network error)", "error")
     } finally {
       setSubmittingClaim(false)
     }

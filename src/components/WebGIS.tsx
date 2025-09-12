@@ -572,106 +572,24 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
         console.log("Layer", layer.id, "has", features.length, "features, geometry type:", geometryType)
 
         if (geometryType === "Point" || geometryType === "MultiPoint") {
-          // Use a symbol layer with a generated SVG image so point features render as MapPin icons
-          const iconName = `icon-${layerId}`
+          // Use circle layer for point features
+          layerConfig.type = "circle"
+          layerConfig.paint = {
+            'circle-radius': 8,
+            'circle-color': layer.style.fillColor || '#ff4444',
+            'circle-opacity': layer.style.opacity || 1.0,
+            'circle-stroke-color': layer.style.strokeColor || '#ffffff',
+            'circle-stroke-width': layer.style.strokeWidth || 2,
+          }
           try {
-            // create a small svg string for the pin image using the layer color
-            const color = layer.style.fillColor || "#ff4444"
-            const outline = (layer.style && (layer.style as any).strokeColor) || "#ffffff"
-            const svgString = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"></path><circle cx="12" cy="10" r="3" fill="${color}"></circle></svg>`
-
-            // add image to map style if not present
-            if (!map.current.hasImage(iconName)) {
-              const img = new Image()
-              img.src = `data:image/svg+xml;base64,${btoa(svgString)}`
-              img.onload = () => {
-                try {
-                  map.current && map.current.addImage && map.current.addImage(iconName, img)
-                } catch (err) {
-                  console.error('Failed to add image to map style:', err)
-                } finally {
-                  try {
-                    
-                  } catch (e) {}
-                }
-
-                const symbolLayer = {
-                  id: layerConfig.id,
-                  type: 'symbol',
-                  source: sourceId,
-                  layout: {
-                    'icon-image': iconName,
-                    'icon-allow-overlap': true,
-                    'icon-ignore-placement': true,
-                    'icon-anchor': 'bottom',
-                    // smaller default icon-size
-                    'icon-size': 0.75,
-                  },
-                }
-
-                try {
-                  if (!map.current) return
-                  if (!map.current.getLayer(layerConfig.id)) {
-                    map.current.addLayer(symbolLayer as any)
-                  }
-                  try {
-                    map.current.moveLayer(layerConfig.id)
-                  } catch (e) {}
-                } catch (err) {
-                  console.error('Error adding symbol layer after image load', err)
-                }
-              }
-              img.onerror = (e) => {
-                console.error('Failed to load svg for icon', e)
-                try {
-                
-                } catch (ee) {}
-                // fallback to circle layer if image fails
-                layerConfig.type = 'circle'
-                layerConfig.paint = {
-                  'circle-radius': 8,
-                  'circle-color': layer.style.fillColor || '#ff4444',
-                  'circle-opacity': layer.style.opacity || 1.0,
-                  'circle-stroke-color': layer.style.strokeColor || '#ffffff',
-                  'circle-stroke-width': layer.style.strokeWidth || 2,
-                }
-                try {
-                  if (!map.current) return
-                  if (!map.current.getLayer(layerConfig.id)) {
-                    map.current.addLayer(layerConfig as any)
-                  }
-                } catch (err) {
-                  console.error('Fallback add circle layer failed', err)
-                }
-              }
-             
-            } else {
-              const symbolLayer = {
-                id: layerConfig.id,
-                type: 'symbol',
-                source: sourceId,
-                layout: {
-                  'icon-image': iconName,
-                  'icon-allow-overlap': true,
-                  'icon-ignore-placement': true,
-                  'icon-anchor': 'bottom',
-                  'icon-size': 1,
-                },
-              }
-              try {
-                if (!map.current) return
-                if (!map.current.getLayer(layerConfig.id)) {
-                  map.current.addLayer(symbolLayer as any)
-                }
-                try {
-                  map.current.moveLayer(layerConfig.id)
-                } catch (e) {}
-              } catch (err) {
-                console.error('Error adding symbol layer', err)
-              }
+            if (!map.current.getLayer(layerConfig.id)) {
+              map.current.addLayer(layerConfig as any)
             }
+            try {
+              map.current.moveLayer(layerConfig.id)
+            } catch (e) {}
           } catch (error) {
-            console.error('Error adding symbol point layer', layerConfig.id, ':', error)
+            console.error("Error adding circle layer", layerConfig.id, ":", error)
           }
 
           // click handlers (skip for boundary layer to make boundaries non-clickable)
