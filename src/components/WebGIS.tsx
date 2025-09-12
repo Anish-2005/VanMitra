@@ -895,13 +895,16 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
     if (!map.current || !mapLoaded) return
 
     console.log("🗺️ Processing markers:", markers.length)
-    markers.forEach(marker => {
+    // Filter out pathfinding icons, only keep claim-area-center marker
+    const filteredMarkers = markers.filter(marker => marker.id === "claim-area-center")
+    console.log("🗺️ Filtered markers (only claim-area-center):", filteredMarkers.length)
+    filteredMarkers.forEach(marker => {
       console.log("🗺️ Marker details:", marker.id, marker.lng, marker.lat, marker.color, marker.popup)
     })
 
     // Get existing marker IDs
     const existingMarkerIds = new Set(markersRef.current.map(m => (m as any)._markerId))
-    const newMarkerIds = new Set(markers.map(m => m.id))
+    const newMarkerIds = new Set(filteredMarkers.map(m => m.id))
 
     console.log("🗺️ Existing marker IDs:", Array.from(existingMarkerIds))
     console.log("🗺️ New marker IDs:", Array.from(newMarkerIds))
@@ -916,11 +919,11 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
     console.log("🗺️ Keeping markers:", markersToKeep.map(m => (m as any)._markerId))
 
     // Create new markers for IDs that don't exist yet
-    const markersToCreate = markers.filter(marker => !existingMarkerIds.has(marker.id))
+    const markersToCreate = filteredMarkers.filter(marker => !existingMarkerIds.has(marker.id))
     console.log("🗺️ Creating new markers:", markersToCreate.map(m => m.id))
 
     // Update existing markers with new data
-    const markersToUpdate = markers.filter(marker => existingMarkerIds.has(marker.id))
+    const markersToUpdate = filteredMarkers.filter(marker => existingMarkerIds.has(marker.id))
     console.log("🗺️ Updating markers:", markersToUpdate.map(m => m.id))
 
     // Clear popups for removed markers
