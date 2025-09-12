@@ -2495,11 +2495,18 @@ export default function AtlasPage() {
                       </div>
                     </div>
                     <div className="p-3 bg-gray-50 rounded-md">
-                      <div className="text-xs text-gray-500">Claims inside</div>
-                      <div className="mt-1 text-lg font-semibold text-gray-900">
-                        {selectedFeature.properties?._counting ? <span className="text-sm text-gray-500">Counting...</span> : (formatNumber(selectedFeature.properties?.claims_count ?? null))}
-                      </div>
+                    <div className="text-xs text-gray-500">Claims inside</div>
+                    <div className="mt-1 text-lg font-semibold text-gray-900">
+                      {selectedFeature.properties?._counting ? (
+                        <span className="text-sm text-gray-500">Counting...</span>
+                      ) : (
+                        selectedFeature.properties?.claims_count != null
+                          ? Number(selectedFeature.properties.claims_count) 
+                          : "-"
+                      )}
                     </div>
+                  </div>
+
                     <div className="p-3 bg-gray-50 rounded-md">
                       <div className="text-xs text-gray-500">Level</div>
                       <div className="mt-1 text-sm text-gray-700">{friendlyLevel(selectedFeature.properties?.level ?? selectedFeature.layer)}</div>
