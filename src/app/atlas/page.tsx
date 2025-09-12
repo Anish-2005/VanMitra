@@ -1027,9 +1027,12 @@ export default function AtlasPage() {
       // default label (try multiple common property names)
       const label = getBoundaryLabel(props) ?? "Boundary"
 
-      // If tehsil, also compute number of claims inside it
+      // For boundary layers, compute number of claims inside it
       const level = (props?.level || layer?.id || layer?.name || "").toString().toLowerCase()
-      const isTehsil = level.includes("tehsil") || String(props?.type ?? "").toLowerCase().includes("tehsil")
+      const isBoundaryWithClaims = level.includes("state") || level.includes("district") || level.includes("tehsil") ||
+        String(props?.type ?? "").toLowerCase().includes("state") ||
+        String(props?.type ?? "").toLowerCase().includes("district") ||
+        String(props?.type ?? "").toLowerCase().includes("tehsil")
 
       const boundaryFeature = {
         layer: layer?.id || layer?.name || "boundary",
@@ -1045,7 +1048,7 @@ export default function AtlasPage() {
       setSelectedFeature(boundaryFeature)
       setModalOpen(true)
 
-      if (isTehsil) {
+      if (isBoundaryWithClaims) {
         ; (async () => {
           try {
             // show counting state in modal
@@ -1127,7 +1130,7 @@ export default function AtlasPage() {
             // update modal properties with claims count and clear counting flag
             setSelectedFeature((prev) => (prev ? { ...prev, properties: { ...prev.properties, claims_count: count, _counting: false } } : prev))
           } catch (err) {
-            console.warn("Failed to count claims for tehsil:", err)
+            console.warn("Failed to count claims for boundary:", err)
             setSelectedFeature((prev) => (prev ? { ...prev, properties: { ...prev.properties, _counting: false } } : prev))
           }
         })()
@@ -2463,7 +2466,7 @@ export default function AtlasPage() {
                     <div className="p-3 bg-gray-50 rounded-md">
                       <div className="text-xs text-gray-500">Claims inside</div>
                       <div className="mt-1 text-lg font-semibold text-gray-900">
-                        {selectedFeature.properties?._counting ? <span className="text-sm text-gray-500">Counting...</span> : (formatNumber(selectedFeature.properties?.claims_count ?? null))}
+                        {selectedFeature.properties?._counting ? <span className="text-sm text-gray-500">Counting...</span> : (selectedFeature.properties?.claims_count?.toString() ?? '—')}
                       </div>
                     </div>
                     <div className="p-3 bg-gray-50 rounded-md">
