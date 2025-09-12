@@ -141,6 +141,7 @@ export default function Home() {
         {/* desktop nav */}
         <nav className="hidden md:flex items-center gap-4">
           <Link href="/atlas" className="nav-link">Atlas</Link>
+          <Link href="/ocr" className="nav-link">OCR</Link>
           <Link href="/dss" className="nav-link">DSS</Link>
           <Link href="/public" className="nav-link">Public Data</Link>
           <a className="nav-link" href="#tech">Technology</a>
@@ -191,6 +192,7 @@ export default function Home() {
 
               <nav className="flex flex-col gap-4 text-green-800">
                 <Link href="/atlas" onClick={() => setMobileOpen(false)} className="font-medium">Atlas</Link>
+                <Link href="/ocr" onClick={() => setMobileOpen(false)} className="font-medium">OCR</Link>
                 <Link href="/dss" onClick={() => setMobileOpen(false)} className="font-medium">DSS</Link>
                 <Link href="/public" onClick={() => setMobileOpen(false)} className="font-medium">Public Data</Link>
                 <a href="#tech" onClick={() => setMobileOpen(false)} className="font-medium">Technology</a>
