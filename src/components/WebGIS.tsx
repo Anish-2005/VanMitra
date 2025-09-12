@@ -813,9 +813,9 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
     if (!map.current || !mapLoaded) return
 
     console.log("🗺️ Processing markers:", markers.length)
-    // Filter out pathfinding icons, only keep claim-area-center marker
-    const filteredMarkers = markers.filter(marker => marker.id === "claim-area-center")
-    console.log("🗺️ Filtered markers (only claim-area-center):", filteredMarkers.length)
+    // Filter out pathfinding icons, only keep claim-area-center and last-click markers
+    const filteredMarkers = markers.filter(marker => marker.id === "claim-area-center" || marker.id === "last-click")
+    console.log("🗺️ Filtered markers (claim-area-center and last-click):", filteredMarkers.length)
     filteredMarkers.forEach(marker => {
       console.log("🗺️ Marker details:", marker.id, marker.lng, marker.lat, marker.color, marker.popup)
     })
@@ -862,11 +862,40 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
     markersToCreate.forEach((marker) => {
       console.log("🗺️ Creating marker:", marker.id, marker.lng, marker.lat)
       // Make markers much larger and more visible
-      const baseSize = Math.max(50, marker.size ?? 50)
+      const baseSize = marker.id === "last-click" ? Math.max(30, marker.size ?? 30) : Math.max(50, marker.size ?? 50)
       const color = marker.color || "#16a34a"
       const outline = (marker as any).outline || "#ffffff"
 
       console.log("🗺️ Processing marker with", marker.id, "baseSize:", baseSize, "color:", color)
+
+      // For last-click markers, use a simple standard marker to ensure visibility
+      if (marker.id === "last-click") {
+        console.log("🗺️ Using standard marker for last-click")
+        const mapMarker = new maplibregl.Marker({ color: color, scale: 1.5 })
+          .setLngLat([marker.lng, marker.lat])
+        ;(mapMarker as any).addTo(map.current!)
+
+        // Store marker ID for tracking
+        ;(mapMarker as any)._markerId = marker.id
+
+        console.log("🗺️ Added standard marker to map:", marker.lng, marker.lat)
+        console.log("🗺️ Marker position on map:", mapMarker.getLngLat())
+        console.log("🗺️ Map center:", map.current!.getCenter())
+        console.log("🗺️ Map zoom:", map.current!.getZoom())
+
+        // popup from marker
+        if (marker.popup) {
+          const popup = new maplibregl.Popup({ offset: 25 })
+          popup.setHTML(marker.popup)
+          ;(mapMarker as any).setPopup(popup)
+          // Store marker ID for popup tracking
+          ;(popup as any)._markerId = marker.id
+          popupsRef.current.push(popup)
+        }
+
+        newCreatedMarkers.push(mapMarker)
+        return
+      }
 
       const el = document.createElement("div")
       el.className = "marker"
@@ -885,17 +914,28 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
 
       console.log("🗺️ Created marker element:", el, "styles:", el.style.cssText)
 
-      // Build SVG with optional count label in the center
-      const labelText = "" // Single marker, no count
-      const fontSize = Math.max(9, Math.round(baseSize * 0.35))
-      const svg = `<?xml version='1.0' encoding='UTF-8'?><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='${baseSize}' height='${baseSize}'><path d='M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z' fill='${color}' stroke='${outline}' stroke-width='1.5'/><circle cx='12' cy='10' r='2.5' fill='white'/>${labelText ? `<text x='12' y='11.5' font-family='Arial, Helvetica, sans-serif' font-size='${fontSize}' font-weight='700' fill='${color}' text-anchor='middle' dominant-baseline='central'>${labelText}</text>` : ''}</svg>`
+      // Build SVG with location icon for last-click marker
+      let svg: string
+      if (marker.id === "last-click") {
+        // Use a location pin icon for last-click markers
+        svg = `<?xml version='1.0' encoding='UTF-8'?><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='${baseSize}' height='${baseSize}'><path d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z' fill='${color}' stroke='${outline}' stroke-width='1'/></svg>`
+      } else {
+        // Use the existing map pin icon for other markers
+        const labelText = "" // Single marker, no count
+        const fontSize = Math.max(9, Math.round(baseSize * 0.35))
+        svg = `<?xml version='1.0' encoding='UTF-8'?><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='${baseSize}' height='${baseSize}'><path d='M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z' fill='${color}' stroke='${outline}' stroke-width='1.5'/><circle cx='12' cy='10' r='2.5' fill='white'/>${labelText ? `<text x='12' y='11.5' font-family='Arial, Helvetica, sans-serif' font-size='${fontSize}' font-weight='700' fill='${color}' text-anchor='middle' dominant-baseline='central'>${labelText}</text>` : ''}</svg>`
+      }
 
       el.innerHTML = svg
       console.log("🗺️ Created marker element with SVG:", svg.substring(0, 100) + "...")
 
-      // Add a text fallback for debugging with MapPin icon
+      // Add a text fallback for debugging with location icon for last-click, MapPin for others
       const textFallback = document.createElement("div")
-      textFallback.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`
+      if (marker.id === "last-click") {
+        textFallback.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"></path><circle cx="12" cy="9" r="2.5"></circle></svg>`
+      } else {
+        textFallback.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>`
+      }
       textFallback.style.cssText = `
         position: absolute;
         top: 0;
@@ -917,11 +957,9 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
       // Create marker with custom element
       let mapMarker: maplibregl.Marker
 
-      try {
-        mapMarker = new maplibregl.Marker({ element: el, anchor: "bottom", draggable: true })
-        mapMarker.setLngLat([marker.lng, marker.lat])
-
-        // Add marker to map
+  try {
+    mapMarker = new maplibregl.Marker({ element: el, anchor: "bottom", draggable: marker.id === "claim-area-center" })
+    mapMarker.setLngLat([marker.lng, marker.lat])        // Add marker to map
         if (typeof (mapMarker as any).addTo === 'function') {
           (mapMarker as any).addTo(map.current!)
         } else {
@@ -956,34 +994,34 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
         popupsRef.current.push(popup)
       }
 
-      // Add drag event handlers for the marker
-      ;(mapMarker as any).on("dragstart", () => {
-        setDraggedMarker(marker.id)
-        setIsDragging(true)
-        map.current!.getCanvas().style.cursor = "grabbing"
-        ;(map.current as any).dragPan.disable() // Disable map dragging while dragging marker
-      })
+  // Add drag event handlers for the marker (only for claim-area-center)
+  if (marker.id === "claim-area-center") {
+    ;(mapMarker as any).on("dragstart", () => {
+      setDraggedMarker(marker.id)
+      setIsDragging(true)
+      map.current!.getCanvas().style.cursor = "grabbing"
+      ;(map.current as any).dragPan.disable() // Disable map dragging while dragging marker
+    })
 
-      ;(mapMarker as any).on("drag", () => {
-        // Update cursor during drag
-        map.current!.getCanvas().style.cursor = "grabbing"
-      })
+    ;(mapMarker as any).on("drag", () => {
+      // Update cursor during drag
+      map.current!.getCanvas().style.cursor = "grabbing"
+    })
 
-      ;(mapMarker as any).on("dragend", (e: any) => {
-        console.log("Marker dragend event:", marker.id, e.target.getLngLat())
-        setDraggedMarker(null)
-        setIsDragging(false)
-        map.current!.getCanvas().style.cursor = ""
-        ;(map.current as any).dragPan.enable() // Re-enable map dragging
+    ;(mapMarker as any).on("dragend", (e: any) => {
+      console.log("Marker dragend event:", marker.id, e.target.getLngLat())
+      setDraggedMarker(null)
+      setIsDragging(false)
+      map.current!.getCanvas().style.cursor = ""
+      ;(map.current as any).dragPan.enable() // Re-enable map dragging
 
-        // If this is the claim area marker, update the claim area center
-        if (marker.id === "claim-area-center" && onMapClick) {
-          console.log("Calling onMapClick with:", e.target.getLngLat())
-          onMapClick(e.target.getLngLat())
-        }
-      })
-
-      newCreatedMarkers.push(mapMarker)
+      // If this is the claim area marker, update the claim area center
+      if (marker.id === "claim-area-center" && onMapClick) {
+        console.log("Calling onMapClick with:", e.target.getLngLat())
+        onMapClick(e.target.getLngLat())
+      }
+    })
+  }      newCreatedMarkers.push(mapMarker)
     })
 
     // Update existing markers
@@ -1764,7 +1802,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
         ref={mapContainer}
         className="w-full h-full"
         data-testid="map-container"
-        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, overflow: "hidden" }}
+        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, overflow: "hidden", cursor: "pointer" }}
       />
 
       {/* Loading Overlay */}

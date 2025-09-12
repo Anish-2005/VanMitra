@@ -995,6 +995,11 @@ export default function AtlasPage() {
   }
 
   const handleFeatureClick = (featureInfo: { layer: string; feature: any; lngLat: any }) => {
+    // If placing marker, don't show modal for other features
+    if (addClaimOpen && areaEntered && !markerPlaced) {
+      return
+    }
+
     // Handle claim area dragging
     if (featureInfo.layer === "claim-area" && addClaimOpen) {
       setIsDraggingArea(true)
@@ -1380,7 +1385,22 @@ export default function AtlasPage() {
   }
 
   const handleMapClick = (lngLat: { lng: number; lat: number }) => {
-    console.log("Map clicked at:", lngLat, "isDraggingArea:", isDraggingArea, "addClaimOpen:", addClaimOpen, "claimAreaVisible:", claimAreaVisible)
+    console.log("🗺️ [Atlas] Map clicked at:", lngLat, "isDraggingArea:", isDraggingArea, "addClaimOpen:", addClaimOpen, "claimAreaVisible:", claimAreaVisible, "areaEntered:", areaEntered, "markerPlaced:", markerPlaced)
+
+    // Always update last clicked coordinates
+    console.log("🗺️ [Atlas] Setting lastClickedCoords to:", [lngLat.lng, lngLat.lat])
+    setLastClickedCoords([lngLat.lng, lngLat.lat])
+
+    // If add claim form is open, allow placing/selecting location
+    if (addClaimOpen) {
+      console.log("Placing/selecting location at clicked location:", lngLat)
+      setClaimAreaCenter([lngLat.lng, lngLat.lat])
+      setMarkerPlaced(true)
+      if (areaEntered) {
+        setClaimAreaVisible(true)
+      }
+      return
+    }
 
     // If dragging claim area, update its position
     if (isDraggingArea && addClaimOpen) {
@@ -1440,19 +1460,51 @@ export default function AtlasPage() {
   const [claimAreaCenter, setClaimAreaCenter] = useState<[number, number] | null>(null)
   const [claimAreaRadius, setClaimAreaRadius] = useState<number>(0) // in meters
   const [isDraggingArea, setIsDraggingArea] = useState(false)
+  const [areaEntered, setAreaEntered] = useState(false)
+  const [markerPlaced, setMarkerPlaced] = useState(false)
+  const [lastClickedCoords, setLastClickedCoords] = useState<[number, number] | null>(null)
 
-  // Update claim area layer when state changes
+  // Update last click marker
+  useEffect(() => {
+    console.log("🗺️ [Atlas] lastClickedCoords changed:", lastClickedCoords)
+    if (lastClickedCoords) {
+      const lastClickMarker: GISMarker = {
+        id: "last-click",
+        lng: lastClickedCoords[0],
+        lat: lastClickedCoords[1],
+        label: "Last Click Location",
+        color: "#dc2626", // red-600
+        popup: `<div style="min-width:180px;font-size:14px;padding:8px;"><strong style="color:#dc2626;">📍 Last Clicked Location</strong><div style="margin-top:8px;"><strong>Latitude:</strong> ${lastClickedCoords[1].toFixed(6)}</div><div><strong>Longitude:</strong> ${lastClickedCoords[0].toFixed(6)}</div><div style="margin-top:8px;font-size:12px;color:#666;">Click elsewhere to move this marker</div></div>`,
+        size: 50, // larger size for better visibility
+      }
+
+      console.log("🗺️ [Atlas] Creating last-click marker:", lastClickMarker)
+      setMarkers((prev) => {
+        const filtered = prev.filter(m => m.id !== "last-click")
+        const newMarkers = [...filtered, lastClickMarker]
+        console.log("🗺️ [Atlas] Updated markers array with last-click:", newMarkers.map(m => ({ id: m.id, lng: m.lng, lat: m.lat })))
+        return newMarkers
+      })
+    } else {
+      console.log("🗺️ [Atlas] Removing last-click marker")
+      setMarkers((prev) => prev.filter(m => m.id !== "last-click"))
+    }
+  }, [lastClickedCoords])
+
+  // Update claim area and marker
   useEffect(() => {
     console.log("=== CLAIM AREA useEffect triggered ===")
     console.log("claimAreaVisible:", claimAreaVisible)
     console.log("claimAreaCenter:", claimAreaCenter)
     console.log("claimAreaRadius:", claimAreaRadius)
     console.log("area:", newClaim.claimed_area)
+    console.log("markerPlaced:", markerPlaced)
     console.log("Current map center:", mapCenter)
     console.log("🗺️ [Atlas] Current markers count:", markers.length)
 
+    // Handle circle layer
     if (claimAreaVisible && claimAreaCenter && claimAreaRadius > 0) {
-      console.log("=== SHOWING CLAIM AREA ===")
+      console.log("=== SHOWING CLAIM AREA CIRCLE ===")
       // Create a circle polygon for the claim area
       const circle = turf.circle(claimAreaCenter, claimAreaRadius / 1000, { steps: 64, units: 'kilometers' })
       console.log("Created circle:", circle)
@@ -1468,42 +1520,8 @@ export default function AtlasPage() {
             : layer
         )
       )
-
-      // Update marker position when claim area center changes
-      const area = newClaim.claimed_area
-      if (area > 0) {
-        const areaM2 = area * 10000
-        const radiusM = Math.sqrt(areaM2 / Math.PI)
-
-        const claimMarker: GISMarker = {
-          id: "claim-area-center",
-          lng: claimAreaCenter[0],
-          lat: claimAreaCenter[1],
-          label: `New Claim (${area} ha)`,
-          color: "#ef4444",
-          popup: `<div style="min-width:200px;font-size:13px"><strong>New Claim Area</strong><div>Area: ${area} ha</div><div>Radius: ${(radiusM / 1000).toFixed(2)} km</div><div style="margin-top:6px;color:#ef4444;"><em>Drag the circle to reposition</em></div></div>`,
-          size: Math.max(100, Math.min(200, Math.sqrt(area) * 10)) // Size proportional to area, min 100px, max 200px
-        }
-
-        console.log("Creating marker:", claimMarker)
-        console.log("Marker coordinates vs map center:", {
-          markerLng: claimMarker.lng,
-          markerLat: claimMarker.lat,
-          mapCenterLng: mapCenter ? mapCenter[0] : null,
-          mapCenterLat: mapCenter ? mapCenter[1] : null,
-          distance: mapCenter ? turf.distance(turf.point(claimAreaCenter), turf.point(mapCenter), { units: 'kilometers' }) : null
-        })
-
-        setMarkers((prev) => {
-          const filtered = prev.filter(m => m.id !== "claim-area-center")
-          const newMarkers = [...filtered, claimMarker]
-          console.log("Updated markers array:", newMarkers.length, "markers")
-          console.log("All marker IDs:", newMarkers.map(m => m.id))
-          return newMarkers
-        })
-      }
     } else {
-      console.log("=== HIDING CLAIM AREA ===")
+      console.log("=== HIDING CLAIM AREA CIRCLE ===")
       // Hide the claim area layer
       setLayers((prevLayers) =>
         prevLayers.map((layer) =>
@@ -1512,6 +1530,40 @@ export default function AtlasPage() {
             : layer
         )
       )
+    }
+
+    // Handle marker
+    if (markerPlaced && claimAreaCenter && addClaimOpen) {
+      console.log("=== SHOWING CLAIM MARKER ===")
+      const area = newClaim.claimed_area
+      const claimMarker: GISMarker = {
+        id: "claim-area-center",
+        lng: claimAreaCenter[0],
+        lat: claimAreaCenter[1],
+        label: area > 0 ? `New Claim (${area} ha)` : `Selected Location`,
+        color: "#ef4444",
+        popup: area > 0 ? `<div style="min-width:200px;font-size:13px"><strong>New Claim Area</strong><div>Area: ${area} ha</div><div>Radius: ${(claimAreaRadius / 1000).toFixed(2)} km</div><div style="margin-top:6px;color:#ef4444;"><em>Drag the circle to reposition</em></div></div>` : `<div style="min-width:200px;font-size:13px"><strong>Selected Location</strong><div style="margin-top:6px;color:#ef4444;"><em>Drag to reposition</em></div></div>`,
+        size: area > 0 ? Math.max(100, Math.min(200, Math.sqrt(area) * 10)) : 100 // Size proportional to area, min 100px, max 200px
+      }
+
+      console.log("Creating marker:", claimMarker)
+      console.log("Marker coordinates vs map center:", {
+        markerLng: claimMarker.lng,
+        markerLat: claimMarker.lat,
+        mapCenterLng: mapCenter ? mapCenter[0] : null,
+        mapCenterLat: mapCenter ? mapCenter[1] : null,
+        distance: mapCenter ? turf.distance(turf.point(claimAreaCenter), turf.point(mapCenter), { units: 'kilometers' }) : null
+      })
+
+      setMarkers((prev) => {
+        const filtered = prev.filter(m => m.id !== "claim-area-center")
+        const newMarkers = [...filtered, claimMarker]
+        console.log("Updated markers array:", newMarkers.length, "markers")
+        console.log("All marker IDs:", newMarkers.map(m => m.id))
+        return newMarkers
+      })
+    } else {
+      console.log("=== HIDING CLAIM MARKER ===")
       // Remove claim area marker
       setMarkers((prev) => {
         const filtered = prev.filter(m => m.id !== "claim-area-center")
@@ -1520,7 +1572,7 @@ export default function AtlasPage() {
       })
     }
     console.log("=== END CLAIM AREA useEffect ===")
-  }, [claimAreaVisible, claimAreaCenter, claimAreaRadius, newClaim.claimed_area, mapCenter])
+  }, [claimAreaVisible, claimAreaCenter, claimAreaRadius, newClaim.claimed_area, mapCenter, markerPlaced, addClaimOpen])
 
   const submitNewClaim = async () => {
     try {
@@ -1575,6 +1627,9 @@ export default function AtlasPage() {
       setClaimAreaVisible(false)
       setClaimAreaCenter(null)
       setClaimAreaRadius(0)
+      setAreaEntered(false)
+      setMarkerPlaced(false)
+      setLastClickedCoords(null)
 
       // Remove claim area marker
       setMarkers((prev) => {
@@ -1925,22 +1980,16 @@ export default function AtlasPage() {
                                 const areaM2 = area * 10000
                                 const radiusM = Math.sqrt(areaM2 / Math.PI)
                                 setClaimAreaRadius(radiusM)
-
-                                // Set center to current map view center if not already set
-                                if (!claimAreaCenter) {
-                                  const currentCenter = mapCenter ?? stateCenter
-                                  if (currentCenter) {
-                                    setClaimAreaCenter(currentCenter as [number, number])
-                                  }
+                                setAreaEntered(true)
+                                if (markerPlaced) {
+                                  setClaimAreaVisible(true)
                                 }
-
-                                // Automatically show claim area when area is entered
-                                setClaimAreaVisible(true)
                               } else {
                                 // Clear claim area when area is 0 or empty
                                 setClaimAreaVisible(false)
-                                setClaimAreaCenter(null)
                                 setClaimAreaRadius(0)
+                                setAreaEntered(false)
+                                setMarkerPlaced(false)
                               }
                             }}
                             className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
@@ -1949,7 +1998,19 @@ export default function AtlasPage() {
 
                         </div>
 
-                        {claimAreaVisible && claimAreaCenter && (
+                        {lastClickedCoords && addClaimOpen && (
+                          <div>
+                            <label className="block text-sm text-green-700">Last Clicked Coordinates</label>
+                            <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-md">
+                              <div className="text-sm text-gray-800 font-mono">
+                                <div><strong>Longitude:</strong> {lastClickedCoords[0].toFixed(6)}</div>
+                                <div><strong>Latitude:</strong> {lastClickedCoords[1].toFixed(6)}</div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {markerPlaced && claimAreaCenter && (
                           <div>
                             <label className="block text-sm text-green-700">Claim Center Coordinates</label>
                             <div className="mt-1 p-3 bg-blue-50 border border-blue-200 rounded-md">
@@ -1985,10 +2046,15 @@ export default function AtlasPage() {
                         </div>
                       </div>
 
-                      {claimAreaVisible && (
+                      {addClaimOpen && (
                         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
                           <p className="text-sm text-yellow-800">
-                            Claim area is now visible on the map with a red marker at the center. You can drag it to adjust the location.
+                            {!markerPlaced
+                              ? "Click on the map to select a location for your claim."
+                              : !areaEntered
+                                ? "Location selected. Enter the claimed area to see the claim boundary."
+                                : "Claim area is now visible on the map with a red marker. You can drag it to adjust the location."
+                            }
                           </p>
                         </div>
                       )}
@@ -2007,6 +2073,9 @@ export default function AtlasPage() {
                             setClaimAreaVisible(false)
                             setClaimAreaCenter(null)
                             setClaimAreaRadius(0)
+                            setAreaEntered(false)
+                            setMarkerPlaced(false)
+                            setLastClickedCoords(null)
                             setNewClaim({ state_name: "", district_name: "", village_name: "", claim_type: "", claimant_name: "", community_name: "", claimed_area: 0 })
                             // Remove claim area marker
                             setMarkers((prev) => {
