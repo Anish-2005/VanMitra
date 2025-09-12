@@ -1840,7 +1840,8 @@ export default function AtlasPage() {
 
                         <div>
                           <label className="block text-sm text-green-700">District</label>
-                          <select
+                          <input
+                            type="text"
                             value={newClaim.district_name}
                             onChange={(e) => {
                               const districtName = e.target.value
@@ -1849,61 +1850,20 @@ export default function AtlasPage() {
                               setPendingVillageFilter("")
                             }}
                             className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
-                            disabled={!newClaim.state_name}
-                          >
-                            <option value="">Select District</option>
-                            {newClaim.state_name && districtOptionsByState[newClaim.state_name] &&
-                              districtOptionsByState[newClaim.state_name].length
-                              ? districtOptionsByState[newClaim.state_name].map((d) => (
-                                <option key={d} value={d}>
-                                  {d}
-                                </option>
-                              ))
-                              : (STATES.find((s) => s.name === newClaim.state_name)?.districts || []).map((d) => (
-                                <option key={d} value={d}>
-                                  {d}
-                                </option>
-                              ))}
-                          </select>
+                            placeholder="Enter district name"
+                          />
                         </div>
 
                         <div>
                           <label className="block text-sm text-green-700">Village</label>
                           <div className="flex gap-2">
-                            <select
+                            <input
+                              type="text"
                               value={newClaim.village_name}
                               onChange={(e) => setNewClaim((s) => ({ ...s, village_name: e.target.value }))}
                               className="mt-1 flex-1 rounded-md border border-green-100 p-2 bg-green-50"
-                              disabled={!newClaim.district_name}
-                            >
-                              <option value="">Select Village</option>
-                              {newClaim.district_name && newClaim.state_name
-                                ? // Prefer district-scoped villages when district is selected
-                                  (villageOptionsByStateAndDistrict[newClaim.state_name] && villageOptionsByStateAndDistrict[newClaim.state_name][newClaim.district_name]
-                                    ? villageOptionsByStateAndDistrict[newClaim.state_name][newClaim.district_name].map((v) => (
-                                      <option key={v} value={v}>
-                                        {v}
-                                      </option>
-                                    ))
-                                    : // fallback to state-wide villages for the selected state
-                                      (villageOptionsByState[newClaim.state_name] || []).map((v) => (
-                                        <option key={v} value={v}>
-                                          {v}
-                                        </option>
-                                      )))
-                                : // no district selected: show state-wide list if available otherwise global list
-                                (newClaim.state_name
-                                  ? (villageOptionsByState[newClaim.state_name] || []).map((v) => (
-                                      <option key={v} value={v}>
-                                        {v}
-                                      </option>
-                                    ))
-                                  : villageOptions.map((v) => (
-                                      <option key={v} value={v}>
-                                        {v}
-                                      </option>
-                                    )))}
-                            </select>
+                              placeholder="Enter village name"
+                            />
                             <button
                               onClick={goToVillageArea}
                               disabled={!newClaim.village_name || !newClaim.state_name}
