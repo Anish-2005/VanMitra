@@ -111,9 +111,31 @@ async function fetchOSMDataQuick(bbox: string, featureType: string): Promise<OSM
   }
 }
 
-// Generate realistic fallback data for different states
-function generateFallbackData(state: string, district: string) {
-  const stateCenters: { [key: string]: [number, number] } = {
+import { Feature, Point } from "geojson";
+
+interface FallbackProperties {
+  id: string;
+  type: 'pond' | 'farm' | 'well' | 'wetland';
+  state: string;
+  district: string;
+  village: string;
+  source: string;
+  created_date: string;
+  // optional type-specific properties
+  area_hectares?: number;
+  water_quality?: 'Good' | 'Fair' | 'Poor';
+  usage?: 'Irrigation' | 'Drinking' | 'Both';
+  crop_type?: 'Rice' | 'Wheat' | 'Cotton' | 'Sugarcane' | 'Maize';
+  irrigation_type?: 'Canal' | 'Well' | 'Rain-fed';
+  depth_meters?: number;
+  water_level_meters?: number;
+  well_type?: 'Borewell' | 'Hand Pump' | 'Open Well';
+  wetland_type?: 'Marsh' | 'Swamp' | 'Lake' | 'Riverine';
+  biodiversity_index?: number;
+}
+
+export function generateFallbackData(state: string, district: string): Feature<Point, FallbackProperties>[] {
+  const stateCenters: Record<string, [number, number]> = {
     'Madhya Pradesh': [77.4, 23.2],
     'Tripura': [91.2, 23.8],
     'Odisha': [85.8, 19.8],
@@ -123,9 +145,8 @@ function generateFallbackData(state: string, district: string) {
 
   const [centerLng, centerLat] = stateCenters[state] || stateCenters['Madhya Pradesh'];
 
-  // Generate diverse features around the state center
-  const features = [];
-  const featureTypes = ['pond', 'farm', 'well', 'wetland'];
+  const features: Feature<Point, FallbackProperties>[] = [];
+  const featureTypes: FallbackProperties['type'][] = ['pond', 'farm', 'well', 'wetland'];
   const villages = [
     'Village A', 'Village B', 'Village C', 'Village D', 'Village E',
     'Village F', 'Village G', 'Village H', 'Village I', 'Village J'
@@ -135,13 +156,12 @@ function generateFallbackData(state: string, district: string) {
     const type = featureTypes[i % featureTypes.length];
     const village = villages[i % villages.length];
 
-    // Generate coordinates within a reasonable radius of the state center
-    const radius = 0.5; // degrees
+    const radius = 0.5;
     const angle = (i / 25) * 2 * Math.PI;
     const lng = centerLng + Math.cos(angle) * radius * (0.5 + Math.random() * 0.5);
     const lat = centerLat + Math.sin(angle) * radius * (0.5 + Math.random() * 0.5);
 
-    let properties: any = {
+    let properties: FallbackProperties = {
       id: `${state.toLowerCase().replace(' ', '_')}_${district.toLowerCase().replace(' ', '_')}_${type}_${i + 1}`,
       type,
       state,
@@ -157,16 +177,16 @@ function generateFallbackData(state: string, district: string) {
         properties = {
           ...properties,
           area_hectares: Math.round((0.5 + Math.random() * 4.5) * 100) / 100,
-          water_quality: ['Good', 'Fair', 'Poor'][Math.floor(Math.random() * 3)],
-          usage: ['Irrigation', 'Drinking', 'Both'][Math.floor(Math.random() * 3)]
+          water_quality: ['Good', 'Fair', 'Poor'][Math.floor(Math.random() * 3)] as 'Good' | 'Fair' | 'Poor',
+          usage: ['Irrigation', 'Drinking', 'Both'][Math.floor(Math.random() * 3)] as 'Irrigation' | 'Drinking' | 'Both'
         };
         break;
       case 'farm':
         properties = {
           ...properties,
-          crop_type: ['Rice', 'Wheat', 'Cotton', 'Sugarcane', 'Maize'][Math.floor(Math.random() * 5)],
+          crop_type: ['Rice', 'Wheat', 'Cotton', 'Sugarcane', 'Maize'][Math.floor(Math.random() * 5)] as 'Rice' | 'Wheat' | 'Cotton' | 'Sugarcane' | 'Maize',
           area_hectares: Math.round((1 + Math.random() * 9) * 100) / 100,
-          irrigation_type: ['Canal', 'Well', 'Rain-fed'][Math.floor(Math.random() * 3)]
+          irrigation_type: ['Canal', 'Well', 'Rain-fed'][Math.floor(Math.random() * 3)] as 'Canal' | 'Well' | 'Rain-fed'
         };
         break;
       case 'well':
@@ -174,14 +194,14 @@ function generateFallbackData(state: string, district: string) {
           ...properties,
           depth_meters: Math.round((10 + Math.random() * 50) * 100) / 100,
           water_level_meters: Math.round((2 + Math.random() * 20) * 100) / 100,
-          well_type: ['Borewell', 'Hand Pump', 'Open Well'][Math.floor(Math.random() * 3)]
+          well_type: ['Borewell', 'Hand Pump', 'Open Well'][Math.floor(Math.random() * 3)] as 'Borewell' | 'Hand Pump' | 'Open Well'
         };
         break;
       case 'wetland':
         properties = {
           ...properties,
           area_hectares: Math.round((2 + Math.random() * 18) * 100) / 100,
-          wetland_type: ['Marsh', 'Swamp', 'Lake', 'Riverine'][Math.floor(Math.random() * 4)],
+          wetland_type: ['Marsh', 'Swamp', 'Lake', 'Riverine'][Math.floor(Math.random() * 4)] as 'Marsh' | 'Swamp' | 'Lake' | 'Riverine',
           biodiversity_index: Math.round((0.3 + Math.random() * 0.7) * 100) / 100
         };
         break;
@@ -191,7 +211,7 @@ function generateFallbackData(state: string, district: string) {
       type: "Feature",
       properties,
       geometry: {
-        type: 'Point',
+        type: "Point",
         coordinates: [lng, lat]
       }
     });
@@ -301,14 +321,14 @@ async function fetchOSMData(bbox: string, featureType: string, retryCount = 0): 
 /* eslint-enable @typescript-eslint/no-unused-vars */
 
 // Convert OSM data to GeoJSON format
-function convertOSMToGeoJSON(osmData: OSMResponse | null, stateName: string, districtName: string) {
+function convertOSMToGeoJSON(osmData: OSMResponse | null, stateName: string, districtName: string): any[] {
   if (!osmData || !osmData.elements) return [];
 
   return (osmData.elements || [])
     .filter((element: any) => element.type === 'node' || element.type === 'way')
     .map((element: any, index: number) => {
       let coordinates: [number, number];
-  const geometryType = 'Point';
+      const geometryType = 'Point';
 
       if (element.type === 'node') {
         coordinates = [element.lon, element.lat];
@@ -350,7 +370,7 @@ function convertOSMToGeoJSON(osmData: OSMResponse | null, stateName: string, dis
         }
       };
     })
-    .filter(Boolean);
+    .filter((feature): feature is any => feature !== null);
 }
 
 export async function GET(request: Request) {
