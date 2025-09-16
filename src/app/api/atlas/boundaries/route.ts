@@ -294,7 +294,7 @@ async function fetchFromDatta07IndianShapefiles(level: string, state: string) {
         if (coordinates && coordinates.length > 50) {
           const targetPoints = 30
           const step = Math.ceil(coordinates.length / targetPoints)
-          const simplifiedCoords = []
+          const simplifiedCoords: [number, number][] = []
           
           for (let i = 0; i < coordinates.length; i += step) {
             simplifiedCoords.push(coordinates[i])
@@ -322,7 +322,7 @@ async function fetchFromDatta07IndianShapefiles(level: string, state: string) {
           const coordinates = firstPolygon[0]
           const targetPoints = 30
           const step = Math.ceil(coordinates.length / targetPoints)
-          const simplifiedCoords = []
+          const simplifiedCoords: [number, number][] = []
           
           for (let i = 0; i < coordinates.length; i += step) {
             simplifiedCoords.push(coordinates[i])
@@ -431,7 +431,7 @@ async function fetchFromGitHubIndianShapefiles(level: string, state: string) {
         if (coordinates && coordinates.length > 50) {
           const targetPoints = 30
           const step = Math.ceil(coordinates.length / targetPoints)
-          const simplifiedCoords = []
+          const simplifiedCoords: [number, number][] = []
           
           for (let i = 0; i < coordinates.length; i += step) {
             simplifiedCoords.push(coordinates[i])
@@ -784,7 +784,7 @@ async function fetchFromBharatMapService(level: string, state: string) {
             // More aggressive simplification - reduce to ~30 points for cleaner boundaries
             const targetPoints = 30
             const step = Math.ceil(coordinates.length / targetPoints)
-            const simplifiedCoords = []
+            const simplifiedCoords: [number, number][] = []
             
             // Take points at regular intervals
             for (let i = 0; i < coordinates.length; i += step) {
@@ -815,7 +815,7 @@ async function fetchFromBharatMapService(level: string, state: string) {
             const coordinates = firstPolygon[0]
             const targetPoints = 30
             const step = Math.ceil(coordinates.length / targetPoints)
-            const simplifiedCoords = []
+            const simplifiedCoords: [number, number][] = []
             
             // Take points at regular intervals
             for (let i = 0; i < coordinates.length; i += step) {
@@ -940,7 +940,7 @@ async function fetchFromOverpassAPI(level: string, state: string) {
           if (simplifiedCoords.length > 50) {
             const targetPoints = 30
             const step = Math.ceil(simplifiedCoords.length / targetPoints)
-            const newCoords = []
+            const newCoords: [number, number][] = []
             
             for (let i = 0; i < simplifiedCoords.length; i += step) {
               newCoords.push(simplifiedCoords[i])

@@ -12,7 +12,6 @@ const MAside: React.FC<HTMLMotionProps<"aside">> = motion.aside;
 import { Leaf,MapPin, Database, Target, Satellite, ArrowRight, TrendingUp, Users, FileText, BarChart3, Activity, Calendar, Download, Filter, Layers, BookOpen, Upload, Server, Eye, Globe } from "lucide-react";
 import DecorativeBackground from "@/components/ui/DecorativeBackground";
 import Link from "next/link";
-import Button from "@/components/ui/button";
 import WebGIS from "../../components/WebGIS";
 import LayerManager from "../../components/LayerManager";
 import { ProtectedRoute } from "@/components/ProtectedRoute";

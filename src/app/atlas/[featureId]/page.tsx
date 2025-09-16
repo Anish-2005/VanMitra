@@ -317,7 +317,7 @@ export default function FeaturePage({
               `${derivedDistrict}, ${derivedState}, India`
             );
             const nomUrl = `https://nominatim.openstreetmap.org/search.php?q=${districtQuery}&polygon_geojson=1&format=jsonv2`;
-            let res = null;
+            let res: any[] | null = null;
             try {
               res = await fetchWithRetry(nomUrl, 3, 400);
             } catch (err) {
@@ -340,7 +340,7 @@ export default function FeaturePage({
             // fallback: state boundaries
             const stateQuery = encodeURIComponent(`${derivedState}, India`);
             const nomUrl2 = `https://nominatim.openstreetmap.org/search.php?q=${stateQuery}&polygon_geojson=1&format=jsonv2`;
-            let res2 = null;
+            let res2: any[] | null = null;
             try {
               res2 = await fetchWithRetry(nomUrl2, 3, 400);
             } catch (err) {

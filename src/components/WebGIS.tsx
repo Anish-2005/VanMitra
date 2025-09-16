@@ -268,7 +268,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
         let url = layer.url
         if (!url.includes("state=") && !url.includes("district=")) {
           const separator = url.includes("?") ? "&" : "?"
-          const params = []
+          const params: string[] = []
           if (state) params.push(`state=${encodeURIComponent(state)}`)
           if (district) params.push(`district=${encodeURIComponent(district)}`)
           if (params.length > 0) {

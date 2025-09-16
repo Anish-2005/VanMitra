@@ -134,7 +134,7 @@ interface FallbackProperties {
   biodiversity_index?: number;
 }
 
-export function generateFallbackData(state: string, district: string): Feature<Point, FallbackProperties>[] {
+function generateFallbackData(state: string, district: string): Feature<Point, FallbackProperties>[] {
   const stateCenters: Record<string, [number, number]> = {
     'Madhya Pradesh': [77.4, 23.2],
     'Tripura': [91.2, 23.8],

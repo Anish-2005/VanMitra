@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-
 // Asset types supported by the system
 const ASSET_TYPES = ['pond', 'farm', 'well', 'wetland'] as const;
 type AssetType = typeof ASSET_TYPES[number];
