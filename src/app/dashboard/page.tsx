@@ -312,9 +312,9 @@ export default function Dashboard() {
             <Link href="/public" className="nav-link">Public Data</Link>
             <Link href="/dashboard" className="nav-link font-semibold text-green-700">Dashboard</Link>
             {user ? (
-              <Button onClick={handleLogout} className="ml-4">Sign out</Button>
+              <button onClick={handleLogout} className="ml-4">Sign out</button>
             ) : (
-              <Button onClick={() => setLoginOpen(true)} className="ml-4">Sign in</Button>
+              <button onClick={() => setLoginOpen(true)} className="ml-4">Sign in</button>
             )}
           </nav>
 
