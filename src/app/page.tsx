@@ -6,449 +6,21 @@ import * as THREE from 'three';
 import {
   ArrowRight, Leaf, MapPin, Server, Database, Layers,
   Cloud, Cpu, BookOpen, Clock, Check, Users,
-  Shield, BarChart3, Target, Satellite, Map, Menu, X, Sparkles, Zap, Globe,
+  Shield, BarChart3, Target, Satellite, Map, Sparkles, Zap, Globe,
   Info, ChevronDown, ChevronUp, Search, Filter, FileText,
   Sprout, Droplets, Trees, Mountain, Sun
 } from "lucide-react";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import ThreeBackground from "@/components/ThreeBackground";
+import FloatingOrbs from "@/components/FloatingOrbs";
+import DecorativeElements from "@/components/DecorativeElements";
+import GlassCard from "@/components/GlassCard";
+import MagneticButton from "@/components/MagneticButton";
+import Tooltip from "@/components/Tooltip";
+import AnimatedCounter from "@/components/AnimatedCounter";
 
-// Three.js Background Component - Enhanced with Decorative Elements
-const ThreeBackground = () => {
-  const mountRef = useRef<HTMLDivElement>(null);
-  const sceneRef = useRef<THREE.Scene | null>(null);
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const particlesRef = useRef<THREE.Points | null>(null);
-  const frameRef = useRef<number | null>(null);
 
-  // Seeded randomness for deterministic positioning
-  const seeded = (i: number, salt = 1) =>
-    Math.abs(Math.sin(i * 12.9898 + salt * 78.233) * 43758.5453) % 1;
-
-  useEffect(() => {
-    if (!mountRef.current) return;
-
-    try {
-      // Scene setup
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-      const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false });
-
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setClearColor(0x000000, 0);
-      mountRef.current.appendChild(renderer.domElement);
-
-      sceneRef.current = scene;
-      rendererRef.current = renderer;
-
-      // Create enhanced floating particles
-      const particleCount = 120; // Increased count
-      const positions = new Float32Array(particleCount * 3);
-      const colors = new Float32Array(particleCount * 3);
-      const sizes = new Float32Array(particleCount);
-
-      for (let i = 0; i < particleCount * 3; i += 3) {
-        const particleIndex = i / 3;
-
-        // Use seeded randomness for consistent positioning
-        const r1 = seeded(particleIndex, 1);
-        const r2 = seeded(particleIndex, 2);
-        const r3 = seeded(particleIndex, 3);
-
-        positions[i] = (r1 - 0.5) * 40;     // X position
-        positions[i + 1] = (r2 - 0.5) * 40; // Y position
-        positions[i + 2] = (r3 - 0.5) * 40; // Z position
-
-        // Varied green tones
-        if (r1 > 0.7) {
-          colors[i] = 0.1;     // R (dark green)
-          colors[i + 1] = 0.8; // G
-          colors[i + 2] = 0.2; // B
-        } else if (r2 > 0.6) {
-          colors[i] = 0.2;     // R
-          colors[i + 1] = 0.6; // G (medium green)
-          colors[i + 2] = 0.3; // B
-        } else {
-          colors[i] = 0.3;     // R
-          colors[i + 1] = 0.9; // G (bright green)
-          colors[i + 2] = 0.4; // B
-        }
-
-        // Varied sizes
-        sizes[particleIndex] = 0.02 + r3 * 0.08;
-      }
-
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-      geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
-
-      const material = new THREE.ShaderMaterial({
-        uniforms: {
-          time: { value: 0 }
-        },
-        vertexShader: `
-          attribute float size;
-          varying vec3 vColor;
-          varying float vSize;
-
-          void main() {
-            vColor = color;
-            vSize = size;
-
-            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-            gl_PointSize = size * (300.0 / -mvPosition.z);
-            gl_Position = projectionMatrix * mvPosition;
-          }
-        `,
-        fragmentShader: `
-          varying vec3 vColor;
-          varying float vSize;
-
-          void main() {
-            float r = distance(gl_PointCoord, vec2(0.5, 0.5));
-            if (r > 0.5) discard;
-
-            float alpha = 1.0 - smoothstep(0.0, 0.5, r);
-            gl_FragColor = vec4(vColor, alpha * 0.8);
-          }
-        `,
-        transparent: true,
-        vertexColors: true,
-        blending: THREE.AdditiveBlending
-      });
-
-      const particles = new THREE.Points(geometry, material);
-      scene.add(particles);
-      particlesRef.current = particles;
-
-      camera.position.z = 5;
-
-      // Animation loop with enhanced effects
-      const animate = () => {
-        if (!particlesRef.current || !rendererRef.current || !sceneRef.current) return;
-
-        frameRef.current = requestAnimationFrame(animate);
-
-        const time = Date.now() * 0.001;
-
-        // Update shader time uniform
-        if (material.uniforms.time) {
-          material.uniforms.time.value = time;
-        }
-
-        // Complex rotation with slight variations
-        particlesRef.current.rotation.y += 0.001;
-        particlesRef.current.rotation.x += 0.0005;
-        particlesRef.current.rotation.z += 0.0002;
-
-        // Subtle floating motion
-        particlesRef.current.position.y = Math.sin(time * 0.5) * 0.5;
-
-        rendererRef.current.render(sceneRef.current, camera);
-      };
-
-      animate();
-
-      // Handle resize
-      const handleResize = () => {
-        if (!rendererRef.current || !camera) return;
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        rendererRef.current.setSize(window.innerWidth, window.innerHeight);
-      };
-
-      window.addEventListener('resize', handleResize);
-
-      return () => {
-        window.removeEventListener('resize', handleResize);
-        if (frameRef.current) {
-          cancelAnimationFrame(frameRef.current);
-        }
-        if (rendererRef.current && mountRef.current) {
-          mountRef.current.removeChild(rendererRef.current.domElement);
-        }
-        if (rendererRef.current) {
-          rendererRef.current.dispose();
-        }
-        if (geometry) {
-          geometry.dispose();
-        }
-        if (material) {
-          material.dispose();
-        }
-      };
-    } catch (error) {
-      console.warn('Three.js initialization failed:', error);
-      return () => { };
-    }
-  }, []);
-
-  return <div ref={mountRef} className="fixed inset-0 pointer-events-none z-0" />;
-};
-
-// Enhanced Decorative Elements Component
-const DecorativeElements = () => {
-  // Seeded randomness for deterministic positioning
-  const seeded = (i: number, salt = 1) =>
-    Math.abs(Math.sin(i * 12.9898 + salt * 78.233) * 43758.5453) % 1;
-
-  // Floating icons pool - forest/nature themed
-  const floatIcons = [Leaf, Sprout, Droplets, Trees];
-
-  return (
-    <>
-      {/* Static large elements with depth layers */}
-      <div className="absolute top-12 right-12 opacity-10 pointer-events-none z-1">
-        <motion.div
-          initial={{ scale: 0.8, rotate: -5 }}
-          animate={{ scale: [0.9, 1, 0.9], rotate: [-5, -2, -5] }}
-          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <Trees size={120} className="text-green-600" />
-        </motion.div>
-      </div>
-
-      <div className="absolute bottom-16 left-8 opacity-8 pointer-events-none z-1">
-        <motion.div
-          initial={{ y: 10 }}
-          animate={{ y: [10, -8, 10] }}
-          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <Mountain size={140} className="text-green-700" />
-        </motion.div>
-      </div>
-
-      <div className="absolute top-1/3 left-16 opacity-12 pointer-events-none z-1">
-        <motion.div
-          initial={{ scale: 0.8 }}
-          animate={{ scale: [0.8, 1, 0.8] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <Sun size={80} className="text-yellow-500" />
-        </motion.div>
-      </div>
-
-      <div className="absolute top-2/3 right-20 opacity-10 pointer-events-none z-1">
-        <motion.div
-          animate={{ x: [0, 25, 0] }}
-          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <Cloud size={100} className="text-blue-400" />
-        </motion.div>
-      </div>
-
-      {/* Floating animated icons */}
-      {[...Array(20)].map((_, i) => {
-        const r1 = seeded(i, 11);
-        const r2 = seeded(i, 22);
-        const duration = 8 + r1 * 10;
-        const delay = r2 * 5;
-        const top = `${(r2 * 75 + 8).toFixed(2)}%`;
-        const left = `${(r1 * 85 + 5).toFixed(2)}%`;
-
-        const Icon = floatIcons[i % floatIcons.length];
-        const size = 14 + r1 * 20;
-        const opacity = 0.08 + r2 * 0.15;
-
-        return (
-          <motion.div
-            key={`float-${i}`}
-            animate={{
-              y: [0, -25 - r1 * 20, 0],
-              x: [0, (r2 > 0.5 ? 18 : -18), 0],
-              rotate: [0, r1 * 20, 0],
-              scale: [1, 1.15, 1],
-            }}
-            transition={{
-              duration,
-              delay,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-            style={{ position: "absolute", top, left }}
-            aria-hidden
-            className="pointer-events-none z-1"
-          >
-            <div
-              style={{
-                opacity,
-                color: r2 > 0.7 ? "#16a34a" : r1 > 0.6 ? "#15803d" : r2 > 0.4 ? "#22c55e" : "#10b981",
-              }}
-            >
-              <Icon size={size} />
-            </div>
-          </motion.div>
-        );
-      })}
-    </>
-  );
-};
-
-// Animated Background Orbs
-const FloatingOrbs = () => {
-  const orbs = useMemo(() => Array.from({ length: 6 }, (_, i) => ({
-    id: i,
-    size: Math.random() * 200 + 100,
-    x: Math.random() * 100,
-    y: Math.random() * 100,
-    duration: Math.random() * 10 + 15,
-    delay: Math.random() * 5
-  })), []);
-
-  return (
-    <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-      {orbs.map((orb) => (
-        <motion.div
-          key={orb.id}
-          className="absolute rounded-full"
-          style={{
-            width: orb.size,
-            height: orb.size,
-            left: `${orb.x}%`,
-            top: `${orb.y}%`,
-            background: `radial-gradient(circle, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 50%, transparent 100%)`,
-            filter: 'blur(40px)',
-          }}
-          animate={{
-            x: [0, 100, -50, 0],
-            y: [0, -100, 50, 0],
-            scale: [1, 1.2, 0.8, 1],
-            opacity: [0.3, 0.6, 0.2, 0.3]
-          }}
-          transition={{
-            duration: orb.duration,
-            delay: orb.delay,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        />
-      ))}
-    </div>
-  );
-};
-
-// Glass Card Component
-const GlassCard = ({ children, className = "", hover = true, ...props }) => (
-  <motion.div
-    className={`backdrop-blur-xl bg-white/10 border border-white/20 hover:border-green-400/30 rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-300 ${className}`}
-    whileHover={hover ? {
-      scale: 1.02
-    } : {}}
-    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-    {...props}
-  >
-    {children}
-  </motion.div>
-);// Magnetic Button Component
-const MagneticButton = ({ children, className = "", variant = "primary", ...props }) => {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const buttonRef = useRef<HTMLButtonElement>(null);
-
-  const handleMouseMove = (e) => {
-    if (!buttonRef.current) return;
-    const rect = buttonRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left - rect.width / 2;
-    const y = e.clientY - rect.top - rect.height / 2;
-    setMousePosition({ x: x * 0.1, y: y * 0.1 });
-  };
-
-  const handleMouseLeave = () => {
-    setMousePosition({ x: 0, y: 0 });
-  };
-
-  const baseClass = variant === "primary"
-    ? "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-lg hover:shadow-2xl"
-    : "bg-white/10 backdrop-blur-sm border border-white/20 text-green-100 hover:bg-white/20";
-
-  return (
-    <motion.button
-      ref={buttonRef}
-      className={`px-8 py-4 rounded-full font-semibold transition-all duration-300 ${baseClass} ${className}`}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      animate={{ x: mousePosition.x, y: mousePosition.y }}
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      transition={{ type: "spring", stiffness: 150, damping: 15 }}
-      {...props}
-    >
-      {children}
-    </motion.button>
-  );
-};
-
-// Tooltip Component
-const Tooltip = ({ children, content, position = "top" }) => {
-  const [isVisible, setIsVisible] = useState(false);
-
-  return (
-    <div className="relative inline-block">
-      <div
-        onMouseEnter={() => setIsVisible(true)}
-        onMouseLeave={() => setIsVisible(false)}
-        className="cursor-help"
-      >
-        {children}
-      </div>
-
-      <AnimatePresence>
-        {isVisible && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8, y: position === "top" ? 10 : -10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, y: position === "top" ? 10 : -10 }}
-            transition={{ duration: 0.2 }}
-            className={`absolute z-50 px-3 py-2 text-sm text-white bg-slate-800/90 backdrop-blur-sm rounded-lg border border-white/20 shadow-xl max-w-xs ${
-              position === "top" ? "bottom-full left-1/2 transform -translate-x-1/2 mb-2" : "top-full left-1/2 transform -translate-x-1/2 mt-2"
-            }`}
-          >
-            {content}
-            <div className={`absolute w-2 h-2 bg-slate-800/90 border-transparent transform rotate-45 ${
-              position === "top" ? "top-full left-1/2 -translate-x-1/2 -mt-1 border-t-slate-800/90 border-r-slate-800/90" : "bottom-full left-1/2 -translate-x-1/2 -mb-1 border-b-slate-800/90 border-l-slate-800/90"
-            }`} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
-
-// Animated Counter Component
-const AnimatedCounter = ({ value, duration = 2000 }) => {
-  const [count, setCount] = useState(0);
-  const nodeRef = useRef<HTMLSpanElement>(null!);
-  const isInView = useInView(nodeRef, { once: true });
-
-  useEffect(() => {
-    if (isInView) {
-      const start = 0;
-      const end = value;
-      const incrementTime = duration / end;
-
-      const timer = setInterval(() => {
-        setCount((prevCount) => {
-          if (prevCount >= end) {
-            clearInterval(timer);
-            return end;
-          }
-          return prevCount + 1;
-        });
-      }, incrementTime);
-
-      return () => clearInterval(timer);
-    }
-  }, [isInView, value, duration]);
-
-  return (
-    <motion.span
-      ref={nodeRef}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
-      {count.toLocaleString()}
-    </motion.span>
-  );
-};
 
 export default function Home() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -482,17 +54,6 @@ export default function Home() {
     setUser(null);
   };
 
-  // Smooth scroll function for navigation
-  const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-    }
-  };
-
   // Container variants for stagger animation
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -517,6 +78,10 @@ export default function Home() {
     }
   };
 
+
+
+
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-emerald-900 text-white relative overflow-hidden">
       <ThreeBackground />
@@ -538,139 +103,15 @@ export default function Home() {
       </div>
 
       {/* Header */}
-      <motion.header
-        className="relative z-20 max-w-7xl mx-auto px-6 pt-8 flex items-center justify-between"
-        initial={{ y: -100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ type: "spring", stiffness: 100, damping: 20 }}
-      >
-        <motion.div
-          className="flex items-center gap-3"
-          whileHover={{ scale: 1.05 }}
-        >
-          <motion.div
-            className="h-12 w-12 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center shadow-xl"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          >
-            <Leaf className="text-white" />
-          </motion.div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-green-300 to-emerald-300 bg-clip-text text-transparent">
-              VanMitra
-            </h1>
-            <p className="text-xs text-green-300">Forest Rights & Asset Mapping Platform</p>
-          </div>
-        </motion.div>
+      <Navbar
+        user={user}
+        onLogin={() => setLoginOpen(true)}
+        onLogout={handleLogout}
+        onMobileMenuToggle={() => setMobileOpen(!mobileOpen)}
+        mobileOpen={mobileOpen}
+      />
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-2">
-          {["Atlas", "OCR", "DSS", "Public Data", "Technology", "Roadmap", "Dashboard"].map((item, i) => (
-            <motion.button
-              key={item}
-              onClick={() => scrollToSection(item.toLowerCase())}
-              className="px-4 py-2 rounded-full text-sm font-medium text-green-100 hover:text-white hover:bg-white/10 transition-all duration-300 backdrop-blur-sm"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              {item}
-            </motion.button>
-          ))}
-          {user ? (
-            <MagneticButton onClick={handleLogout} className="ml-4">
-              Sign out
-            </MagneticButton>
-          ) : (
-            <MagneticButton onClick={() => setLoginOpen(true)} className="ml-4">
-              Sign in
-            </MagneticButton>
-          )}
-        </nav>
 
-        {/* Mobile Menu Toggle */}
-        <motion.button
-          className="md:hidden p-3 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20"
-          onClick={() => setMobileOpen(!mobileOpen)}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <AnimatePresence mode="wait">
-            {mobileOpen ? (
-              <motion.div
-                key="close"
-                initial={{ rotate: -90, opacity: 0 }}
-                animate={{ rotate: 0, opacity: 1 }}
-                exit={{ rotate: 90, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <X className="text-green-200" />
-              </motion.div>
-            ) : (
-              <motion.div
-                key="menu"
-                initial={{ rotate: 90, opacity: 0 }}
-                animate={{ rotate: 0, opacity: 1 }}
-                exit={{ rotate: -90, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Menu className="text-green-200" />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.button>
-      </motion.header>
-
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            className="md:hidden fixed inset-0 z-30"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-              onClick={() => setMobileOpen(false)}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            />
-            <motion.aside
-              className="absolute top-0 right-0 w-80 h-full bg-gradient-to-b from-slate-800 to-green-900 backdrop-blur-xl border-l border-white/20 p-6 shadow-2xl"
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            >
-              <motion.nav
-                className="flex flex-col gap-4 mt-16"
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-              >
-                {["Atlas", "OCR", "DSS", "Public Data", "Technology", "Roadmap", "Dashboard"].map((item) => (
-                  <motion.button
-                    key={item}
-                    onClick={() => {
-                      scrollToSection(item.toLowerCase());
-                      setMobileOpen(false);
-                    }}
-                    className="text-lg font-medium text-green-100 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10"
-                    variants={itemVariants}
-                    whileHover={{ x: 10 }}
-                  >
-                    {item}
-                  </motion.button>
-                ))}
-              </motion.nav>
-            </motion.aside>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Login Modal */}
       <AnimatePresence>
@@ -821,7 +262,7 @@ export default function Home() {
               variants={containerVariants}
             >
               {[
-                { icon: MapPin, title: "Claims processed", value: claimsTotal, subtitle: "legacy + recent uploads" },
+                { icon: MapPin, title: "Claims", value: claimsTotal, subtitle: "legacy + recent uploads" },
                 { icon: Database, title: "Grants issued", value: claimsGranted, subtitle: "verified & geo-referenced" },
                 { icon: Layers, title: "AI assets", value: 12, subtitle: "ponds, farms, homesteads" }
               ].map((stat, i) => (
@@ -1484,59 +925,7 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <motion.footer
-        className="relative z-10 max-w-7xl mx-auto px-6 py-12 mt-24"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        transition={{ duration: 1 }}
-        viewport={{ once: true }}
-      >
-        <motion.div
-          className="flex flex-col md:flex-row items-center justify-between gap-8 p-8 rounded-3xl bg-gradient-to-r from-slate-800/50 to-green-800/50 backdrop-blur-xl border border-white/10"
-          whileHover={{ scale: 1.02 }}
-          transition={{ type: "spring", stiffness: 200 }}
-        >
-          <div className="flex items-center gap-4">
-            <motion.div
-              className="h-12 w-12 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center shadow-lg"
-              whileHover={{ rotate: 360 }}
-              transition={{ duration: 0.6 }}
-            >
-              <Leaf className="text-white" size={20} />
-            </motion.div>
-            <div>
-              <div className="text-lg font-semibold text-white">VanMitra</div>
-              <div className="text-green-300">© {new Date().getFullYear()} — For tribal land rights</div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-6">
-            {["Privacy", "Terms", "Contact"].map((link, i) => (
-              <a
-                key={link}
-                href={`#${link.toLowerCase()}`}
-                className="text-green-200 hover:text-white transition-colors relative"
-              >
-                <motion.span
-                  whileHover={{ scale: 1.1, y: -2 }}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  style={{ display: "inline-block" }}
-                >
-                  {link}
-                  <motion.div
-                    className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-green-400 to-emerald-400 origin-left"
-                    initial={{ scaleX: 0 }}
-                    whileHover={{ scaleX: 1 }}
-                    transition={{ duration: 0.3 }}
-                  />
-                </motion.span>
-              </a>
-            ))}
-          </div>
-        </motion.div>
-      </motion.footer>
+      <Footer />
 
       {/* Scroll Progress Indicator */}
       <motion.div

@@ -257,8 +257,12 @@ export default function Dashboard() {
 
         {/* Floating leaves - Add this section */}
         {[...Array(8)].map((_, i) => {
-          const r1 = Math.random();
-          const r2 = Math.random();
+          // Seeded randomness for deterministic positioning
+          const seeded = (i: number, salt = 1) =>
+            Math.abs(Math.sin(i * 12.9898 + salt * 78.233) * 43758.5453) % 1;
+
+          const r1 = seeded(i, 1);
+          const r2 = seeded(i, 2);
           const duration = 5 + r1 * 5;
           const top = `${(r2 * 80 + 10).toFixed(6)}%`;
           const left = `${(r1 * 90 + 5).toFixed(6)}%`;
