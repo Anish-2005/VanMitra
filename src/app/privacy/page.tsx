@@ -90,13 +90,7 @@ export default function Privacy() {
       </div>
 
       {/* Header */}
-      <Navbar
-        user={user}
-        onLogin={() => setLoginOpen(true)}
-        onLogout={handleLogout}
-        onMobileMenuToggle={() => setMobileOpen(!mobileOpen)}
-        mobileOpen={mobileOpen}
-      />
+      <Navbar />
 
       {/* Login Modal */}
       <AnimatePresence>

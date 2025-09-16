@@ -16,11 +16,11 @@ const FloatingOrbs: React.FC<FloatingOrbsProps> = ({ className = "" }) => {
 
   const orbs = useMemo(() => Array.from({ length: 6 }, (_, i) => ({
     id: i,
-    size: seeded(i, 1) * 200 + 100,
-    x: seeded(i, 2) * 100,
-    y: seeded(i, 3) * 100,
-    duration: seeded(i, 4) * 10 + 15,
-    delay: seeded(i, 5) * 5
+    size: Number((seeded(i, 1) * 200 + 100).toFixed(1)),
+    x: Number((seeded(i, 2) * 100).toFixed(3)),
+    y: Number((seeded(i, 3) * 100).toFixed(3)),
+    duration: Number((seeded(i, 4) * 10 + 15).toFixed(2)),
+    delay: Number((seeded(i, 5) * 5).toFixed(2))
   })), []);
 
   useEffect(() => {

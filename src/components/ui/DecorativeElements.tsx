@@ -1,13 +1,27 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Cloud, Droplets, Leaf, Mountain, Sprout, Sun, Trees } from "lucide-react";
 
 const DecorativeElements = () => {
+  const [isClient, setIsClient] = useState(false);
+
   // Seeded randomness for deterministic positioning
   const seeded = (i: number, salt = 1) =>
     Math.abs(Math.sin(i * 12.9898 + salt * 78.233) * 43758.5453) % 1;
 
   // Floating icons pool - forest/nature themed
   const floatIcons = [Leaf, Sprout, Droplets, Trees];
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Don't render on server to prevent hydration mismatch
+  if (!isClient) {
+    return null;
+  }
 
   return (
     <>
@@ -55,22 +69,22 @@ const DecorativeElements = () => {
       {[...Array(20)].map((_, i) => {
         const r1 = seeded(i, 11);
         const r2 = seeded(i, 22);
-        const duration = 8 + r1 * 10;
-        const delay = r2 * 5;
+        const duration = Number((8 + r1 * 10).toFixed(2));
+        const delay = Number((r2 * 5).toFixed(2));
         const top = `${(r2 * 75 + 8).toFixed(2)}%`;
         const left = `${(r1 * 85 + 5).toFixed(2)}%`;
 
         const Icon = floatIcons[i % floatIcons.length];
-        const size = 14 + r1 * 20;
-        const opacity = 0.08 + r2 * 0.15;
+        const size = Number((14 + r1 * 20).toFixed(1));
+        const opacity = Number((0.08 + r2 * 0.15).toFixed(3));
 
         return (
           <motion.div
             key={`float-${i}`}
             animate={{
-              y: [0, -25 - r1 * 20, 0],
+              y: [0, Number((-25 - r1 * 20).toFixed(1)), 0],
               x: [0, (r2 > 0.5 ? 18 : -18), 0],
-              rotate: [0, r1 * 20, 0],
+              rotate: [0, Number((r1 * 20).toFixed(1)), 0],
               scale: [1, 1.15, 1],
             }}
             transition={{

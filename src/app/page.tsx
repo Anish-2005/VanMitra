@@ -10,15 +10,18 @@ import {
   Info, ChevronDown, ChevronUp, Search, Filter, FileText,
   Sprout, Droplets, Trees, Mountain, Sun
 } from "lucide-react";
+import dynamic from 'next/dynamic';
 import Navbar from "@/components/ui/Navbar";
 import Footer from "@/components/ui/Footer";
 import ThreeBackground from "@/components/ui/ThreeBackground";
-import FloatingOrbs from "@/components/ui/FloatingOrbs";
-import DecorativeElements from "@/components/ui/DecorativeElements";
 import GlassCard from "@/components/ui/GlassCard";
 import MagneticButton from "@/components/ui/MagneticButton";
 import Tooltip from "@/components/ui/Tooltip";
 import AnimatedCounter from "@/components/ui/AnimatedCounter";
+
+// Client-only components to prevent hydration mismatches
+const FloatingOrbs = dynamic(() => import('@/components/ui/FloatingOrbs'), { ssr: false });
+const DecorativeElements = dynamic(() => import('@/components/ui/DecorativeElements'), { ssr: false });
 
 
 
@@ -103,13 +106,7 @@ export default function Home() {
       </div>
 
       {/* Header */}
-      <Navbar
-        user={user}
-        onLogin={() => setLoginOpen(true)}
-        onLogout={handleLogout}
-        onMobileMenuToggle={() => setMobileOpen(!mobileOpen)}
-        mobileOpen={mobileOpen}
-      />
+      <Navbar />
 
 
 
@@ -774,25 +771,31 @@ export default function Home() {
             <GlassCard className="p-12 bg-gradient-to-r from-green-600/20 to-emerald-600/20 border-green-400/30 relative overflow-hidden">
               {/* Animated background effects */}
               <div className="absolute inset-0 opacity-20">
-                {[...Array(20)].map((_, i) => (
-                  <motion.div
-                    key={i}
-                    className="absolute w-2 h-2 bg-green-400 rounded-full"
-                    style={{
-                      left: `${Math.random() * 100}%`,
-                      top: `${Math.random() * 100}%`,
-                    }}
-                    animate={{
-                      opacity: [0, 1, 0],
-                      scale: [0, 1, 0],
-                    }}
-                    transition={{
-                      duration: Math.random() * 3 + 2,
-                      repeat: Infinity,
-                      delay: Math.random() * 2,
-                    }}
-                  />
-                ))}
+                {[...Array(20)].map((_, i) => {
+                  // Seeded randomness for consistent positioning
+                  const seeded = (seed: number) =>
+                    Math.abs(Math.sin(seed * 12.9898 + i * 78.233) * 43758.5453) % 1;
+
+                  return (
+                    <motion.div
+                      key={i}
+                      className="absolute w-2 h-2 bg-green-400 rounded-full"
+                      style={{
+                        left: `${(seeded(1) * 100).toFixed(3)}%`,
+                        top: `${(seeded(2) * 100).toFixed(3)}%`,
+                      }}
+                      animate={{
+                        opacity: [0, 1, 0],
+                        scale: [0, 1, 0],
+                      }}
+                      transition={{
+                        duration: Number((seeded(3) * 3 + 2).toFixed(2)),
+                        repeat: Infinity,
+                        delay: Number((seeded(4) * 2).toFixed(2)),
+                      }}
+                    />
+                  );
+                })}
               </div>
 
               <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
