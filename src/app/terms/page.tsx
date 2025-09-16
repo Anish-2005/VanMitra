@@ -10,13 +10,13 @@ import {
   Info, ChevronDown, ChevronUp, Search, Filter, FileText,
   Sprout, Droplets, Trees, Mountain, Sun, FileCheck, Scale, AlertTriangle
 } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import ThreeBackground from "@/components/ThreeBackground";
-import FloatingOrbs from "@/components/FloatingOrbs";
-import DecorativeElements from "@/components/DecorativeElements";
-import GlassCard from "@/components/GlassCard";
-import MagneticButton from "@/components/MagneticButton";
+import Navbar from "@/components/ui/Navbar";
+import Footer from "@/components/ui/Footer";
+import ThreeBackground from "@/components/ui/ThreeBackground";
+import FloatingOrbs from "@/components/ui/FloatingOrbs";
+import DecorativeElements from "@/components/ui/DecorativeElements";
+import GlassCard from "@/components/ui/GlassCard";
+import MagneticButton from "@/components/ui/MagneticButton";
 
 export default function Terms() {
   const [mobileOpen, setMobileOpen] = useState(false);

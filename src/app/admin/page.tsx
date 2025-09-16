@@ -3,7 +3,7 @@
 import React from "react";
 import { Server, UploadCloud, Check } from "lucide-react";
 import Link from "next/link";
-import DecorativeBackground from "@/components/DecorativeBackground";
+import DecorativeBackground from "@/components/ui/DecorativeBackground";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 export default function AdminPage() {

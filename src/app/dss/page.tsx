@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { BookOpen, MapPin, Loader2, AlertCircle } from "lucide-react";
-import DecorativeBackground from "@/components/DecorativeBackground";
+import DecorativeBackground from "@/components/ui/DecorativeBackground";
 import Link from "next/link";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 

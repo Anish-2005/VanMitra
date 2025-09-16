@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { Upload, FileImage, Loader2, CheckCircle, XCircle, ArrowLeft, Leaf, MapPin, FileText, Eye, Info } from 'lucide-react'
-import DecorativeBackground from "@/components/DecorativeBackground"
+import DecorativeBackground from "@/components/ui/DecorativeBackground"
 
 export default function OCRPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)

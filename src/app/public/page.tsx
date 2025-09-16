@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Users} from "lucide-react";
-import DecorativeBackground from "@/components/DecorativeBackground";
+import DecorativeBackground from "@/components/ui/DecorativeBackground";
 import Link from "next/link";
 import MapPreview from "../../components/MapPreview";
 

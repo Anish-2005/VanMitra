@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import * as turf from '@turf/turf';
 import { Ruler, Download, Layers, ArrowLeft } from 'lucide-react';
 import Link from "next/link";
-import DecorativeBackground from "@/components/DecorativeBackground";
+import DecorativeBackground from "@/components/ui/DecorativeBackground";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import WebGIS, { GISLayer, GISMarker, WebGISRef } from "@/components/WebGIS";
 import { exportToGeoJSON } from '@/lib/gis-utils';
