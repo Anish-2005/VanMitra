@@ -5,8 +5,9 @@ export const dynamic = 'force-dynamic'
 import { useState, useRef, useEffect } from "react"
 import * as turf from "@turf/turf"
 import { STATES, DEFAULT_STATE } from "../../lib/regions"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { Layers, Ruler, Download, MapPin, Copy, ZoomIn, FileDown, Plus } from "lucide-react"
+import dynamicImport from "next/dynamic"
 import DecorativeBackground from "@/components/ui/DecorativeBackground"
 import Link from "next/link"
 import WebGIS, { type WebGISRef as WebGISRefType } from "../../components/WebGIS"
@@ -18,6 +19,16 @@ import { ProtectedRoute } from "@/components/ProtectedRoute"
 import type { GISLayer, GISMarker } from "../../components/WebGIS"
 import { exportToGeoJSON } from "../../lib/gis-utils"
 import type { GeoJSON } from "geojson"
+import Navbar from "@/components/ui/Navbar"
+import Footer from "@/components/ui/Footer"
+import ThreeBackground from "@/components/ui/ThreeBackground"
+import GlassCard from "@/components/ui/GlassCard"
+import MagneticButton from "@/components/ui/MagneticButton"
+import AnimatedCounter from "@/components/ui/AnimatedCounter"
+
+// Client-only components to prevent hydration mismatches
+const FloatingOrbs = dynamicImport(() => import('@/components/ui/FloatingOrbs'), { ssr: false })
+const DecorativeElements = dynamicImport(() => import('@/components/ui/DecorativeElements'), { ssr: false })
 
 export default function AtlasPage() {
   const [layers, setLayers] = useState<GISLayer[]>([
@@ -1732,31 +1743,28 @@ export default function AtlasPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-100 text-green-900 relative overflow-hidden">
-        <DecorativeBackground count={6} />
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-emerald-900 text-white relative overflow-hidden">
+      <ThreeBackground />
+      <DecorativeElements />
+      <FloatingOrbs />
 
-        <header className="relative z-10 max-w-7xl mx-auto px-6 pt-8 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-green-600 flex items-center justify-center border border-green-700 shadow-md">
-              <Layers className="text-white" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold tracking-tight text-green-900">VanMitra</h1>
-              <p className="text-xs text-green-700">Interactive Map & Layers</p>
-            </div>
-          </div>
-          <nav className="flex items-center gap-4">
-            <Link href="/" className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors">
-              Home
-            </Link>
-            <Link
-              href="/dashboard"
-              className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors"
-            >
-              Dashboard
-            </Link>
-          </nav>
-        </header>
+      {/* Mesh Gradient Overlay */}
+      <div className="fixed inset-0 bg-gradient-to-br from-green-900/20 via-transparent to-emerald-900/20 pointer-events-none z-1" />
+
+      {/* Animated Grid */}
+      <div className="fixed inset-0 opacity-10 pointer-events-none z-1">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `
+            linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px)
+          `,
+          backgroundSize: '50px 50px'
+        }} />
+      </div>
+
+      <DecorativeBackground count={6} />
+
+      <Navbar />
 
         <main className="relative z-10 max-w-7xl mx-auto px-6 py-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -1791,10 +1799,10 @@ export default function AtlasPage() {
                 </div>
               </motion.div>
               <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 bg-white rounded-xl shadow-md border border-green-100">
+                <GlassCard className="p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <Ruler size={16} />
-                    <h4 className="font-semibold text-green-900">Measurement Tools</h4>
+                    <h4 className="font-semibold text-white">Measurement Tools</h4>
                   </div>
                   <div className="space-y-3">
                     {!isMeasuring ? (
@@ -1805,12 +1813,12 @@ export default function AtlasPage() {
                         Start Measurement
                       </button>
                     ) : (
-                      <div className="text-sm text-gray-600 bg-yellow-50 p-3 rounded-md">
+                      <div className="text-sm text-gray-300 bg-yellow-500/20 p-3 rounded-md border border-yellow-400/30">
                         Click two points on the map to measure distance
                       </div>
                     )}
                     {measurementDistance && (
-                      <div className="text-sm bg-green-50 p-3 rounded-md">
+                      <div className="text-sm bg-green-500/20 p-3 rounded-md border border-green-400/30">
                         <strong>Distance:</strong> {measurementDistance.toFixed(2)} km
                       </div>
                     )}
@@ -1821,12 +1829,12 @@ export default function AtlasPage() {
                       Clear Measurement
                     </button>
                   </div>
-                </div>
+                </GlassCard>
 
-                <div className="p-4 bg-white rounded-xl shadow-md border border-green-100">
+                <GlassCard className="p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <Download size={16} />
-                    <h4 className="font-semibold text-green-900">Export Tools</h4>
+                    <h4 className="font-semibold text-white">Export Tools</h4>
                   </div>
                   <div className="space-y-3">
                     <button
@@ -1840,13 +1848,13 @@ export default function AtlasPage() {
                         console.log("Export button clicked")
                         handleExportMap()
                       }}
-                      className="w-full border border-green-200 text-green-700 px-4 py-2 rounded-md hover:bg-green-50 transition-colors"
+                      className="w-full border border-green-200 text-green-300 px-4 py-2 rounded-md hover:bg-green-500/20 transition-colors"
                     >
                       Export Map Image
                     </button>
                     {/* Add Claim button moved to aside */}
                   </div>
-                </div>
+                </GlassCard>
               </div>
             </section>
 
@@ -1863,25 +1871,36 @@ export default function AtlasPage() {
                     } catch (e) { }
                   }}
                 />
-                {/* Add Claim section (collapsible) */}
-                <div className="mb-4 bg-white rounded-xl shadow-md border border-green-100 overflow-hidden">
+                <GlassCard className="mb-4 overflow-hidden">
                   <div
-                    className="flex items-center justify-between p-3 bg-gray-50 cursor-pointer"
+                    className="flex items-center justify-between p-3 bg-slate-800/50 cursor-pointer"
                     onClick={() => setAddClaimOpen((prev) => !prev)}
                   >
                     <div className="flex items-center gap-2">
                       <Plus size={16} />
-                      <span className="font-medium">Add Claim</span>
-                      <span className="text-sm text-gray-500">(manual entry)</span>
+                      <span className="font-medium text-white">Add Claim</span>
+                      <span className="text-sm text-green-300">(manual entry)</span>
                     </div>
                     <div className={`transform transition-transform ${addClaimOpen ? "rotate-180" : ""}`}>▼</div>
                   </div>
 
-                  {addClaimOpen && (
-                    <div className="p-4 space-y-3">
+                  <AnimatePresence>
+                    {addClaimOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{
+                          duration: 0.4,
+                          ease: [0.4, 0.0, 0.2, 1],
+                          opacity: { duration: 0.2 }
+                        }}
+                        className="overflow-hidden"
+                      >
+                        <div className="p-4 space-y-3">
                       <div className="grid grid-cols-1 gap-3">
                         <div>
-                          <label className="block text-sm text-green-700">State</label>
+                          <label className="block text-sm text-green-300">State</label>
                           <select
                             value={newClaim.state_name}
                             onChange={(e) => {
@@ -1891,7 +1910,7 @@ export default function AtlasPage() {
                               setPendingDistrictFilter("")
                               setPendingVillageFilter("")
                             }}
-                            className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
+                            className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
                           >
                             <option value="">Select State</option>
                             {(stateOptions.length ? stateOptions : STATES.map((s) => s.name)).map((s) => (
@@ -1903,7 +1922,7 @@ export default function AtlasPage() {
                         </div>
 
                         <div>
-                          <label className="block text-sm text-green-700">District</label>
+                          <label className="block text-sm text-green-300">District</label>
                           <input
                             type="text"
                             value={newClaim.district_name}
@@ -1913,19 +1932,19 @@ export default function AtlasPage() {
                               // Reset village when district changes
                               setPendingVillageFilter("")
                             }}
-                            className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
+                            className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
                             placeholder="Enter district name"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-sm text-green-700">Village</label>
+                          <label className="block text-sm text-green-300">Village</label>
                           <div className="flex gap-2">
                             <input
                               type="text"
                               value={newClaim.village_name}
                               onChange={(e) => setNewClaim((s) => ({ ...s, village_name: e.target.value }))}
-                              className="mt-1 flex-1 rounded-md border border-green-100 p-2 bg-green-50"
+                              className="mt-1 flex-1 rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
                               placeholder="Enter village name"
                             />
                             <button
@@ -1940,11 +1959,11 @@ export default function AtlasPage() {
                         </div>
 
                         <div>
-                          <label className="block text-sm text-green-700">Claim type</label>
+                          <label className="block text-sm text-green-300">Claim type</label>
                           <select
                             value={newClaim.claim_type}
                             onChange={(e) => setNewClaim((s) => ({ ...s, claim_type: e.target.value }))}
-                            className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
+                            className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
                           >
                             <option value="">Select Claim Type</option>
                             {claimTypeOptions.length ? (
@@ -1964,7 +1983,7 @@ export default function AtlasPage() {
                         </div>
 
                         <div>
-                          <label className="block text-sm text-green-700">Claimed area (ha)</label>
+                          <label className="block text-sm text-green-300">Claimed area (ha)</label>
                           <input
                             type="number"
                             value={newClaim.claimed_area}
@@ -1992,7 +2011,7 @@ export default function AtlasPage() {
                                 setMarkerPlaced(false)
                               }
                             }}
-                            className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
+                            className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
                             placeholder="Enter area in hectares"
                           />
 
@@ -2000,9 +2019,9 @@ export default function AtlasPage() {
 
                         {lastClickedCoords && addClaimOpen && (
                           <div>
-                            <label className="block text-sm text-green-700">Last Clicked Coordinates</label>
-                            <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-md">
-                              <div className="text-sm text-gray-800 font-mono">
+                            <label className="block text-sm text-green-300">Last Clicked Coordinates</label>
+                            <div className="mt-1 p-3 bg-slate-700/50 border border-slate-600 rounded-md">
+                              <div className="text-sm text-green-100 font-mono">
                                 <div><strong>Longitude:</strong> {lastClickedCoords[0].toFixed(6)}</div>
                                 <div><strong>Latitude:</strong> {lastClickedCoords[1].toFixed(6)}</div>
                               </div>
@@ -2012,13 +2031,13 @@ export default function AtlasPage() {
 
                         {markerPlaced && claimAreaCenter && (
                           <div>
-                            <label className="block text-sm text-green-700">Claim Center Coordinates</label>
-                            <div className="mt-1 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                              <div className="text-sm text-blue-800 font-mono">
+                            <label className="block text-sm text-green-300">Claim Center Coordinates</label>
+                            <div className="mt-1 p-3 bg-blue-500/20 border border-blue-400/30 rounded-md">
+                              <div className="text-sm text-blue-100 font-mono">
                                 <div><strong>Longitude:</strong> {claimAreaCenter[0].toFixed(6)}</div>
                                 <div><strong>Latitude:</strong> {claimAreaCenter[1].toFixed(6)}</div>
                               </div>
-                              <div className="text-xs text-blue-600 mt-1">
+                              <div className="text-xs text-blue-300 mt-1">
                                 Drag the red marker on the map to change these coordinates
                               </div>
                             </div>
@@ -2026,29 +2045,29 @@ export default function AtlasPage() {
                         )}
 
                         <div>
-                          <label className="block text-sm text-green-700">Claimant name</label>
+                          <label className="block text-sm text-green-300">Claimant name</label>
                           <input
                             value={newClaim.claimant_name}
                             onChange={(e) => setNewClaim((s) => ({ ...s, claimant_name: e.target.value }))}
-                            className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
+                            className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
                             placeholder="Enter claimant name"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-sm text-green-700">Community name</label>
+                          <label className="block text-sm text-green-300">Community name</label>
                           <input
                             value={newClaim.community_name}
                             onChange={(e) => setNewClaim((s) => ({ ...s, community_name: e.target.value }))}
-                            className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
+                            className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
                             placeholder="Enter community name"
                           />
                         </div>
                       </div>
 
                       {addClaimOpen && (
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
-                          <p className="text-sm text-yellow-800">
+                        <div className="bg-yellow-500/20 border border-yellow-400/30 rounded-md p-3">
+                          <p className="text-sm text-yellow-200">
                             {!markerPlaced
                               ? "Click on the map to select a location for your claim."
                               : !areaEntered
@@ -2085,40 +2104,55 @@ export default function AtlasPage() {
                               return filtered
                             })
                           }}
-                          className="border border-green-200 text-green-700 px-4 py-2 rounded-md hover:bg-green-50 transition-colors"
+                          className="border border-green-400/30 text-green-300 px-4 py-2 rounded-md hover:bg-green-500/20 transition-colors"
                         >
                           Cancel
                         </button>
                       </div>
                     </div>
+                  </motion.div>
                   )}
-                </div>
-                {/* Search by Village UID (collapsible) */}
-                <div className="my-4 bg-white rounded-xl border border-green-100 shadow-sm overflow-hidden">
+                  </AnimatePresence>
+                </GlassCard>
+                <GlassCard className="my-4 overflow-hidden">
                   <div
-                    className="flex items-center justify-between p-3 cursor-pointer"
+                    className="flex items-center justify-between p-3 bg-slate-800/50 cursor-pointer"
                     onClick={() => setSearchByUidExpanded((s) => !s)}
                   >
                     <div>
-                      <h4 className="text-sm font-semibold text-green-900 mb-0">Search by Village UID</h4>
-                      <p className="text-xs text-green-600">Lookup claims by village identifier</p>
+                      <h4 className="text-sm font-semibold text-white mb-0">Search by Village UID</h4>
+                      <p className="text-xs text-green-300">Lookup claims by village identifier</p>
                     </div>
                     <div className={`transform transition-transform ${searchByUidExpanded ? "rotate-180" : ""}`}>▼</div>
                   </div>
-                  {searchByUidExpanded && (
-                    <div className="p-4 grid grid-cols-1 gap-2">
-                      <input value={(searchVillageUid ?? '') as any} onChange={(e) => setSearchVillageUid(e.target.value)} placeholder="Village UID (integer)" className="w-full rounded-md border p-2" />
-                      <input value={searchStatus ?? ''} onChange={(e) => setSearchStatus(e.target.value)} placeholder="Status (optional)" className="w-full rounded-md border p-2" />
-                      <input value={searchClaimType ?? ''} onChange={(e) => setSearchClaimType(e.target.value)} placeholder="Claim type (optional)" className="w-full rounded-md border p-2" />
+                  <AnimatePresence>
+                    {searchByUidExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{
+                          duration: 0.4,
+                          ease: [0.4, 0.0, 0.2, 1],
+                          opacity: { duration: 0.2 }
+                        }}
+                        className="overflow-hidden"
+                      >
+                        <div className="p-4 grid grid-cols-1 gap-2">
+                      <input value={(searchVillageUid ?? '') as any} onChange={(e) => setSearchVillageUid(e.target.value)} placeholder="Village UID (integer)" className="w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm" />
+                      <input value={searchStatus ?? ''} onChange={(e) => setSearchStatus(e.target.value)} placeholder="Status (optional)" className="w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm" />
+                      <input value={searchClaimType ?? ''} onChange={(e) => setSearchClaimType(e.target.value)} placeholder="Claim type (optional)" className="w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm" />
                       <div className="flex items-center gap-2">
                         <button disabled={searchLoading} onClick={() => runSearchByVillageUid()} className={`px-3 py-1 rounded-md ${searchLoading ? 'bg-gray-300 text-gray-700 cursor-not-allowed' : 'bg-green-700 text-white'}`}>
                           {searchLoading ? 'Searching...' : 'Search'}
                         </button>
-                        <button onClick={() => { setSearchVillageUid(''); setSearchStatus('all'); setSearchClaimType(''); setSearchResultsLayer(null); setVillagePanelOpen(false); setSearchLoading(false); }} className="border px-3 py-1 rounded-md">Clear</button>
+                        <button onClick={() => { setSearchVillageUid(''); setSearchStatus('all'); setSearchClaimType(''); setSearchResultsLayer(null); setVillagePanelOpen(false); setSearchLoading(false); }} className="border border-green-400/30 px-3 py-1 rounded-md text-green-300 hover:bg-green-500/20">Clear</button>
                       </div>
-                    </div>
-                  )}
-                </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </GlassCard>
                 <LayerManager
                   layers={[...layers, ...boundaryLayers]}
                   markers={markers}
@@ -2136,27 +2170,39 @@ export default function AtlasPage() {
 
               </div>
 
-              <div className="bg-white rounded-xl shadow-md border border-green-100 overflow-hidden mb-6">
+              <GlassCard className="overflow-hidden mb-6">
                 <div
-                  className="flex items-center justify-between p-3 bg-gray-50 cursor-pointer"
+                  className="flex items-center justify-between p-3 bg-slate-800/50 cursor-pointer"
                   onClick={() => setFiltersExpanded((prev) => !prev)}
                 >
                   <div className="flex items-center gap-2">
                     <Layers size={16} />
-                    <span className="font-medium">Filters</span>
-                    <span className="text-sm text-gray-500">(controls)</span>
+                    <span className="font-medium text-white">Filters</span>
+                    <span className="text-sm text-green-300">(controls)</span>
                   </div>
                   <div className={`transform transition-transform ${filtersExpanded ? "rotate-180" : ""}`}>▼</div>
                 </div>
 
-                {filtersExpanded && (
-                  <div className="p-4 space-y-3">
+                <AnimatePresence>
+                  {filtersExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{
+                        duration: 0.4,
+                        ease: [0.4, 0.0, 0.2, 1],
+                        opacity: { duration: 0.2 }
+                      }}
+                      className="overflow-hidden"
+                    >
+                      <div className="p-4 space-y-3">
                     <div>
-                      <label className="block text-sm text-green-700">State</label>
+                      <label className="block text-sm text-green-300">State</label>
                       <select
                         value={pendingStateFilter}
                         onChange={(e) => handleStateChange(e.target.value)}
-                        className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
+                        className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
                       >
                         <option value="all">All</option>
                         {(stateOptions.length ? stateOptions : STATES.map((s) => s.name)).map((s) => (
@@ -2168,11 +2214,11 @@ export default function AtlasPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm text-green-700">District</label>
+                      <label className="block text-sm text-green-300">District</label>
                       <select
                         value={pendingDistrictFilter}
                         onChange={(e) => handleDistrictChange(e.target.value)}
-                        className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
+                        className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
                       >
                         <option value="all">All</option>
                         {pendingStateFilter !== "all"
@@ -2193,11 +2239,11 @@ export default function AtlasPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm text-green-700">Status</label>
+                      <label className="block text-sm text-green-300">Status</label>
                       <select
                         value={pendingStatusFilter}
                         onChange={(e) => setPendingStatusFilter(e.target.value)}
-                        className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
+                        className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
                       >
                         <option value="all">All</option>
                         {statusOptions.length ? (
@@ -2217,11 +2263,11 @@ export default function AtlasPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm text-green-700">Village</label>
+                      <label className="block text-sm text-green-300">Village</label>
                       <select
                         value={pendingVillageFilter}
                         onChange={(e) => setPendingVillageFilter(e.target.value)}
-                        className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
+                        className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
                       >
                         <option value="all">All</option>
                         {pendingDistrictFilter && pendingDistrictFilter !== "all"
@@ -2254,11 +2300,11 @@ export default function AtlasPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm text-green-700">Claim type</label>
+                      <label className="block text-sm text-green-300">Claim type</label>
                       <select
                         value={pendingClaimTypeFilter ?? ""}
                         onChange={(e) => setPendingClaimTypeFilter(e.target.value || null)}
-                        className="mt-1 w-full rounded-md border border-green-100 p-2 bg-green-50"
+                        className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
                       >
                         <option value="">any</option>
                         {claimTypeOptions.length ? (
@@ -2289,17 +2335,18 @@ export default function AtlasPage() {
                         )}
                       </button>
                     </div>
-                  </div>
+                    </div>
+                  </motion.div>
                 )}
-              </div>
+                </AnimatePresence>
+              </GlassCard>
 
-              {/* Boundary Toggles */}
-              <div className="bg-white rounded-xl shadow-md border border-green-100 overflow-hidden mb-6">
-                <div className="flex items-center justify-between p-3 bg-gray-50">
+              <GlassCard className="overflow-hidden mb-6">
+                <div className="flex items-center justify-between p-3 bg-slate-800/50">
                   <div className="flex items-center gap-2">
                     <Layers size={16} />
-                    <span className="font-medium">Boundary Layers</span>
-                    <span className="text-sm text-gray-500">(Madhya Pradesh)</span>
+                    <span className="font-medium text-white">Boundary Layers</span>
+                    <span className="text-sm text-green-300">(Madhya Pradesh)</span>
                   </div>
                 </div>
 
@@ -2307,14 +2354,14 @@ export default function AtlasPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-red-500 bg-transparent"></div>
-                      <span className="text-sm font-medium">State Boundary</span>
+                      <span className="text-sm font-medium text-white">State Boundary</span>
                     </div>
                     <label className="inline-flex items-center">
                       <input
                         type="checkbox"
                         checked={pendingShowStateBoundary}
                         onChange={(e) => setPendingShowStateBoundary(e.target.checked)}
-                        className="rounded border-gray-200"
+                        className="rounded border-green-400/30 bg-slate-800/50"
                       />
                     </label>
                   </div>
@@ -2322,14 +2369,14 @@ export default function AtlasPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-blue-500 bg-transparent"></div>
-                      <span className="text-sm font-medium">District Boundaries</span>
+                      <span className="text-sm font-medium text-white">District Boundaries</span>
                     </div>
                     <label className="inline-flex items-center">
                       <input
                         type="checkbox"
                         checked={pendingShowDistrictBoundary}
                         onChange={(e) => setPendingShowDistrictBoundary(e.target.checked)}
-                        className="rounded border-gray-200"
+                        className="rounded border-green-400/30 bg-slate-800/50"
                       />
                     </label>
                   </div>
@@ -2337,19 +2384,19 @@ export default function AtlasPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-green-500 bg-transparent"></div>
-                      <span className="text-sm font-medium">Tehsil Boundaries</span>
+                      <span className="text-sm font-medium text-white">Tehsil Boundaries</span>
                     </div>
                     <label className="inline-flex items-center">
                       <input
                         type="checkbox"
                         checked={pendingShowTehsilBoundary}
                         onChange={(e) => setPendingShowTehsilBoundary(e.target.checked)}
-                        className="rounded border-gray-200"
+                        className="rounded border-green-400/30 bg-slate-800/50"
                       />
                     </label>
                   </div>
                 </div>
-                <div className="p-3 border-t border-green-50 bg-green-50 flex items-center gap-2">
+                <div className="p-3 border-t border-slate-700/50 bg-slate-800/30 flex items-center gap-2">
                   <button
                     onClick={() => {
                       // Commit pending selections
@@ -2366,7 +2413,7 @@ export default function AtlasPage() {
                       } catch (e) { }
                       setMapZoom(7.5)
                     }}
-                    className="bg-green-700 text-white px-3 py-1 rounded-md text-sm"
+                    className="bg-green-700 text-white px-3 py-1 rounded-md text-sm hover:bg-green-600 transition-colors"
                   >
                     Apply
                   </button>
@@ -2377,15 +2424,15 @@ export default function AtlasPage() {
                       setPendingShowDistrictBoundary(showDistrictBoundary)
                       setPendingShowTehsilBoundary(showTehsilBoundary)
                     }}
-                    className="bg-white border border-green-200 text-green-700 px-3 py-1 rounded-md text-sm"
+                    className="border border-green-400/30 text-green-300 px-3 py-1 rounded-md text-sm hover:bg-green-500/20 transition-colors"
                   >
                     Cancel
                   </button>
                 </div>
-              </div>
+              </GlassCard>
 
-              <div className="mt-4 p-4 bg-white rounded-xl shadow-sm border border-green-50">
-                <h5 className="text-sm font-medium text-green-900 mb-3">Legend</h5>
+              <GlassCard className="mt-4 p-4">
+                <h5 className="text-sm font-medium text-white mb-3">Legend</h5>
                 <div className="space-y-3">
                   {claimTypeOptions.length ? (
                     claimTypeOptions.map((ct) => {
@@ -2406,37 +2453,37 @@ export default function AtlasPage() {
                                   background: color,
                                   display: "inline-block",
                                   borderRadius: 3,
-                                  border: "1px solid rgba(0,0,0,0.06)",
+                                  border: "1px solid rgba(255,255,255,0.1)",
                                 }}
                               />
-                              <span className="text-sm">{ct} Areas</span>
+                              <span className="text-sm text-white">{ct} Areas</span>
                             </div>
                             <label className="inline-flex items-center gap-2">
                               <input
                                 type="checkbox"
                                 checked={visible}
                                 onChange={() => handleLayerToggle(layerId)}
-                                className="rounded border-gray-200"
+                                className="rounded border-green-400/30 bg-slate-800/50"
                               />
-                              <span className="text-sm text-gray-600">{visible ? "Visible" : "Hidden"}</span>
+                              <span className="text-sm text-green-300">{visible ? "Visible" : "Hidden"}</span>
                             </label>
                           </div>
                         </div>
                       )
                     })
                   ) : (
-                    <div className="text-xs text-gray-500">No claim types available</div>
+                    <div className="text-xs text-green-400">No claim types available</div>
                   )}
 
-                  <div className="pt-2 border-t border-gray-100">
-                    <div className="text-xs text-gray-600">
-                      <div className="font-medium mb-1">Note:</div>
+                  <div className="pt-2 border-t border-slate-700/50">
+                    <div className="text-xs text-green-400">
+                      <div className="font-medium mb-1 text-white">Note:</div>
                       <div>Symbols for claim centroids have been removed for a cleaner overview.</div>
                       <div>Use the area layers and zoom controls to inspect claims.</div>
                     </div>
                   </div>
                 </div>
-              </div>
+              </GlassCard>
             </aside>
           </div>
         </main>
@@ -2664,6 +2711,9 @@ export default function AtlasPage() {
             </div>
           ) : null}
         </Modal>
+
+        {/* Footer */}
+        <Footer />
 
   {/* Toast UI removed */}
       </div>
