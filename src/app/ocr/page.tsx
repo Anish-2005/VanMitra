@@ -1,9 +1,18 @@
 "use client"
 
 import React, { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
-import { Upload, FileImage, Loader2, CheckCircle, XCircle, ArrowLeft, Leaf, MapPin, FileText, Eye, Info } from 'lucide-react'
-import DecorativeBackground from "@/components/ui/DecorativeBackground"
+import { Upload, FileImage, Loader2, CheckCircle, XCircle, ArrowLeft, Leaf, MapPin, FileText, Eye, Info, Sparkles } from 'lucide-react'
+import dynamic from 'next/dynamic'
+import GlassCard from "@/components/ui/GlassCard"
+import MagneticButton from "@/components/ui/MagneticButton"
+import Navbar from '@/components/ui/Navbar'
+import Footer from '@/components/ui/Footer'
+// Client-only components to prevent hydration mismatches
+const ThreeBackground = dynamic(() => import('@/components/ui/ThreeBackground'), { ssr: false })
+const FloatingOrbs = dynamic(() => import('@/components/ui/FloatingOrbs'), { ssr: false })
+const DecorativeElements = dynamic(() => import('@/components/ui/DecorativeElements'), { ssr: false })
 
 export default function OCRPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -79,313 +88,490 @@ export default function OCRPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-100 text-green-900 relative overflow-hidden">
-      <DecorativeBackground count={6} />
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-emerald-900 text-white relative overflow-hidden">
+      <ThreeBackground />
+      <DecorativeElements />
+      <FloatingOrbs />
 
-      <header className="relative z-10 max-w-7xl mx-auto px-6 pt-8 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-green-600 flex items-center justify-center border border-green-700 shadow-md">
-            <Leaf className="text-white" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold tracking-tight text-green-900">VanMitra</h1>
-            <p className="text-xs text-green-700">OCR Document Processing</p>
-          </div>
-        </div>
-        <nav className="flex items-center gap-4">
-          <Link href="/" className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors">
-            Home
-          </Link>
-          <Link
-            href="/dashboard"
-            className="text-sm text-green-800 font-medium hover:text-green-600 transition-colors"
-          >
-            Dashboard
-          </Link>
-        </nav>
-      </header>
+      {/* Mesh Gradient Overlay */}
+      <div className="fixed inset-0 bg-gradient-to-br from-green-900/20 via-transparent to-emerald-900/20 pointer-events-none z-1" />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 py-12">
-        {/* Header */}
-        <div className="text-center mb-8">
-         
-          <h1 className="text-4xl font-bold text-green-900 mb-2">OCR Document Processing</h1>
-          <p className="text-lg text-green-700">Upload an image to extract text and create claims automatically</p>
-        </div>
-
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
-          {/* Upload Section */}
-          <div className="bg-white rounded-2xl shadow-xl border border-green-200 p-8">
-            <div className="mb-6">
-              <h2 className="text-2xl font-semibold text-green-900 mb-2">Upload Image</h2>
-              <p className="text-green-600">Select an image file to process with OCR</p>
-            </div>
-
-            {/* File Upload Area */}
-            <div className="mb-6">
-              <label
-                htmlFor="file-upload"
-                className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-green-300 rounded-xl cursor-pointer hover:border-green-400 hover:bg-green-50 transition-colors"
-              >
-                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                  {preview ? (
-                    <img
-                      src={preview}
-                      alt="Preview"
-                      className="max-w-full max-h-48 object-contain rounded-lg mb-4"
-                    />
-                  ) : (
-                    <>
-                      <Upload className="w-12 h-12 text-green-500 mb-4" />
-                      <p className="mb-2 text-sm text-green-600">
-                        <span className="font-semibold">Click to upload</span> or drag and drop
-                      </p>
-                      <p className="text-xs text-green-500">PNG, JPG, JPEG up to 10MB</p>
-                    </>
-                  )}
-                </div>
-                <input
-                  id="file-upload"
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  onChange={handleFileSelect}
-                />
-              </label>
-            </div>
-
-            {/* File Info */}
-            {selectedFile && (
-              <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
-                <div className="flex items-center gap-3">
-                  <FileImage className="w-8 h-8 text-green-600" />
-                  <div className="flex-1">
-                    <p className="font-medium text-green-900">{selectedFile.name}</p>
-                    <p className="text-sm text-green-600">
-                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB • {selectedFile.type}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex gap-3">
-              <button
-                onClick={handleUpload}
-                disabled={!selectedFile || isProcessing}
-                className="flex-1 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-              >
-                {isProcessing ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-5 h-5" />
-                    Process Image
-                  </>
-                )}
-              </button>
-
-              {(selectedFile || result || error) && (
-                <button
-                  onClick={resetForm}
-                  className="px-6 py-3 border border-green-300 text-green-700 rounded-lg hover:bg-green-50 transition-colors"
-                >
-                  Reset
-                </button>
-              )}
-            </div>
-
-            {/* Error Message */}
-            {error && (
-              <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
-                <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-                <p className="text-red-800">{error}</p>
-              </div>
-            )}
-          </div>
-
-          {/* Results Section */}
-          <div className="bg-white rounded-2xl shadow-xl border border-green-200 p-8">
-            <div className="mb-6">
-              <h2 className="text-2xl font-semibold text-green-900 mb-2">OCR Results</h2>
-              <p className="text-green-600">Extracted text and processed data</p>
-            </div>
-
-            {isProcessing && (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <Loader2 className="w-12 h-12 animate-spin text-green-600 mx-auto mb-4" />
-                  <p className="text-green-700 font-medium">Processing image...</p>
-                  <p className="text-green-600 text-sm">This may take a few moments</p>
-                </div>
-              </div>
-            )}
-
-            {result && !isProcessing && (
-              <div className="space-y-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <CheckCircle className="w-8 h-8 text-green-600" />
-                  <span className="text-xl font-semibold text-green-800">Processing Complete!</span>
-                </div>
-
-                {/* Success Message */}
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <p className="text-green-800 font-medium">{JSON.parse(result).message}</p>
-                </div>
-
-                {/* Claim Details */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Location Information */}
-                  <div className="bg-white border border-green-200 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-green-900 mb-4 flex items-center gap-2">
-                      <MapPin className="w-5 h-5" />
-                      Location Details
-                    </h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Village:</span>
-                        <span className="font-medium text-gray-900">{JSON.parse(result).village_name}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">District:</span>
-                        <span className="font-medium text-gray-900">{JSON.parse(result).district_name}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">State:</span>
-                        <span className="font-medium text-gray-900">{JSON.parse(result).state_name}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Coordinates:</span>
-                        <span className="font-medium text-gray-900 text-sm">
-                          {JSON.parse(result).latitude.toFixed(6)}, {JSON.parse(result).longitude.toFixed(6)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Claim Information */}
-                  <div className="bg-white border border-green-200 rounded-lg p-6">
-                    <h3 className="text-lg font-semibold text-green-900 mb-4 flex items-center gap-2">
-                      <FileText className="w-5 h-5" />
-                      Claim Details
-                    </h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Claim ID:</span>
-                        <span className="font-medium text-gray-900">#{JSON.parse(result).claim_id}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Claim Type:</span>
-                        <span className="font-medium text-gray-900">{JSON.parse(result).claim_type}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Claimant:</span>
-                        <span className="font-medium text-gray-900">{JSON.parse(result).claimant_name}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Community:</span>
-                        <span className="font-medium text-gray-900">{JSON.parse(result).community_name}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Area:</span>
-                        <span className="font-medium text-gray-900">{JSON.parse(result).claimed_area} ha</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Extracted Data */}
-                <div className="bg-white border border-green-200 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-green-900 mb-4 flex items-center gap-2">
-                    <Eye className="w-5 h-5" />
-                    Extracted Information
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {Object.entries(JSON.parse(result).extracted_data).map(([key, value]) => (
-                      <div key={key} className="bg-gray-50 rounded-lg p-4">
-                        <div className="text-sm text-gray-600 mb-1">{key}</div>
-                        <div className="font-medium text-gray-900">{String(value)}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Additional Info */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-blue-800 font-medium mb-1">Claim Successfully Created</p>
-                      <p className="text-blue-700 text-sm">
-                        The OCR data has been processed and a claim has been automatically created in the database with ID #{JSON.parse(result).claim_id}.
-                        You can view and manage this claim in the dashboard.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {!result && !isProcessing && !error && (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <FileImage className="w-16 h-16 text-green-300 mb-4" />
-                <h3 className="text-lg font-medium text-green-900 mb-2">No Results Yet</h3>
-                <p className="text-green-600">Upload an image and click "Process Image" to see OCR results</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Instructions */}
-        <div className="mt-12 bg-white rounded-2xl shadow-xl border border-green-200 p-8">
-          <h2 className="text-2xl font-semibold text-green-900 mb-4">How It Works</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Upload className="w-6 h-6 text-green-600" />
-              </div>
-              <h3 className="font-semibold text-green-900 mb-2">1. Upload Image</h3>
-              <p className="text-green-600 text-sm">Select a clear image of your document</p>
-            </div>
-            <div className="text-center">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Loader2 className="w-6 h-6 text-green-600" />
-              </div>
-              <h3 className="font-semibold text-green-900 mb-2">2. AI Processing</h3>
-              <p className="text-green-600 text-sm">OCR extracts text and processes data</p>
-            </div>
-            <div className="text-center">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-6 h-6 text-green-600" />
-              </div>
-              <h3 className="font-semibold text-green-900 mb-2">3. Claim Created</h3>
-              <p className="text-green-600 text-sm">Data is automatically saved to database</p>
-            </div>
-          </div>
-        </div>
+      {/* Animated Grid */}
+      <div className="fixed inset-0 opacity-10 pointer-events-none z-1">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `
+            linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px)
+          `,
+          backgroundSize: '50px 50px'
+        }} />
       </div>
 
-      <style jsx>{`
-        @keyframes blob {
-          0% { transform: translate(0px, 0px) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
-          100% { transform: translate(0px, 0px) scale(1); }
-        }
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-      `}</style>
+      <Navbar />
+
+      <div className="relative z-10 max-w-7xl mx-auto px-6 py-16">
+        {/* Header */}
+        <motion.div
+          className="text-center mb-16"
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+        >
+          <motion.div
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 mb-6"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.6 }}
+          >
+            <Sparkles size={16} className="text-green-400" />
+            <span className="text-green-300 font-medium">AI-Powered OCR Processing</span>
+          </motion.div>
+
+          <h1 className="text-5xl font-bold text-white mb-6">
+            <motion.span
+              className="bg-gradient-to-r from-white via-green-300 to-emerald-300 bg-clip-text text-transparent"
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8, duration: 0.8 }}
+            >
+              OCR Document
+            </motion.span>
+            <br />
+            <motion.span
+              className="bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent"
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.0, duration: 0.8 }}
+            >
+              Processing
+            </motion.span>
+          </h1>
+          <motion.p
+            className="text-xl text-green-100 max-w-2xl mx-auto"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.2, duration: 0.8 }}
+          >
+            Upload an image to extract text and create claims automatically with AI-powered OCR technology
+          </motion.p>
+        </motion.div>
+
+        <motion.div
+          className="grid grid-cols-1 xl:grid-cols-2 gap-12"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.4, staggerChildren: 0.2 }}
+        >
+          {/* Upload Section */}
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <GlassCard className="p-8">
+              <div className="mb-6">
+                <h2 className="text-2xl font-semibold text-white mb-2 flex items-center gap-3">
+                  <Upload className="text-green-400" />
+                  Upload Image
+                </h2>
+                <p className="text-green-300">Select an image file to process with OCR</p>
+              </div>
+
+              {/* File Upload Area */}
+              <motion.div
+                className="mb-6"
+                whileHover={{ scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <label
+                  htmlFor="file-upload"
+                  className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-emerald-700/50 rounded-2xl cursor-pointer hover:border-emerald-400 hover:bg-emerald-900/20 transition-all duration-300 backdrop-blur-sm"
+                >
+                  <motion.div
+                    className="flex flex-col items-center justify-center pt-5 pb-6"
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    {preview ? (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.5 }}
+                      >
+                        <img
+                          src={preview}
+                          alt="Preview"
+                          className="max-w-full max-h-48 object-contain rounded-lg mb-4"
+                        />
+                      </motion.div>
+                    ) : (
+                      <>
+                        <motion.div
+                          whileHover={{ scale: 1.1, rotate: 5 }}
+                          transition={{ type: "spring", stiffness: 300 }}
+                        >
+                          <Upload className="w-16 h-16 text-green-400 mb-4" />
+                        </motion.div>
+                        <p className="mb-2 text-lg text-green-300 font-medium">
+                          <span className="font-semibold">Click to upload</span> or drag and drop
+                        </p>
+                        <p className="text-sm text-green-400">PNG, JPG, JPEG up to 10MB</p>
+                      </>
+                    )}
+                  </motion.div>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                  />
+                </label>
+              </motion.div>
+
+              {/* File Info */}
+              {selectedFile && (
+                <motion.div
+                  className="mb-6 p-4 rounded-xl bg-emerald-900/20 border border-emerald-700/50 backdrop-blur-sm"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <div className="flex items-center gap-3">
+                    <FileImage className="w-8 h-8 text-green-400" />
+                    <div className="flex-1">
+                      <p className="font-medium text-white">{selectedFile.name}</p>
+                      <p className="text-sm text-green-300">
+                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB • {selectedFile.type}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <MagneticButton
+                  onClick={handleUpload}
+                  disabled={!selectedFile || isProcessing}
+                  className="flex-1"
+                >
+                  {isProcessing ? (
+                    <>
+                    <div className="flex items-center justify-center">
+                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                      Processing...
+                    </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-center">
+                        <Upload className="w-5 h-5 mr-2" />
+                        Process Image
+                      </div>
+                    </>
+                  )}
+                </MagneticButton>
+
+                {(selectedFile || result || error) && (
+                  <motion.button
+                    onClick={resetForm}
+                    className="px-6 py-3 border border-emerald-700/50 text-green-300 rounded-xl hover:bg-emerald-900/20 transition-all duration-300 backdrop-blur-sm"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Reset
+                  </motion.button>
+                )}
+              </div>
+
+              {/* Error Message */}
+              {error && (
+                <motion.div
+                  className="mt-4 p-4 bg-red-900/20 border border-red-700/50 rounded-xl backdrop-blur-sm flex items-center gap-3"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <XCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                  <p className="text-red-300">{error}</p>
+                </motion.div>
+              )}
+            </GlassCard>
+          </motion.div>
+
+          {/* Results Section */}
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+          >
+            <GlassCard className="p-8 pb-28 ">
+              <div className="mb-12">
+                <h2 className="text-2xl font-semibold text-white mb-2 flex items-center gap-3">
+                  <FileText className="text-green-400" />
+                  OCR Results
+                </h2>
+                <p className="text-green-300">Extracted text and processed data</p>
+              </div>
+
+              {isProcessing && (
+                <motion.div
+                  className="flex items-center justify-center py-30"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <div className="text-center">
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                    >
+                      <Loader2 className="w-16 h-16 text-green-400 mx-auto mb-4" />
+                    </motion.div>
+                    <p className="text-xl font-semibold text-white mb-2">Processing image...</p>
+                    <p className="text-green-300">This may take a few moments</p>
+                  </div>
+                </motion.div>
+              )}
+
+              {result && !isProcessing && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <div className="flex items-center gap-3 mb-6">
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", stiffness: 300, delay: 0.2 }}
+                    >
+                      <CheckCircle className="w-8 h-8 text-green-400" />
+                    </motion.div>
+                    <span className="text-2xl font-bold text-white">Processing Complete!</span>
+                  </div>
+
+                  {/* Success Message */}
+                  <motion.div
+                    className="bg-emerald-900/20 border border-emerald-700/50 rounded-xl p-4 mb-6 backdrop-blur-sm"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <p className="text-green-300 font-medium">{JSON.parse(result).message}</p>
+                  </motion.div>
+
+                  {/* Claim Details */}
+                  <motion.div
+                    className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.4, staggerChildren: 0.1 }}
+                  >
+                    {/* Location Information */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5 }}
+                    >
+                      <GlassCard className="p-6">
+                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                          <MapPin className="w-5 h-5 text-green-400" />
+                          Location Details
+                        </h3>
+                        <div className="space-y-3">
+                          <div className="flex justify-between">
+                            <span className="text-green-300">Village:</span>
+                            <span className="font-medium text-white">{JSON.parse(result).village_name}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-green-300">District:</span>
+                            <span className="font-medium text-white">{JSON.parse(result).district_name}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-green-300">State:</span>
+                            <span className="font-medium text-white">{JSON.parse(result).state_name}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-green-300">Coordinates:</span>
+                            <span className="font-medium text-white text-sm">
+                              {JSON.parse(result).latitude.toFixed(6)}, {JSON.parse(result).longitude.toFixed(6)}
+                            </span>
+                          </div>
+                        </div>
+                      </GlassCard>
+                    </motion.div>
+
+                    {/* Claim Information */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6 }}
+                    >
+                      <GlassCard className="p-6">
+                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                          <FileText className="w-5 h-5 text-green-400" />
+                          Claim Details
+                        </h3>
+                        <div className="space-y-3">
+                          <div className="flex justify-between">
+                            <span className="text-green-300">Claim ID:</span>
+                            <span className="font-medium text-white">#{JSON.parse(result).claim_id}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-green-300">Claim Type:</span>
+                            <span className="font-medium text-white">{JSON.parse(result).claim_type}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-green-300">Claimant:</span>
+                            <span className="font-medium text-white">{JSON.parse(result).claimant_name}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-green-300">Community:</span>
+                            <span className="font-medium text-white">{JSON.parse(result).community_name}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-green-300">Area:</span>
+                            <span className="font-medium text-white">{JSON.parse(result).claimed_area} ha</span>
+                          </div>
+                        </div>
+                      </GlassCard>
+                    </motion.div>
+                  </motion.div>
+
+                  {/* Extracted Data */}
+                  <motion.div
+                    className="mb-6"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7 }}
+                  >
+                    <GlassCard className="p-6">
+                      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <Eye className="w-5 h-5 text-green-400" />
+                        Extracted Information
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {Object.entries(JSON.parse(result).extracted_data).map(([key, value], index) => (
+                          <motion.div
+                            key={key}
+                            className="bg-emerald-900/20 rounded-lg p-4 border border-emerald-700/30 backdrop-blur-sm"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.8 + index * 0.1 }}
+                          >
+                            <div className="text-sm text-green-300 mb-1">{key}</div>
+                            <div className="font-medium text-white">{String(value)}</div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </GlassCard>
+                  </motion.div>
+
+                  {/* Additional Info */}
+                  <motion.div
+                    className="bg-blue-900/20 border border-blue-700/50 rounded-xl p-4 backdrop-blur-sm"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.9 }}
+                  >
+                    <div className="flex items-start gap-3">
+                      <Info className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-blue-300 font-medium mb-1">Claim Successfully Created</p>
+                        <p className="text-blue-200 text-sm">
+                          The OCR data has been processed and a claim has been automatically created in the database with ID #{JSON.parse(result).claim_id}.
+                          You can view and manage this claim in the dashboard.
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+
+              {!result && !isProcessing && !error && (
+                <motion.div
+                  className="flex flex-col items-center justify-center py-12 text-center"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <motion.div
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    transition={{ type: "spring", stiffness: 300 }}
+                  >
+                    <FileImage className="w-20 h-20 text-green-400 mb-4" />
+                  </motion.div>
+                  <h3 className="text-xl font-medium text-white mb-2">No Results Yet</h3>
+                  <p className="text-green-300">Upload an image and click "Process Image" to see OCR results</p>
+                </motion.div>
+              )}
+            </GlassCard>
+          </motion.div>
+        </motion.div>
+      </div>
+
+      {/* Instructions */}
+      <motion.div
+        className="relative z-10 max-w-7xl mx-auto px-6 pb-16"
+        initial={{ opacity: 0, y: 50 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        viewport={{ once: true }}
+      >
+        <GlassCard className="p-8">
+          <h2 className="text-3xl font-bold text-white mb-8 text-center">How It Works</h2>
+          <motion.div
+            className="grid grid-cols-1 md:grid-cols-3 gap-8"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ delay: 0.2, staggerChildren: 0.2 }}
+            viewport={{ once: true }}
+          >
+            {[
+              {
+                icon: Upload,
+                title: "1. Upload Image",
+                description: "Select a clear image of your document",
+                color: "green"
+              },
+              {
+                icon: Loader2,
+                title: "2. AI Processing",
+                description: "OCR extracts text and processes data",
+                color: "blue"
+              },
+              {
+                icon: CheckCircle,
+                title: "3. Claim Created",
+                description: "Data is automatically saved to database",
+                color: "emerald"
+              }
+            ].map((step, index) => (
+              <motion.div
+                key={index}
+                className="text-center"
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 + index * 0.2 }}
+                viewport={{ once: true }}
+                whileHover={{ scale: 1.05 }}
+              >
+                <motion.div
+                  className={`w-16 h-16 bg-gradient-to-r from-${step.color}-500 to-${step.color}-600 rounded-2xl flex items-center justify-center mx-auto mb-6`}
+                  whileHover={{ rotate: 5, scale: 1.1 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <step.icon className="w-8 h-8 text-white" />
+                </motion.div>
+                <h3 className="text-xl font-semibold text-white mb-3">{step.title}</h3>
+                <p className="text-green-300">{step.description}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+        </GlassCard>
+      </motion.div>
+      <Footer />
     </div>
   )
 }
