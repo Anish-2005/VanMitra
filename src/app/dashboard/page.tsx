@@ -668,45 +668,58 @@ export default function Dashboard() {
 
                     {/* Filters Panel */}
                     {!filtersCollapsed && (
-                      <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <motion.div
+                        className="mb-6 p-6 rounded-3xl border border-emerald-700/50 bg-gradient-to-r from-emerald-900/20 to-green-900/20 backdrop-blur-xl shadow-2xl"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                      >
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                           <div>
                             <label className="block text-sm font-medium text-green-700 mb-2">State</label>
-                            <select
+                            <motion.select
                               value={stateFilter}
                               onChange={(e) => setStateFilter(e.target.value)}
-                              className="w-full px-3 py-2 border border-green-200 rounded-lg bg-white text-green-900"
+                              className="w-full px-4 py-2 rounded-2xl border border-emerald-700/50 bg-gradient-to-r from-emerald-900/20 to-green-900/20 backdrop-blur-sm text-white placeholder-green-300 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 hover:bg-gradient-to-r hover:from-emerald-900/30 hover:to-green-900/30 transition-all duration-300 cursor-pointer"
+                              whileHover={{ scale: 1.02 }}
+                              whileFocus={{ scale: 1.02 }}
+                              transition={{ type: "spring", stiffness: 300 }}
                             >
                               {STATES.map(state => (
-                                <option key={state.name} value={state.name}>{state.name}</option>
+                                <option key={state.name} value={state.name} className="bg-slate-900 text-white">{state.name}</option>
                               ))}
-                            </select>
+                            </motion.select>
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-green-700 mb-2">District</label>
-                            <select
+                            <motion.select
                               value={districtFilter}
                               onChange={(e) => setDistrictFilter(e.target.value)}
-                              className="w-full px-3 py-2 border border-green-200 rounded-lg bg-white text-green-900"
+                              className="w-full px-4 py-2 rounded-2xl border border-emerald-700/50 bg-gradient-to-r from-emerald-900/20 to-green-900/20 backdrop-blur-sm text-white placeholder-green-300 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 hover:bg-gradient-to-r hover:from-emerald-900/30 hover:to-green-900/30 transition-all duration-300 cursor-pointer"
+                              whileHover={{ scale: 1.02 }}
+                              whileFocus={{ scale: 1.02 }}
+                              transition={{ type: "spring", stiffness: 300 }}
                             >
-                              <option value="All">All Districts</option>
-                              <option value="Raipur">Raipur</option>
-                              <option value="Bilaspur">Bilaspur</option>
-                              <option value="Durg">Durg</option>
-                            </select>
+                              <option value="All" className="bg-slate-900 text-white">All Districts</option>
+                              <option value="Raipur" className="bg-slate-900 text-white">Raipur</option>
+                              <option value="Bilaspur" className="bg-slate-900 text-white">Bilaspur</option>
+                              <option value="Durg" className="bg-slate-900 text-white">Durg</option>
+                            </motion.select>
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-green-700 mb-2">Search Village</label>
-                            <input
+                            <motion.input
                               type="text"
                               value={villageQuery}
                               onChange={(e) => setVillageQuery(e.target.value)}
                               placeholder="Enter village name..."
-                              className="w-full px-3 py-2 border border-green-200 rounded-lg bg-white text-green-900"
+                              className="w-full px-4 py-2 rounded-2xl border border-emerald-700/50 bg-gradient-to-r from-emerald-900/20 to-green-900/20 backdrop-blur-sm text-white placeholder-green-300 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 hover:bg-gradient-to-r hover:from-emerald-900/30 hover:to-green-900/30 transition-all duration-300"
+                              whileFocus={{ scale: 1.02 }}
+                              transition={{ type: "spring", stiffness: 300 }}
                             />
                           </div>
                         </div>
-                      </div>
+                      </motion.div>
                     )}
 
                     {/* Map Container */}
