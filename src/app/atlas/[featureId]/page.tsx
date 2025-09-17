@@ -2,14 +2,25 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import * as turf from '@turf/turf';
-import { Ruler, Download, Layers, ArrowLeft } from 'lucide-react';
+import { Ruler, Download, Layers, ArrowLeft, ChevronDown } from 'lucide-react';
 import Link from "next/link";
 import DecorativeBackground from "@/components/ui/DecorativeBackground";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import WebGIS, { GISLayer, GISMarker, WebGISRef } from "@/components/WebGIS";
 import { exportToGeoJSON } from '@/lib/gis-utils';
 import { STATES, DEFAULT_STATE } from '@/lib/regions';
-// LayerManager removed - use map's built-in controls instead
+import dynamic from "next/dynamic";
+import { motion, AnimatePresence } from "framer-motion";
+import Navbar from "@/components/ui/Navbar";
+import Footer from "@/components/ui/Footer";
+import ThreeBackground from "@/components/ui/ThreeBackground";
+import GlassCard from "@/components/ui/GlassCard";
+import MagneticButton from "@/components/ui/MagneticButton";
+import AnimatedCounter from "@/components/ui/AnimatedCounter";
+
+// Client-only components to prevent hydration mismatches
+const FloatingOrbs = dynamic(() => import('@/components/ui/FloatingOrbs'), { ssr: false });
+const DecorativeElements = dynamic(() => import('@/components/ui/DecorativeElements'), { ssr: false });
 
 interface FeatureData {
   area: number | undefined;
@@ -67,7 +78,7 @@ export default function FeaturePage({
   const [feature, setFeature] = useState<FeatureData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  const [search, setSearch] = useState<string>("");
   const webgisRef = useRef<WebGISRef | null>(null);
   const [layers, setLayers] = useState<GISLayer[]>([]);
   const [markers, setMarkers] = useState<GISMarker[]>([]);
@@ -168,7 +179,7 @@ export default function FeaturePage({
         }
 
         // If item is a feature (GeoJSON) use it directly, else normalize
-  let featureObj: FeatureData;
+        let featureObj: FeatureData;
         if (item.type === 'Feature') {
           featureObj = {
             area: item.properties?.land_area ?? item.properties?.area,
@@ -193,7 +204,7 @@ export default function FeaturePage({
             geometry: item.geometry
           };
         } else {
-    const geom = item.geometry ?? (item.lat && item.lng ? { type: 'Point', coordinates: [Number(item.lng), Number(item.lat)] } : null);
+          const geom = item.geometry ?? (item.lat && item.lng ? { type: 'Point', coordinates: [Number(item.lng), Number(item.lat)] } : null);
           featureObj = {
             area: item.land_area ?? item.area,
             type: 'Feature',
@@ -222,7 +233,7 @@ export default function FeaturePage({
         setFeature(featureObj);
 
         // Create a dedicated layer for this feature so polygons render with fill + outline
-  const fc: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [featureObj as unknown as GeoJSON.Feature] };
+        const fc: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [featureObj as unknown as GeoJSON.Feature] };
         const claimType = String(featureObj.properties?.claim_type ?? '').toUpperCase();
         const colorMap: Record<string, string> = { IFR: '#16a34a', CR: '#3b82f6', CFR: '#f59e0b' };
         const fillColor = colorMap[claimType] ?? '#60a5fa';
@@ -247,7 +258,7 @@ export default function FeaturePage({
             setMarkers([{ id: String(featureObj.properties.id ?? 'unknown'), lng: coords[0], lat: coords[1], label: '1', color: '#ef4444' }]);
             setMapCenter([coords[0], coords[1]]);
             setMapZoom(14);
-            } else if (featureObj.geometry && (featureObj.geometry.type === 'Polygon' || featureObj.geometry.type === 'MultiPolygon')) {
+          } else if (featureObj.geometry && (featureObj.geometry.type === 'Polygon' || featureObj.geometry.type === 'MultiPolygon')) {
             const centroid = turf.centroid(featureObj as unknown as GeoJSON.Feature);
             if (centroid && centroid.geometry && centroid.geometry.coordinates) {
               const [lng, lat] = centroid.geometry.coordinates as [number, number];
@@ -273,6 +284,25 @@ export default function FeaturePage({
   const derivedState = feature?.properties?.state || DEFAULT_STATE;
   const derivedDistrict = feature?.properties?.district || "Bhopal";
   const derivedCenter = STATES.find(s => s.name === derivedState)?.center ?? STATES.find(s => s.name === DEFAULT_STATE)?.center ?? [78.9629, 22.9734];
+
+  // Example state for layers
+  const [mapLayers, setMapLayers] = useState([
+    { id: "roads", name: "Roads", visible: true },
+    { id: "buildings", name: "Buildings", visible: false },
+    { id: "satellite", name: "Satellite Imagery", visible: true },
+  ]);
+
+  const toggleLayer = (id: string) => {
+    setMapLayers((prev) =>
+      prev.map((layer) =>
+        layer.id === id ? { ...layer, visible: !layer.visible } : layer
+      )
+    );
+
+    // Hook into your GIS ref if needed:
+    // webgisRef.current?.setLayerVisibility(id, newVisibility)
+  };
+
 
   useEffect(() => {
     setLayers([
@@ -387,9 +417,12 @@ export default function FeaturePage({
   if (loading) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-100 p-8 text-gray-900">
-          <div className="max-w-3xl mx-auto bg-white p-8 rounded-lg shadow text-gray-900">
-            Loading...
+        <div className="min-h-screen bg-emerald-900/95 p-8 text-white">
+          <div className="max-w-3xl mx-auto bg-emerald-800/30 border border-emerald-700/50 p-8 rounded-3xl shadow-2xl backdrop-blur-sm">
+            <div className="flex items-center justify-center">
+              <div className="w-6 h-6 bg-emerald-400 rounded-full animate-pulse mr-3"></div>
+              <span className="text-emerald-100">Loading...</span>
+            </div>
           </div>
         </div>
       </ProtectedRoute>
@@ -399,12 +432,12 @@ export default function FeaturePage({
   if (error || !feature) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-100 p-8 text-gray-900">
-          <div className="max-w-3xl mx-auto bg-white p-8 rounded-lg shadow text-gray-900">
-            <h2 className="text-red-600">{error || "Feature not found"}</h2>
-            <div className="mt-4">
-              <Link href="/atlas" className="inline-flex items-center gap-2 bg-white border border-gray-200 px-3 py-2 rounded text-emerald-800 hover:bg-emerald-50">
-                <ArrowLeft size={14} />
+        <div className="min-h-screen bg-emerald-900/95 p-8 text-white">
+          <div className="max-w-3xl mx-auto bg-emerald-800/30 border border-emerald-700/50 p-8 rounded-3xl shadow-2xl backdrop-blur-sm">
+            <h2 className="text-red-400 text-xl font-semibold mb-4">{error || "Feature not found"}</h2>
+            <div className="mt-6">
+              <Link href="/atlas" className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition-colors duration-200 shadow-lg hover:shadow-xl">
+                <ArrowLeft size={16} />
                 Back to Atlas
               </Link>
             </div>
@@ -416,142 +449,319 @@ export default function FeaturePage({
 
   const props = feature.properties;
 
+
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-green-100 p-4 text-gray-900 relative overflow-hidden">
-        <DecorativeBackground count={4} />
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-emerald-900 text-white relative overflow-hidden">
+        <ThreeBackground />
+        <DecorativeElements />
+        <FloatingOrbs />
 
-        <header className="relative z-10 max-w-7xl mx-auto px-6 pt-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/atlas" className="inline-flex items-center justify-center h-9 w-9 rounded-md bg-white border border-gray-200 text-emerald-800 shadow-sm hover:bg-emerald-50" aria-label="Back to Atlas">
-              <ArrowLeft size={18} />
-            </Link>
-            <div className="h-9 w-9 rounded-md bg-green-600 flex items-center justify-center border border-green-700 shadow-sm">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 6h18M3 12h18M3 18h18" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-            </div>
-            <div>
-              <h2 className="text-base font-semibold text-green-900">VanMitra</h2>
-              <p className="text-xs text-green-700">Map — Feature</p>
-            </div>
-          </div>
+        {/* Mesh Gradient Overlay */}
+        <div className="fixed inset-0 bg-gradient-to-br from-green-900/20 via-transparent to-emerald-900/20 pointer-events-none z-1" />
 
-          <nav className="flex items-center gap-3 text-sm">
-            <Link href="/atlas" className="text-green-800 hover:text-green-600">Atlas</Link>
-            <Link href="/" className="text-green-800 hover:text-green-600">Home</Link>
-          </nav>
-        </header>
-  <div className="max-w-7xl mx-auto mt-4 mb-6">
+        {/* Animated Grid */}
+        <div className="fixed inset-0 opacity-10 pointer-events-none z-1">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `
+            linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px)
+          `,
+            backgroundSize: '50px 50px'
+          }} />
+        </div>
 
-          {/* Feature Header */}
-          <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-            <div className="flex items-start gap-4">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Claim {props.id}</h1>
-                <div className="text-sm text-gray-600">{props.village ?? ''}, {props.district ?? ''}</div>
-              </div>
-              <div className="ml-auto flex items-center gap-2">
-                <div className={`px-2 py-1 rounded text-xs font-medium ${String(props.status).toLowerCase() === 'approved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                  {String(props.status ?? '').toUpperCase()}
+        <Navbar />
+
+        <main className="relative z-10 max-w-7xl mx-auto px-6 py-10">
+          <motion.div initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
+            <div className="mb-8">
+              <div className="flex items-center gap-4 mb-6">
+                <Link href="/atlas" className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-emerald-800/30 border border-emerald-600/50 text-emerald-100 shadow-lg hover:bg-emerald-700/40 transition-colors duration-200" aria-label="Back to Atlas">
+                  <ArrowLeft size={20} />
+                </Link>
+                <div>
+                  <h1 className="text-4xl font-bold text-white mb-2">Claim {props.id}</h1>
+                  <p className="text-xl text-emerald-200/80">{props.village ?? ''}, {props.district ?? ''}</p>
                 </div>
-                <div className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">{String(props.claim_type ?? '').toUpperCase()}</div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm mt-4">
-              <div>
-                <span className="font-semibold text-gray-600">ID</span>
-                <p className="truncate">{props.id}</p>
-              </div>
-              <div>
-                <span className="font-semibold text-gray-600">Area</span>
-                <p>{props.area ? `${props.area} ha` : 'N/A'}</p>
-              </div>
-              <div>
-                <span className="font-semibold text-gray-600">State</span>
-                <p>{props.state ?? '—'}</p>
-              </div>
-              <div>
-                <span className="font-semibold text-gray-600">Village</span>
-                <p>{props.village ?? '—'}</p>
-              </div>
-            </div>
-
-            <div className="mt-4 flex items-center gap-2">
-              <button onClick={() => { }} className="px-3 py-1 bg-green-700 text-white rounded-md text-sm">Open detail</button>
-              <button onClick={() => { }} className="px-3 py-1 border rounded-md text-sm">Edit</button>
-              <button onClick={() => { }} className="px-3 py-1 border rounded-md text-sm">Report</button>
-              <button onClick={() => { }} className="px-3 py-1 border rounded-md text-sm">Verify</button>
-            </div>
-          </div>
-
-          {/* Main Content Area */}
-          <div className="flex flex-col lg:flex-row gap-6">
-            {/* Left panel removed - map controls will handle layer toggles */}
-
-            {/* Map Container */}
-            <div className="flex-1 bg-white rounded-xl shadow-md overflow-hidden">
-              <div style={{ height: '70vh' }}>
-                <WebGIS
-                  ref={webgisRef}
-                  className="w-full h-full"
-                  center={(mapCenter ?? (feature.geometry.type === 'Point' ? (feature.geometry.coordinates as [number, number]) : derivedCenter)) as [number, number]}
-                  zoom={mapZoom}
-                  layers={layers}
-                  markers={markers}
-                  state={derivedState}
-                  district={derivedDistrict}
-                  showControls={true}
-                  showExportControls={true}
-                  onLayerToggle={handleLayerToggle}
-                />
               </div>
 
-              <div className="p-4 flex justify-center">
-                <div className="max-w-sm w-full">
-                  <div className="p-3 bg-white rounded shadow-sm border">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Download size={16} />
-                      <h4 className="font-medium">Export</h4>
+              {/* Feature Header */}
+              <GlassCard className="p-8 mb-8">
+                {/* Top Row: Status + Type */}
+                <div className="flex items-start gap-6 mb-8">
+                  <div className="flex flex-wrap gap-3">
+                    <div
+                      className={`px-4 py-1.5 rounded-full text-sm font-semibold border shadow-sm backdrop-blur-sm ${String(props.status).toLowerCase() === 'approved'
+                        ? 'bg-emerald-600/30 text-emerald-100 border-emerald-400/40 shadow-emerald-800/20'
+                        : 'bg-amber-600/30 text-amber-100 border-amber-400/40 shadow-amber-800/20'
+                        }`}
+                    >
+                      {String(props.status ?? '').toUpperCase()}
                     </div>
-                    <div className="space-y-2">
-                      <button onClick={() => {
-                        if (!feature) { pushToast('No feature to export', 'info'); return; }
-                        const fc = { type: 'FeatureCollection' as const, features: [feature as any] };
-                        const ts = new Date().toISOString().replace(/[:.]/g, '-');
-                        const filename = `vanmitra-feature-${feature.properties.id ?? 'unknown'}-${ts}.geojson`;
-                        try {
-                          exportToGeoJSON(fc as any, filename);
-                          pushToast('Export started', 'info');
-                        } catch (e) {
-                          console.error('Export failed', e);
-                          pushToast('Export failed', 'error');
-                        }
-                      }} className="w-full bg-green-500 text-white px-3 py-2 rounded">Export GeoJSON</button>
-                      <button onClick={() => webgisRef.current?.exportMap?.()} className="w-full border border-gray-200 text-gray-800 px-3 py-2 rounded">Export Map Image</button>
+                    <div className="px-4 py-1.5 rounded-full text-sm font-semibold bg-slate-700/40 text-slate-200 border border-slate-600/40 shadow-inner">
+                      {String(props.claim_type ?? '').toUpperCase()}
                     </div>
                   </div>
                 </div>
+
+                {/* Info Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-sm">
+                  {/* ID */}
+                  <div className="group relative bg-emerald-900/20 rounded-2xl p-6 border border-emerald-700/40 hover:border-emerald-500/50 transition-colors shadow-lg shadow-emerald-900/10">
+                    <span className="font-semibold text-emerald-300/70 text-xs uppercase tracking-wide flex items-center gap-2">
+                      <svg className="w-4 h-4 text-emerald-400/80" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path d="M9 12h6m2 0a2 2 0 100-4h-1V7a2 2 0 10-4 0v1H9a2 2 0 100 4h1v1a2 2 0 104 0v-1h1z" />
+                      </svg>
+                      ID
+                    </span>
+                    <p className="text-2xl font-bold text-white mt-2 truncate">{props.id}</p>
+                  </div>
+
+                  {/* Area */}
+                  <div className="group relative bg-emerald-900/20 rounded-2xl p-6 border border-emerald-700/40 hover:border-emerald-500/50 transition-colors shadow-lg shadow-emerald-900/10">
+                    <span className="font-semibold text-emerald-300/70 text-xs uppercase tracking-wide flex items-center gap-2">
+                      <svg className="w-4 h-4 text-emerald-400/80" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path d="M4 4h16v16H4z" />
+                      </svg>
+                      Area
+                    </span>
+                    <span className="text-2xl font-bold text-white mt-2">
+                      <AnimatedCounter value={props.area || 0} /> <span className="text-base text-emerald-300/70">ha</span>
+                    </span>
+                  </div>
+
+                  {/* State */}
+                  <div className="group relative bg-emerald-900/20 rounded-2xl p-6 border border-emerald-700/40 hover:border-emerald-500/50 transition-colors shadow-lg shadow-emerald-900/10">
+                    <span className="font-semibold text-emerald-300/70 text-xs uppercase tracking-wide flex items-center gap-2">
+                      <svg className="w-4 h-4 text-emerald-400/80" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path d="M12 2l9 4.5v11L12 22l-9-4.5v-11L12 2z" />
+                      </svg>
+                      State
+                    </span>
+                    <p className="text-2xl font-bold text-white mt-2">{props.state ?? '—'}</p>
+                  </div>
+
+                  {/* Village */}
+                  <div className="group relative bg-emerald-900/20 rounded-2xl p-6 border border-emerald-700/40 hover:border-emerald-500/50 transition-colors shadow-lg shadow-emerald-900/10">
+                    <span className="font-semibold text-emerald-300/70 text-xs uppercase tracking-wide flex items-center gap-2">
+                      <svg className="w-4 h-4 text-emerald-400/80" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path d="M12 22s8-4 8-10a8 8 0 10-16 0c0 6 8 10 8 10z" />
+                      </svg>
+                      Village
+                    </span>
+                    <p className="text-2xl font-bold text-white mt-2">{props.village ?? '—'}</p>
+                  </div>
+                </div>
+              </GlassCard>
+
+
+              {/* Main Content Area */}
+              <div className="flex flex-col gap-8">
+                {/* Full-width Map */}
+                <GlassCard className="p-0 overflow-hidden h-[calc(100vh-120px)]">
+                  <div className="w-full h-full relative rounded-2xl">
+                    {/* Subtle dark overlay */}
+                    <div className="absolute inset-0 bg-green-900/10 rounded-2xl pointer-events-none" />
+                    <div className="relative z-10 h-full">
+                      <WebGIS
+                        ref={webgisRef}
+                        className="w-full h-full"
+                        center={
+                          (mapCenter ??
+                            (feature.geometry.type === "Point"
+                              ? (feature.geometry.coordinates as [number, number])
+                              : derivedCenter)) as [number, number]
+                        }
+                        zoom={mapZoom}
+                        layers={layers}
+                        markers={markers}
+                        state={derivedState}
+                        district={derivedDistrict}
+                        showControls={true}
+                        showExportControls={true}
+                        onLayerToggle={handleLayerToggle}
+                      />
+                    </div>
+                  </div>
+                </GlassCard>
+
+                {/* Tools + Panels Below Map */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* LEFT SIDE */}
+                  <div className="flex flex-col gap-6 lg:col-span-1">
+                    {/* Measurement Tools */}
+                    <GlassCard className="p-6">
+                      <div className="flex items-center gap-3 mb-4">
+                        <Ruler size={20} className="text-emerald-400" />
+                        <h4 className="font-semibold text-white text-lg">Measurement Tools</h4>
+                      </div>
+                      <div className="space-y-3">
+                        <button
+                          onClick={() => webgisRef.current?.startMeasurement?.()}
+                          className="w-full bg-blue-600 text-white px-4 py-3 rounded-xl hover:bg-blue-500 transition duration-200 shadow-md hover:shadow-lg font-medium"
+                        >
+                          Start Measurement
+                        </button>
+                        <button
+                          onClick={() => webgisRef.current?.clearMeasurement?.()}
+                          className="w-full border border-emerald-600/50 bg-emerald-800/30 hover:bg-emerald-700/40 text-emerald-100 px-4 py-3 rounded-xl font-medium transition duration-200"
+                        >
+                          Clear Measurement
+                        </button>
+                      </div>
+                    </GlassCard>
+
+                    {/* Export Tools */}
+                    <GlassCard className="p-6">
+                      <div className="flex items-center gap-3 mb-4">
+                        <Download size={20} className="text-emerald-400" />
+                        <h4 className="font-semibold text-white text-lg">Export Tools</h4>
+                      </div>
+                      <div className="space-y-3">
+                        <button
+                          onClick={() => {
+                            if (!feature) {
+                              pushToast("No feature to export", "info");
+                              return;
+                            }
+                            const fc = {
+                              type: "FeatureCollection" as const,
+                              features: [feature as any],
+                            };
+                            const ts = new Date().toISOString().replace(/[:.]/g, "-");
+                            const filename = `vanmitra-feature-${feature.properties.id ?? "unknown"
+                              }-${ts}.geojson`;
+                            try {
+                              exportToGeoJSON(fc as any, filename);
+                              pushToast("Export started", "info");
+                            } catch (e) {
+                              console.error("Export failed", e);
+                              pushToast("Export failed", "error");
+                            }
+                          }}
+                          className="w-full bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-3 rounded-xl font-medium transition duration-200 shadow-md hover:shadow-lg"
+                        >
+                          Export GeoJSON
+                        </button>
+                        <button
+                          onClick={() => webgisRef.current?.exportMap?.()}
+                          className="w-full border border-emerald-600/50 bg-emerald-800/30 hover:bg-emerald-700/40 text-emerald-100 px-4 py-3 rounded-xl font-medium transition duration-200"
+                        >
+                          Export Map Image
+                        </button>
+                      </div>
+                    </GlassCard>
+                  </div>
+
+                  {/* RIGHT SIDE */}
+                  <div className="lg:col-span-2 flex flex-col gap-6">
+                    {/* Properties Panel */}
+                    <GlassCard className="p-6 flex flex-col h-[433px]">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-lg font-semibold text-white">Properties</h4>
+                        <input
+                          type="text"
+                          placeholder="Search properties..."
+                          className="bg-emerald-900/30 border border-emerald-700/40 text-white text-sm rounded-lg px-3 py-2 w-56 focus:outline-none focus:ring-2 focus:ring-emerald-400/40"
+                          onChange={(e) => setSearch(e.target.value)}
+                        />
+                      </div>
+
+                      {/* Advanced property list */}
+                      <div className="flex-1 overflow-y-auto custom-scroll pr-1">
+                        <div className="divide-y divide-emerald-700/20 space-y-2">
+                          {Object.entries(props)
+                            .filter(
+                              ([key, value]) =>
+                                key.toLowerCase().includes(search.toLowerCase()) ||
+                                String(value).toLowerCase().includes(search.toLowerCase())
+                            )
+                            .map(([key, value]) => (
+                              <details
+                                key={key}
+                                className="group bg-emerald-800/20 rounded-lg px-3 py-2 hover:bg-emerald-700/30 transition"
+                              >
+                                <summary className="flex justify-between items-center cursor-pointer">
+                                  <span className="text-emerald-300/80 text-xs uppercase tracking-wide">
+                                    {key.replace(/_/g, " ")}
+                                  </span>
+                                  <ChevronDown
+                                    size={16}
+                                    className="text-emerald-400 group-open:rotate-180 transition-transform"
+                                  />
+                                </summary>
+                                <p className="text-white font-medium text-sm mt-2 break-all">
+                                  {String(value || "—")}
+                                </p>
+                              </details>
+                            ))}
+                        </div>
+                      </div>
+                    </GlassCard>
+
+
+                  </div>
+
+                </div>
+
+                {/* Layer Control */}
+                <GlassCard className="p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Layers size={20} className="text-emerald-400" />
+                    <h4 className="font-semibold text-white text-lg">Layer Control</h4>
+                  </div>
+                  <div className="space-y-3">
+                    {/* Example toggle */}
+                    {layers.map((layer) => (
+                      <div key={layer.id} className="flex items-center justify-between">
+                        <span className="text-sm text-white">{layer.name}</span>
+                        <input
+                          type="checkbox"
+                          checked={layer.visible}
+                          onChange={() => toggleLayer(layer.id)}
+                          className="w-4 h-4 accent-emerald-500"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </GlassCard>
               </div>
+
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </main>
+
+        <Footer />
 
         {/* Toasts container */}
-        <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
-          {toasts.map((t) => (
-            <div key={t.id} className={`px-4 py-3 rounded-lg shadow-lg text-white text-sm flex items-center ${t.type === 'error' ? 'bg-red-600' : 'bg-emerald-600'}`}>
-              {t.type === 'error' ? (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              )}
-              {t.message}
-            </div>
-          ))}
+        <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
+          <AnimatePresence>
+            {toasts.map((t) => (
+              <motion.div
+                key={t.id}
+                initial={{ x: 300, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: 300, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                className={`px-6 py-4 rounded-2xl shadow-2xl text-white text-sm flex items-center backdrop-blur-sm border ${t.type === 'error'
+                  ? 'bg-red-600/90 border-red-500/50'
+                  : 'bg-emerald-600/90 border-emerald-500/50'
+                  }`}
+              >
+                {t.type === 'error' ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                )}
+                {t.message}
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       </div>
     </ProtectedRoute>

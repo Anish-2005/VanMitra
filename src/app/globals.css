@@ -189,3 +189,28 @@ html { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
   }
 }
 
+/* Custom emerald themed scrollbar */
+.custom-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+  background: rgba(6, 78, 59, 0.2); /* emerald-900/20 */
+  border-radius: 8px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.4); /* emerald-400/40 */
+  border-radius: 8px;
+  transition: background 0.3s ease;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.6); /* emerald-400/60 */
+}
+
+/* Firefox */
+.custom-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(16, 185, 129, 0.5) rgba(6, 78, 59, 0.2);
+}
