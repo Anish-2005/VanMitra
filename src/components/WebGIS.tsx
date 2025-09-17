@@ -814,11 +814,219 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
 
     console.log("🗺️ Processing markers:", markers.length)
     // Filter out pathfinding icons, only keep claim-area-center and last-click markers
-    const filteredMarkers = markers.filter(marker => marker.id === "claim-area-center" || marker.id === "last-click")
+    const filteredMarkers = markers.filter((marker) => marker.id === "claim-area-center" || marker.id === "last-click")
     console.log("🗺️ Filtered markers (claim-area-center and last-click):", filteredMarkers.length)
-    filteredMarkers.forEach(marker => {
-      console.log("🗺️ Marker details:", marker.id, marker.lng, marker.lat, marker.color, marker.popup)
+
+    // Helper: normalize incoming coords. Accept numbers or numeric strings, detect swapped lat/lng and fix.
+    const normalizeCoords = (rawLng: any, rawLat: any) => {
+      let lng = typeof rawLng === "string" ? parseFloat(rawLng) : Number(rawLng)
+      let lat = typeof rawLat === "string" ? parseFloat(rawLat) : Number(rawLat)
+
+      if (!Number.isFinite(lng) || !Number.isFinite(lat)) {
+        return { lng: NaN, lat: NaN }
+      }
+
+      // If values are obviously out of geographic bounds, attempt to swap them.
+      const lngOut = lng < -180 || lng > 180
+      const latOut = lat < -90 || lat > 90
+
+      // Common mistake: lng/lat swapped. If lng is out-of-range but lat looks like a valid lng,
+      // swap them. Also if lat is outside [-90,90] but lng is inside that range, swap.
+      if ((lngOut && !latOut) || (Math.abs(lat) <= 180 && Math.abs(lat) > 90 && Math.abs(lng) <= 90)) {
+        const tmp = lng
+        lng = lat
+        lat = tmp
+        console.warn("Swapped marker coordinates (detected possible lng/lat swap)", { rawLng, rawLat, lng, lat })
+      }
+
+      return { lng, lat }
+    }
+
+    filteredMarkers.forEach((marker) => {
+      const coords = normalizeCoords((marker as any).lng, (marker as any).lat)
+      console.log("🗺️ Marker details:", marker.id, coords.lng, coords.lat, marker.color, marker.popup)
+      // Attach normalized values back to the marker copy to use below
+      ;(marker as any)._normLng = coords.lng
+      ;(marker as any)._normLat = coords.lat
     })
+
+    // Special-case: render `last-click` as a proper GeoJSON layer so it stays anchored
+    // to map coordinates across zooms/pans and avoids DOM overlay placement issues.
+    const lastClick = filteredMarkers.find((m) => m.id === "last-click")
+    if (map.current) {
+      try {
+        if (lastClick && Number.isFinite((lastClick as any)._normLng) && Number.isFinite((lastClick as any)._normLat)) {
+          const lng = (lastClick as any)._normLng
+          const lat = (lastClick as any)._normLat
+          const pointFeature = {
+            type: "Feature" as const,
+            geometry: { type: "Point" as const, coordinates: [lng, lat] },
+            properties: { id: "last-click", popup: lastClick.popup, color: lastClick.color || "#dc2626" },
+          }
+
+          // Remove any DOM marker with id 'last-click' to avoid duplicates
+          try {
+            const existingDom = markersRef.current.find((m) => (m as any)._markerId === "last-click")
+            if (existingDom) {
+              console.log("Removing legacy DOM last-click marker to use layer instead")
+              try { existingDom.remove() } catch (e) {}
+              markersRef.current = markersRef.current.filter((m) => (m as any)._markerId !== "last-click")
+            }
+          } catch (e) {}
+
+          // Add or update source
+          const srcId = "source-last-click"
+          const layerId = "layer-last-click-circle"
+          const popupLayerHandlerKey = "layer-last-click-popup-handler"
+
+          if (!map.current.getSource(srcId)) {
+            map.current.addSource(srcId, { type: "geojson", data: pointFeature as any })
+          } else {
+            try {
+              ;(map.current.getSource(srcId) as GeoJSONSource).setData(pointFeature as any)
+            } catch (e) {
+              console.warn("Failed to setData for last-click source", e)
+            }
+          }
+
+          // Use a symbol layer with an embedded SVG icon (MapPin with drop shadow)
+          const iconImageName = "last-click-icon-svg"
+          const symbolLayerId = "layer-last-click-symbol"
+          const sizePx = (lastClick as any).size ?? 48
+          // Build SVG for MapPin (using a simple pin path) with a subtle drop shadow filter
+          const color = (lastClick as any).color || "#dc2626"
+          const svg = `<?xml version='1.0' encoding='UTF-8'?><svg xmlns='http://www.w3.org/2000/svg' width='${sizePx}' height='${sizePx}' viewBox='0 0 24 24' preserveAspectRatio='xMidYMid meet'><defs><filter id='ds' x='-50%' y='-50%' width='200%' height='200%'><feDropShadow dx='0' dy='2' stdDeviation='2' flood-color='rgba(0,0,0,0.35)' /></filter></defs><g filter='url(#ds)'><path d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z' fill='${color}' stroke='#fff' stroke-width='1.2'/><circle cx='12' cy='9' r='2.5' fill='#fff'/></g></svg>`
+
+          const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
+
+          const addIconAndLayer = () => {
+            try {
+              // Add image if not present
+              if (!map.current!.hasImage || !map.current!.getImage) {
+                // older maplibre builds
+              }
+              if (!map.current!.getImage || !map.current!.getImage(iconImageName)) {
+                const img = new Image()
+                img.onload = () => {
+                  try {
+                    if (!map.current) return
+                    if (!map.current.getImage(iconImageName)) {
+                      // @ts-ignore
+                      map.current.addImage(iconImageName, img)
+                    }
+                    if (!map.current) return
+                    if (!map.current.getLayer(symbolLayerId)) {
+                      map.current.addLayer({
+                        id: symbolLayerId,
+                        type: "symbol",
+                        source: srcId,
+                        layout: {
+                          "icon-image": iconImageName,
+                          "icon-size": 1,
+                          "icon-anchor": "bottom",
+                        },
+                      })
+                      map.current.on("click", symbolLayerId, (e: any) => {
+                        try {
+                          const coords = e.lngLat
+                          const props = e.features && e.features[0] && e.features[0].properties
+                          if (props && props.popup) {
+                            const popup = new maplibregl.Popup({ offset: 25 })
+                            popup.setLngLat(coords).setHTML(String(props.popup)).addTo(map.current!)
+                          }
+                        } catch (err) {
+                          console.warn("Error showing last-click popup", err)
+                        }
+                      })
+                      map.current.on("mouseenter", symbolLayerId, () => {
+                        map.current && map.current.getCanvas && (map.current.getCanvas().style.cursor = "pointer")
+                      })
+                      map.current.on("mouseleave", symbolLayerId, () => {
+                        map.current && map.current.getCanvas && (map.current.getCanvas().style.cursor = "")
+                      })
+                    }
+                  } catch (err) {
+                    console.warn("Failed to add last-click icon or layer", err)
+                  }
+                }
+                img.src = dataUrl
+              } else {
+                if (!map.current) return
+                if (!map.current.getLayer(symbolLayerId)) {
+                  map.current.addLayer({
+                    id: symbolLayerId,
+                    type: "symbol",
+                    source: srcId,
+                    layout: {
+                      "icon-image": iconImageName,
+                      "icon-size": 1,
+                      "icon-anchor": "bottom",
+                    },
+                  })
+                }
+              }
+            } catch (err) {
+              console.warn("Failed to create last-click symbol layer", err)
+            }
+          }
+
+          addIconAndLayer()
+
+          // Keep the source data up-to-date
+          try {
+            ;(map.current.getSource(srcId) as GeoJSONSource).setData(pointFeature as any)
+          } catch (e) {}
+        } else {
+          // No lastClick => remove any existing last-click layers/sources/images.
+          // Remove layers first to ensure the source can be removed without MapLibre errors.
+          try {
+            const symbolLayerId = "layer-last-click-symbol"
+            const circleLayerId = "layer-last-click-circle"
+            const srcId = "source-last-click"
+            const iconImageName = "last-click-icon-svg"
+
+            // Remove symbol layer if present. Removing the layer is sufficient
+            // — layer-specific handlers are not removable by passing the layer id
+            // into `off` in the typed API, so we avoid calling `off` here.
+            try {
+              if (map.current.getLayer && map.current.getLayer(symbolLayerId)) {
+                try { map.current.removeLayer(symbolLayerId) } catch (e) {}
+              }
+            } catch (e) {}
+
+            // Remove circle layer if present (older variant)
+            try {
+              if (map.current.getLayer && map.current.getLayer(circleLayerId)) {
+                try { map.current.removeLayer(circleLayerId) } catch (e) {}
+              }
+            } catch (e) {}
+
+            // Now remove the source
+            try {
+              if (map.current.getSource && map.current.getSource(srcId)) {
+                try { map.current.removeSource(srcId) } catch (e) {}
+              }
+            } catch (e) {}
+
+            // Optionally remove the in-memory icon image if present
+            try {
+              // some maplibre builds expose hasImage/getImage/removeImage differently
+              const hasImg = (map.current as any).hasImage ? (map.current as any).hasImage(iconImageName) : !!(map.current as any).getImage?.(iconImageName)
+              if (hasImg) {
+                try { (map.current as any).removeImage?.(iconImageName) } catch (e) {}
+              }
+            } catch (e) {}
+          } catch (e) {
+            /* ignore cleanup errors */
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to manage last-click layer", e)
+      }
+    }
+
+    // For DOM marker creation/update we will ignore 'last-click' so it isn't duplicated
+    const domMarkers = filteredMarkers.filter((m) => m.id !== "last-click")
 
     // Get existing marker IDs
     const existingMarkerIds = new Set(markersRef.current.map(m => (m as any)._markerId))
@@ -836,12 +1044,12 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
     const markersToKeep = markersRef.current.filter(marker => newMarkerIds.has((marker as any)._markerId))
     console.log("🗺️ Keeping markers:", markersToKeep.map(m => (m as any)._markerId))
 
-    // Create new markers for IDs that don't exist yet
-    const markersToCreate = filteredMarkers.filter(marker => !existingMarkerIds.has(marker.id))
+  // Create new markers for IDs that don't exist yet (exclude last-click - handled as layer)
+  const markersToCreate = domMarkers.filter((marker) => !existingMarkerIds.has(marker.id))
     console.log("🗺️ Creating new markers:", markersToCreate.map(m => m.id))
 
-    // Update existing markers with new data
-    const markersToUpdate = filteredMarkers.filter(marker => existingMarkerIds.has(marker.id))
+  // Update existing markers with new data (exclude last-click)
+  const markersToUpdate = domMarkers.filter((marker) => existingMarkerIds.has(marker.id))
     console.log("🗺️ Updating markers:", markersToUpdate.map(m => m.id))
 
     // Clear popups for removed markers
@@ -860,42 +1068,16 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
     const newCreatedMarkers: maplibregl.Marker[] = []
 
     markersToCreate.forEach((marker) => {
-      console.log("🗺️ Creating marker:", marker.id, marker.lng, marker.lat)
+      const lng = (marker as any)._normLng ?? Number(marker.lng)
+      const lat = (marker as any)._normLat ?? Number(marker.lat)
+      console.log("🗺️ Creating marker:", marker.id, lng, lat)
       // Make markers much larger and more visible
-      const baseSize = marker.id === "last-click" ? Math.max(30, marker.size ?? 30) : Math.max(50, marker.size ?? 50)
+      const baseSize = Math.max(50, marker.size ?? 50)
       const color = marker.color || "#16a34a"
       const outline = (marker as any).outline || "#ffffff"
 
       console.log("🗺️ Processing marker with", marker.id, "baseSize:", baseSize, "color:", color)
-
-      // For last-click markers, use a simple standard marker to ensure visibility
-      if (marker.id === "last-click") {
-        console.log("🗺️ Using standard marker for last-click")
-        const mapMarker = new maplibregl.Marker({ color: color, scale: 1.5 })
-          .setLngLat([marker.lng, marker.lat])
-        ;(mapMarker as any).addTo(map.current!)
-
-        // Store marker ID for tracking
-        ;(mapMarker as any)._markerId = marker.id
-
-        console.log("🗺️ Added standard marker to map:", marker.lng, marker.lat)
-        console.log("🗺️ Marker position on map:", mapMarker.getLngLat())
-        console.log("🗺️ Map center:", map.current!.getCenter())
-        console.log("🗺️ Map zoom:", map.current!.getZoom())
-
-        // popup from marker
-        if (marker.popup) {
-          const popup = new maplibregl.Popup({ offset: 25 })
-          popup.setHTML(marker.popup)
-          ;(mapMarker as any).setPopup(popup)
-          // Store marker ID for popup tracking
-          ;(popup as any)._markerId = marker.id
-          popupsRef.current.push(popup)
-        }
-
-        newCreatedMarkers.push(mapMarker)
-        return
-      }
+      
 
       const el = document.createElement("div")
       el.className = "marker"
@@ -957,9 +1139,9 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
       // Create marker with custom element
       let mapMarker: maplibregl.Marker
 
-  try {
+      try {
     mapMarker = new maplibregl.Marker({ element: el, anchor: "bottom", draggable: marker.id === "claim-area-center" })
-    mapMarker.setLngLat([marker.lng, marker.lat])        // Add marker to map
+    mapMarker.setLngLat([lng, lat])        // Add marker to map
         if (typeof (mapMarker as any).addTo === 'function') {
           (mapMarker as any).addTo(map.current!)
         } else {
@@ -973,10 +1155,10 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
         ;(mapMarker as any).addTo(map.current!)
       }
 
-      // Store marker ID for tracking
-      (mapMarker as any)._markerId = marker.id
+  // Store marker ID for tracking
+  (mapMarker as any)._markerId = marker.id
 
-      console.log("🗺️ Added marker to map:", marker.lng, marker.lat, "Element:", el)
+  console.log("🗺️ Added marker to map:", lng, lat, "Element:", el)
       console.log("🗺️ Marker element in DOM:", document.body.contains(el))
       console.log("🗺️ Marker element visibility:", el.style.display, el.style.visibility)
       console.log("🗺️ Marker position on map:", mapMarker.getLngLat())
@@ -1024,12 +1206,14 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
   }      newCreatedMarkers.push(mapMarker)
     })
 
-    // Update existing markers
-    markersToUpdate.forEach((marker) => {
-      const existingMarker = markersRef.current.find(m => (m as any)._markerId === marker.id)
-      if (existingMarker) {
-        console.log("🗺️ Updating existing marker:", marker.id, "to:", marker.lng, marker.lat)
-        ;(existingMarker as any).setLngLat([marker.lng, marker.lat])
+      // Update existing markers (exclude last-click - handled as layer)
+      markersToUpdate.forEach((marker) => {
+        const existingMarker = markersRef.current.find((m) => (m as any)._markerId === marker.id)
+        if (existingMarker) {
+          const lng = (marker as any)._normLng ?? Number(marker.lng)
+          const lat = (marker as any)._normLat ?? Number(marker.lat)
+          console.log("🗺️ Updating existing marker:", marker.id, "to:", lng, lat)
+          ;(existingMarker as any).setLngLat([lng, lat])
 
         // Update popup if it changed
         if (marker.popup) {

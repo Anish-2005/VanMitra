@@ -1479,13 +1479,23 @@ export default function AtlasPage() {
   useEffect(() => {
     console.log("🗺️ [Atlas] lastClickedCoords changed:", lastClickedCoords)
     if (lastClickedCoords) {
+      // Determine color based on selected claim type.
+      // Priority: when add-claim modal is open use newClaim.claim_type, otherwise
+      // fall back to pendingClaimTypeFilter or claimTypeFilter; if none selected use 'NON'.
+      const selectedTypeRaw = (addClaimOpen && newClaim?.claim_type)
+        ? newClaim.claim_type
+        : (pendingClaimTypeFilter ?? claimTypeFilter ?? null)
+      const selectedType = selectedTypeRaw ? String(selectedTypeRaw).toUpperCase() : "NON"
+      const lastClickColorMap: Record<string, string> = { IFR: "#16a34a", CR: "#3b82f6", CFR: "#f59e0b", NON: "#dc2626" }
+      const lastClickColor = lastClickColorMap[selectedType] ?? "#dc2626"
+
       const lastClickMarker: GISMarker = {
         id: "last-click",
         lng: lastClickedCoords[0],
         lat: lastClickedCoords[1],
         label: "Last Click Location",
-        color: "#dc2626", // red-600
-        popup: `<div style="min-width:180px;font-size:14px;padding:8px;"><strong style="color:#dc2626;">📍 Last Clicked Location</strong><div style="margin-top:8px;"><strong>Latitude:</strong> ${lastClickedCoords[1].toFixed(6)}</div><div><strong>Longitude:</strong> ${lastClickedCoords[0].toFixed(6)}</div><div style="margin-top:8px;font-size:12px;color:#666;">Click elsewhere to move this marker</div></div>`,
+        color: lastClickColor,
+        popup: `<div style="min-width:180px;font-size:14px;padding:8px;"><strong style="color:${lastClickColor};">📍 Last Clicked Location</strong><div style="margin-top:8px;"><strong>Latitude:</strong> ${lastClickedCoords[1].toFixed(6)}</div><div><strong>Longitude:</strong> ${lastClickedCoords[0].toFixed(6)}</div><div style="margin-top:8px;font-size:12px;color:#666;">Click elsewhere to move this marker</div></div>`,
         size: 50, // larger size for better visibility
       }
 
