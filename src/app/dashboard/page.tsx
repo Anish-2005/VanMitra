@@ -2,16 +2,21 @@
 
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import { STATES, DEFAULT_STATE, DEFAULT_DISTRICT } from '../../lib/regions';
-import { Menu, X } from "lucide-react"; // icons
+import { BarChart, Menu, Shield, X } from "lucide-react"; // icons
 import { motion, AnimatePresence, HTMLMotionProps } from "framer-motion";
 // Framer-motion's JSX generics sometimes conflict with the project's TS setup.
 // Create lightweight aliases cast to any so we can use className/onClick without type errors.
 const MDiv: React.FC<HTMLMotionProps<"div">> = motion.div;
 const MBackdrop: React.FC<HTMLMotionProps<"div">> = motion.div;
 const MAside: React.FC<HTMLMotionProps<"aside">> = motion.aside;
-import { Leaf,MapPin, Database, Target, Satellite, ArrowRight, TrendingUp, Users, FileText, BarChart3, Activity, Calendar, Download, Filter, Layers, BookOpen, Upload, Server, Eye, Globe } from "lucide-react";
-import DecorativeBackground from "@/components/ui/DecorativeBackground";
+import { Leaf, MapPin, Database, Target, Satellite, ArrowRight, TrendingUp, Users, FileText, BarChart3, Activity, Calendar, Download, Filter, Layers, BookOpen, Upload, Server, Eye, Globe } from "lucide-react";
+import ThreeBackground from "@/components/ui/ThreeBackground";
+import DecorativeElements from "@/components/ui/DecorativeElements";
+import FloatingOrbs from "@/components/ui/FloatingOrbs";
+import Navbar from "@/components/ui/Navbar";
+import Footer from "@/components/ui/Footer";
 import Link from "next/link";
+import GlassCard from "@/components/ui/GlassCard";
 import WebGIS from "../../components/WebGIS";
 import LayerManager from "../../components/LayerManager";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -250,135 +255,21 @@ export default function Dashboard() {
   }
 
   return (
-       <ProtectedRoute>
-      <div className="min-h-screen bg-page-gradient text-green-900 relative overflow-hidden">
-        <DecorativeBackground count={8} />
+    <ProtectedRoute>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-emerald-900 text-white relative overflow-hidden">
+        <ThreeBackground />
+        <DecorativeElements />
+        <FloatingOrbs />
 
-        {/* Floating leaves - Add this section */}
-        {[...Array(8)].map((_, i) => {
-          // Seeded randomness for deterministic positioning
-          const seeded = (i: number, salt = 1) =>
-            Math.abs(Math.sin(i * 12.9898 + salt * 78.233) * 43758.5453) % 1;
-
-          const r1 = seeded(i, 1);
-          const r2 = seeded(i, 2);
-          const duration = 5 + r1 * 5;
-          const top = `${(r2 * 80 + 10).toFixed(6)}%`;
-          const left = `${(r1 * 90 + 5).toFixed(6)}%`;
-
-          return (
-            <motion.div
-              key={i}
-              animate={{
-                y: [0, -20, 0],
-                x: [0, 15, 0],
-                rotate: [0, 10, 0],
-              }}
-              transition={{
-                duration,
-                repeat: Infinity,
-              }}
-              style={{
-                position: "absolute",
-                top,
-                left,
-              }}
-              aria-hidden
-            >
-              <div className="absolute text-green-500 opacity-40">
-                <Leaf size={24} />
-              </div>
-            </motion.div>
-          );
-        })}
-
-        <header className="relative z-50 max-w-7xl mx-auto px-6 pt-8 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-lg bg-green-600 flex items-center justify-center border border-green-700 shadow-md">
-              <Leaf className="text-white" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold tracking-tight text-green-900">VanMitra</h1>
-              <p className="text-xs text-green-700">Forest Rights & Asset Mapping Platform</p>
-            </div>
-          </div>
-          
-          {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-4">
-            <Link href="/atlas" className="nav-link">Atlas</Link>
-            <Link href="/ocr" className="nav-link">OCR</Link>
-            <Link href="/dss" className="nav-link">DSS</Link>
-            <Link href="/public" className="nav-link">Public Data</Link>
-            <Link href="/dashboard" className="nav-link font-semibold text-green-700">Dashboard</Link>
-            {user ? (
-              <button onClick={handleLogout} className="ml-4">Sign out</button>
-            ) : (
-              <button onClick={() => setLoginOpen(true)} className="ml-4">Sign in</button>
-            )}
-          </nav>
-
-          {/* Mobile nav toggle */}
-          <div className="md:hidden">
-            <button onClick={() => setIsOpen((s) => !s)} aria-label="Toggle menu" className="p-2 rounded-md bg-white/10">
-              {isOpen ? <X className="text-green-800" /> : <Menu className="text-green-800" />}
-            </button>
-          </div>
-        </header>
-
-        {/* Mobile menu panel with animation */}
-        <AnimatePresence>
-          {isOpen && (
-            <MDiv {...({ className: "md:hidden fixed inset-0 z-40", initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } } as any)}>
-              {/* backdrop */}
-              <MBackdrop {...({ className: "absolute inset-0 bg-black/30", onClick: () => setIsOpen(false), initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } } as any)} />
-
-              {/* sliding panel */}
-              <MAside
-                {...({
-                  className: "absolute top-0 right-0 w-11/12 max-w-sm bg-white h-full shadow-xl p-6",
-                  initial: { x: '100%' },
-                  animate: { x: 0 },
-                  exit: { x: '100%' },
-                  transition: { type: 'spring', stiffness: 300, damping: 30 }
-                } as any)}
-              >
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-md bg-green-600 flex items-center justify-center"><Leaf className="text-white" /></div>
-                    <div>
-                      <div className="font-semibold text-green-900">VanMitra</div>
-                      <div className="text-xs text-green-700">Forest Rights Platform</div>
-                    </div>
-                  </div>
-                  <button onClick={() => setIsOpen(false)} aria-label="Close menu" className="p-2 rounded-md"><X /></button>
-                </div>
-
-                <nav className="flex flex-col gap-4 text-green-800">
-                  <Link href="/atlas" onClick={() => setIsOpen(false)} className="font-medium">Atlas</Link>
-                  <Link href="/ocr" onClick={() => setIsOpen(false)} className="font-medium">OCR</Link>
-                  <Link href="/dss" onClick={() => setIsOpen(false)} className="font-medium">DSS</Link>
-                  <Link href="/public" onClick={() => setIsOpen(false)} className="font-medium">Public Data</Link>
-                  <Link href="/dashboard" onClick={() => setIsOpen(false)} className="font-medium text-green-700">Dashboard</Link>
-                  <div className="mt-4">
-                    {user ? (
-                      <button onClick={() => { handleLogout(); setIsOpen(false); }} className="w-full inline-flex items-center justify-center gap-2 bg-green-700 text-white px-4 py-2 rounded-md">Sign out</button>
-                    ) : (
-                      <button onClick={() => { setLoginOpen(true); setIsOpen(false); }} className="w-full inline-flex items-center justify-center gap-2 bg-green-700 text-white px-4 py-2 rounded-md">Sign in</button>
-                    )}
-                  </div>
-                </nav>
-              </MAside>
-            </MDiv>
-          )}
-        </AnimatePresence>
+        <Navbar />
 
         <main className="relative z-10 max-w-7xl mx-auto px-6 py-8">
           {/* Loading State */}
           {isLoading && (
             <div className="flex items-center justify-center py-20">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-                <p className="text-green-700">Loading dashboard data...</p>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-400 mx-auto mb-4"></div>
+                <p className="text-emerald-200">Loading dashboard data...</p>
               </div>
             </div>
           )}
@@ -388,104 +279,121 @@ export default function Dashboard() {
               {/* Welcome Section */}
               <div className="mb-8">
                 <motion.div initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
-                  <div className="bg-white rounded-2xl shadow-lg border border-green-200 p-6">
+                  <GlassCard className="p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h2 className="text-2xl font-bold text-green-900">Welcome back, {user?.displayName || 'User'}!</h2>
-                        <p className="text-green-700 mt-1">Here is what is happening with FRA claims and village development today.</p>
+                        <h2 className="text-2xl font-bold text-white">Welcome back, {user?.displayName || 'User'}!</h2>
+                        <p className="text-emerald-200 mt-1">Here is what is happening with FRA claims and village development today.</p>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm text-green-600">Last updated</div>
-                        <div className="text-lg font-semibold text-green-900">{new Date().toLocaleDateString()}</div>
+                        <div className="text-sm text-emerald-200">Last updated</div>
+                        <div className="text-lg font-semibold text-white">{new Date().toLocaleDateString()}</div>
                       </div>
                     </div>
-                  </div>
+                  </GlassCard>
                 </motion.div>
               </div>
 
               {/* Key Performance Indicators */}
               <div className="mb-8">
-                <motion.div initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, delay: 0.1 }}>
+                <motion.div
+                  initial={{ y: 8, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.5, delay: 0.1 }}
+                >
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {kpis.map((kpi, index) => (
-                      <div key={index} className="bg-white rounded-xl shadow-md border border-green-200 p-6 hover:shadow-lg transition-shadow">
+                      <GlassCard
+                        key={index}
+                        className="p-6 hover:shadow-lg transition-shadow"
+                      >
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm font-medium text-green-600">{kpi.label}</p>
-                            <p className="text-2xl font-bold text-green-900 mt-1">{kpi.value}</p>
+                            <p className="text-sm font-medium text-emerald-200">{kpi.label}</p>
+                            <p className="text-2xl font-bold text-white mt-1">{kpi.value}</p>
                             <div className="flex items-center mt-2">
-                              <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-                              <span className="text-sm text-green-600">{kpi.trend}</span>
+                              <TrendingUp className="h-4 w-4 text-emerald-300 mr-1" />
+                              <span className="text-sm text-emerald-200">{kpi.trend}</span>
                             </div>
                           </div>
-                          <div className={`h-12 w-12 rounded-lg flex items-center justify-center ${kpi.color === 'emerald' ? 'bg-emerald-100' :
-                            kpi.color === 'blue' ? 'bg-blue-100' :
-                              kpi.color === 'purple' ? 'bg-purple-100' :
-                                kpi.color === 'orange' ? 'bg-orange-100' :
-                                  'bg-gray-100'
-                            }`}>
-                            <kpi.icon className={`h-6 w-6 ${kpi.color === 'emerald' ? 'text-emerald-600' :
-                              kpi.color === 'blue' ? 'text-blue-600' :
-                                kpi.color === 'purple' ? 'text-purple-600' :
-                                  kpi.color === 'orange' ? 'text-orange-600' :
-                                    'text-gray-600'
-                              }`} />
+
+                          {/* Glassy icon container instead of solid pastel */}
+                          <div
+                            className={`h-12 w-12 rounded-xl flex items-center justify-center 
+                          bg-white/5 border border-white/10 backdrop-blur-sm`}
+                          >
+                            <kpi.icon
+                              className={`h-6 w-6 
+                  ${kpi.color === 'emerald' ? 'text-emerald-400' :
+                                  kpi.color === 'blue' ? 'text-blue-400' :
+                                    kpi.color === 'purple' ? 'text-purple-400' :
+                                      kpi.color === 'orange' ? 'text-orange-400' :
+                                        'text-gray-400'
+                                }`}
+                            />
                           </div>
                         </div>
+
                         <div className="mt-4">
                           <Sparkline data={timeSeries.slice(-7)} />
                         </div>
-                      </div>
+                      </GlassCard>
                     ))}
                   </div>
                 </motion.div>
               </div>
+
 
               {/* Quick Actions & Recent Activity */}
               <div className="mb-8">
                 <motion.div initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, delay: 0.15 }}>
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Quick Actions */}
-                    <div className="bg-white rounded-xl shadow-md border border-green-200 p-6">
-                      <h3 className="text-lg font-semibold text-green-900 mb-4 flex items-center gap-2">
+                    <GlassCard className="p-6">
+                      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                         <Activity className="h-5 w-5" />
                         Quick Actions
                       </h3>
+
                       <div className="space-y-3">
-                        <button className="w-full flex items-center gap-3 p-3 bg-green-50 hover:bg-green-100 rounded-lg transition-colors text-left">
-                          <FileText className="h-5 w-5 text-green-600" />
+                        <button className="w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left bg-white/5 border border-white/10 hover:bg-white/10">
+                          <FileText className="h-5 w-5 text-emerald-400" />
                           <div>
-                            <div className="font-medium text-green-900">New FRA Claim</div>
-                            <div className="text-sm text-green-600">Process a new forest rights claim</div>
+                            <div className="font-medium text-white">New FRA Claim</div>
+                            <div className="text-sm text-emerald-200">Process a new forest rights claim</div>
                           </div>
                         </button>
-                        <button className="w-full flex items-center gap-3 p-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors text-left">
-                          <MapPin className="h-5 w-5 text-blue-600" />
+
+                        <button className="w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left bg-white/5 border border-white/10 hover:bg-white/10">
+                          <MapPin className="h-5 w-5 text-blue-400" />
                           <div>
-                            <div className="font-medium text-green-900">Map Analysis</div>
-                            <div className="text-sm text-green-600">Analyze village boundaries</div>
+                            <div className="font-medium text-white">Map Analysis</div>
+                            <div className="text-sm text-emerald-200">Analyze village boundaries</div>
                           </div>
                         </button>
-                        <button className="w-full flex items-center gap-3 p-3 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors text-left">
-                          <Download className="h-5 w-5 text-purple-600" />
+
+                        <button className="w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left bg-white/5 border border-white/10 hover:bg-white/10">
+                          <Download className="h-5 w-5 text-purple-400" />
                           <div>
-                            <div className="font-medium text-green-900">Export Report</div>
-                            <div className="text-sm text-green-600">Generate comprehensive report</div>
+                            <div className="font-medium text-white">Export Report</div>
+                            <div className="text-sm text-emerald-200">Generate comprehensive report</div>
                           </div>
                         </button>
-                        <button className="w-full flex items-center gap-3 p-3 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors text-left">
-                          <Users className="h-5 w-5 text-orange-600" />
+
+                        <button className="w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left bg-white/5 border border-white/10 hover:bg-white/10">
+                          <Users className="h-5 w-5 text-orange-400" />
                           <div>
-                            <div className="font-medium text-green-900">Team Assignment</div>
-                            <div className="text-sm text-green-600">Assign tasks to field officers</div>
+                            <div className="font-medium text-white">Team Assignment</div>
+                            <div className="text-sm text-emerald-200">Assign tasks to field officers</div>
                           </div>
                         </button>
                       </div>
-                    </div>
+                    </GlassCard>
+
 
                     {/* Recent Activity */}
-                    <div className="bg-white rounded-xl shadow-md border border-green-200 p-6">
-                      <h3 className="text-lg font-semibold text-green-900 mb-4 flex items-center gap-2">
+                    <GlassCard className="p-6">
+                      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                         <Calendar className="h-5 w-5" />
                         Recent Activity
                       </h3>
@@ -493,76 +401,76 @@ export default function Dashboard() {
                         <div className="flex items-start gap-3">
                           <div className="h-2 w-2 bg-green-500 rounded-full mt-2"></div>
                           <div className="flex-1">
-                            <p className="text-sm font-medium text-green-900">New claim processed</p>
-                            <p className="text-xs text-green-600">Village: Chandrapur • 2 hours ago</p>
+                            <p className="text-sm font-medium text-white">New claim processed</p>
+                            <p className="text-xs text-emerald-200">Village: Chandrapur • 2 hours ago</p>
                           </div>
                         </div>
                         <div className="flex items-start gap-3">
                           <div className="h-2 w-2 bg-blue-500 rounded-full mt-2"></div>
                           <div className="flex-1">
-                            <p className="text-sm font-medium text-green-900">Boundary survey completed</p>
-                            <p className="text-xs text-green-600">District: Raipur • 4 hours ago</p>
+                            <p className="text-sm font-medium text-white">Boundary survey completed</p>
+                            <p className="text-xs text-emerald-200">District: Raipur • 4 hours ago</p>
                           </div>
                         </div>
                         <div className="flex items-start gap-3">
                           <div className="h-2 w-2 bg-purple-500 rounded-full mt-2"></div>
                           <div className="flex-1">
-                            <p className="text-sm font-medium text-green-900">Report generated</p>
-                            <p className="text-xs text-green-600">Monthly summary • 1 day ago</p>
+                            <p className="text-sm font-medium text-white">Report generated</p>
+                            <p className="text-xs text-emerald-200">Monthly summary • 1 day ago</p>
                           </div>
                         </div>
                         <div className="flex items-start gap-3">
                           <div className="h-2 w-2 bg-orange-500 rounded-full mt-2"></div>
                           <div className="flex-1">
-                            <p className="text-sm font-medium text-green-900">Officer assigned</p>
-                            <p className="text-xs text-green-600">Team Alpha • 2 days ago</p>
+                            <p className="text-sm font-medium text-white">Officer assigned</p>
+                            <p className="text-xs text-emerald-200">Team Alpha • 2 days ago</p>
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </GlassCard>
 
                     {/* System Status */}
-                    <div className="bg-white rounded-xl shadow-md border border-green-200 p-6">
-                      <h3 className="text-lg font-semibold text-green-900 mb-4 flex items-center gap-2">
+                    <GlassCard className="p-6">
+                      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                         <Server className="h-5 w-5" />
                         System Status
                       </h3>
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-green-700">API Services</span>
+                          <span className="text-sm text-emerald-200">API Services</span>
                           <div className="flex items-center gap-2">
                             <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                            <span className="text-xs text-green-600">Online</span>
+                            <span className="text-xs text-emerald-200">Online</span>
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-green-700">Database</span>
+                          <span className="text-sm text-emerald-200">Database</span>
                           <div className="flex items-center gap-2">
                             <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                            <span className="text-xs text-green-600">Healthy</span>
+                            <span className="text-xs text-emerald-200">Healthy</span>
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-green-700">OCR Engine</span>
+                          <span className="text-sm text-emerald-200">OCR Engine</span>
                           <div className="flex items-center gap-2">
                             <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                            <span className="text-xs text-green-600">Active</span>
+                            <span className="text-xs text-emerald-200">Active</span>
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-green-700">Map Services</span>
+                          <span className="text-sm text-emerald-200">Map Services</span>
                           <div className="flex items-center gap-2">
                             <div className="h-2 w-2 bg-yellow-500 rounded-full"></div>
                             <span className="text-xs text-yellow-600">Maintenance</span>
                           </div>
                         </div>
                       </div>
-                      <div className="mt-4 pt-4 border-t border-green-100">
-                        <div className="text-xs text-green-600">
+                      <div className="mt-4 pt-4 border-t border-white/10">
+                        <div className="text-xs text-emerald-200">
                           Last maintenance: 2 hours ago
                         </div>
                       </div>
-                    </div>
+                    </GlassCard>
                   </div>
                 </motion.div>
               </div>
@@ -571,73 +479,71 @@ export default function Dashboard() {
               <div className="mb-8">
                 <motion.div initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, delay: 0.2 }}>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Claims Trend Chart */}
-                    <div className="bg-white rounded-xl shadow-md border border-green-200 p-6">
-                      <h3 className="text-lg font-semibold text-green-900 mb-4">Claims Processing Trend</h3>
+                    <GlassCard className="p-6">
+                      <h3 className="text-lg font-semibold text-white mb-4">Claims Processing Trend</h3>
                       <div className="h-64 flex items-end justify-between gap-2">
                         {timeSeries.slice(-12).map((value: number, index: number) => (
                           <div key={index} className="flex flex-col items-center flex-1">
                             <div
-                              className="bg-green-500 rounded-t w-full transition-all hover:bg-green-600"
+                              className="bg-emerald-500 rounded-t w-full transition-all hover:bg-emerald-600"
                               style={{ height: `${(value / Math.max(...timeSeries)) * 200}px` }}
                             ></div>
-                            <span className="text-xs text-green-600 mt-2">{index + 1}</span>
+                            <span className="text-xs text-emerald-200 mt-2">{index + 1}</span>
                           </div>
                         ))}
                       </div>
-                      <div className="mt-4 flex justify-between text-sm text-green-600">
+                      <div className="mt-4 flex justify-between text-sm text-emerald-200">
                         <span>Monthly claims processed</span>
                         <span className="font-medium">+{Math.round((timeSeries[timeSeries.length - 1] - timeSeries[timeSeries.length - 2]) / timeSeries[timeSeries.length - 2] * 100)}% this month</span>
                       </div>
-                    </div>
+                    </GlassCard>
 
-                    {/* Priority Distribution */}
-                    <div className="bg-white rounded-xl shadow-md border border-green-200 p-6">
-                      <h3 className="text-lg font-semibold text-green-900 mb-4">Priority Distribution</h3>
+                    <GlassCard className="p-6">
+                      <h3 className="text-lg font-semibold text-white mb-4">Priority Distribution</h3>
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className="h-4 w-4 bg-red-500 rounded"></div>
-                            <span className="text-sm text-green-700">High Priority</span>
+                            <span className="text-sm text-emerald-200">High Priority</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <div className="w-24 h-2 bg-gray-200 rounded">
+                            <div className="w-24 h-2 bg-white/10 rounded">
                               <div className="h-2 bg-red-500 rounded" style={{ width: '35%' }}></div>
                             </div>
-                            <span className="text-sm font-medium text-green-900">35%</span>
+                            <span className="text-sm font-medium text-white">35%</span>
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className="h-4 w-4 bg-yellow-500 rounded"></div>
-                            <span className="text-sm text-green-700">Medium Priority</span>
+                            <span className="text-sm text-emerald-200">Medium Priority</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <div className="w-24 h-2 bg-gray-200 rounded">
+                            <div className="w-24 h-2 bg-white/10 rounded">
                               <div className="h-2 bg-yellow-500 rounded" style={{ width: '45%' }}></div>
                             </div>
-                            <span className="text-sm font-medium text-green-900">45%</span>
+                            <span className="text-sm font-medium text-white">45%</span>
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className="h-4 w-4 bg-green-500 rounded"></div>
-                            <span className="text-sm text-green-700">Low Priority</span>
+                            <span className="text-sm text-emerald-200">Low Priority</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <div className="w-24 h-2 bg-gray-200 rounded">
-                              <div className="h-2 bg-green-500 rounded" style={{ width: '20%' }}></div>
+                            <div className="w-24 h-2 bg-white/10 rounded">
+                              <div className="h-2 bg-emerald-500 rounded" style={{ width: '20%' }}></div>
                             </div>
-                            <span className="text-sm font-medium text-green-900">20%</span>
+                            <span className="text-sm font-medium text-white">20%</span>
                           </div>
                         </div>
                       </div>
-                      <div className="mt-6 pt-4 border-t border-green-100">
-                        <div className="text-sm text-green-600">
-                          Total villages monitored: <span className="font-medium">{filtered.length}</span>
+                      <div className="mt-6 pt-4 border-t border-white/10">
+                        <div className="text-sm text-emerald-200">
+                          Total villages monitored: <span className="font-medium text-white">{filtered.length}</span>
                         </div>
                       </div>
-                    </div>
+                    </GlassCard>
                   </div>
                 </motion.div>
               </div>
@@ -645,23 +551,27 @@ export default function Dashboard() {
               {/* Interactive Map Preview */}
               <div className="mb-8">
                 <motion.div initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, delay: 0.25 }}>
-                  <div className="bg-white rounded-xl shadow-md border border-green-200 p-6">
+                  <GlassCard className="p-6">
                     <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-lg font-semibold text-green-900">Interactive Map Preview</h3>
+                      <h3 className="text-lg font-semibold text-white">Interactive Map Preview</h3>
+
                       <div className="flex items-center gap-3">
                         <button
                           onClick={() => setFiltersCollapsed(!filtersCollapsed)}
-                          className="flex items-center gap-2 px-3 py-2 bg-green-100 hover:bg-green-200 rounded-lg transition-colors text-sm"
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm 
+                   bg-white/5 border border-white/10 hover:bg-white/10"
                         >
-                          <Filter className="h-4 w-4" />
-                          Filters
+                          <Filter className="h-4 w-4 text-emerald-400" />
+                          <span className="text-white">Filters</span>
                         </button>
+
                         <button
                           onClick={handleExportMap}
-                          className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm"
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm 
+                   bg-white/5 border border-white/10 hover:bg-white/10"
                         >
-                          <Download className="h-4 w-4" />
-                          Export
+                          <Download className="h-4 w-4 text-green-400" />
+                          <span className="text-white">Export</span>
                         </button>
                       </div>
                     </div>
@@ -676,7 +586,7 @@ export default function Dashboard() {
                       >
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                           <div>
-                            <label className="block text-sm font-medium text-green-700 mb-2">State</label>
+                            <label className="block text-sm font-medium text-emerald-200 mb-2">State</label>
                             <motion.select
                               value={stateFilter}
                               onChange={(e) => setStateFilter(e.target.value)}
@@ -691,7 +601,7 @@ export default function Dashboard() {
                             </motion.select>
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-green-700 mb-2">District</label>
+                            <label className="block text-sm font-medium text-emerald-200 mb-2">District</label>
                             <motion.select
                               value={districtFilter}
                               onChange={(e) => setDistrictFilter(e.target.value)}
@@ -707,7 +617,7 @@ export default function Dashboard() {
                             </motion.select>
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-green-700 mb-2">Search Village</label>
+                            <label className="block text-sm font-medium text-emerald-200 mb-2">Search Village</label>
                             <motion.input
                               type="text"
                               value={villageQuery}
@@ -723,7 +633,7 @@ export default function Dashboard() {
                     )}
 
                     {/* Map Container */}
-                    <div className="relative h-96 bg-green-50 rounded-lg border border-green-200 overflow-hidden">
+                    <div className="relative h-96 rounded-lg overflow-hidden">
                       <WebGIS
                         ref={webGISRef}
                         center={[stateCenter[0], stateCenter[1]]}
@@ -734,16 +644,22 @@ export default function Dashboard() {
                         onFeatureClick={handleFeatureClick}
                         onMapClick={handleMapClick}
                       />
-                      <div className="absolute top-4 left-4 bg-white rounded-lg shadow-md p-3">
-                        <div className="flex items-center gap-2 text-sm text-green-700">
-                          <MapPin className="h-4 w-4" />
-                          <span>{stateFilter}, {districtFilter}</span>
-                        </div>
+                      <div className="absolute top-4 left-4">
+                        <GlassCard className="p-2">
+                          <div className="flex items-center gap-2 text-sm text-emerald-700">
+                            <MapPin className="h-4 w-4" />
+                            <span className="text-white">{stateFilter}, {districtFilter}</span>
+                          </div>
+                        </GlassCard>
                       </div>
-                      <div className="absolute bottom-4 right-4 bg-white rounded-lg shadow-md p-3">
-                        <div className="text-xs text-green-600">
-                          Zoom: 8x • Layers: {layers.filter(l => l.visible).length}/{layers.length}
-                        </div>
+                      <div className="absolute bottom-4 right-4">
+                        <GlassCard className="p-2">
+                          <div className="text-xs text-emerald-600">
+                            <span className="text-white">Zoom: 8x</span>
+                            <span className="mx-2">•</span>
+                            <span className="text-white">Layers: {layers.filter(l => l.visible).length}/{layers.length}</span>
+                          </div>
+                        </GlassCard>
                       </div>
                     </div>
 
@@ -755,267 +671,236 @@ export default function Dashboard() {
                             className="h-4 w-4 rounded border-2 border-white shadow-sm"
                             style={{ backgroundColor: layer.style.fillColor }}
                           ></div>
-                          <span className="text-sm text-green-700">{layer.name}</span>
+                          <span className="text-sm text-emerald-200">{layer.name}</span>
                         </div>
                       ))}
                     </div>
-                  </div>
+                  </GlassCard>
                 </motion.div>
               </div>
 
               {/* Platform Overview Section */}
-              <div className="mt-12">
-                <motion.div initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, delay: 0.2 }}>
-                  <div className="bg-white rounded-2xl shadow-lg border border-green-200 p-8">
-                    <div className="text-center mb-8">
-                      <h2 className="text-3xl font-bold text-green-900 mb-2">Explore VanMitra Platform</h2>
-                      <p className="text-green-700">Discover all the powerful features available in our FRA management system</p>
-                    </div>
+              <section className="relative mt-20">
+                {/* Background accent */}
+                <div className="absolute inset-0 bg-gradient-to-b from-emerald-900/20 to-transparent rounded-3xl blur-3xl" />
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {/* Atlas Mini Preview */}
-                      <div className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-xl p-6 border border-green-200 hover:shadow-lg transition-shadow">
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="h-10 w-10 rounded-lg bg-green-600 flex items-center justify-center">
-                            <Layers className="text-white" size={20} />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-green-900">Interactive Atlas</h3>
-                            <p className="text-sm text-green-700">Map-based visualization</p>
-                          </div>
-                        </div>
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8 }}
+                  className="relative"
+                >
+                  {/* Section header */}
+                  <div className="text-center mb-14">
+                    <span className="px-3 py-1 text-xs font-medium uppercase tracking-wider text-emerald-300 bg-emerald-800/30 rounded-full">
+                      Features
+                    </span>
+                    <h2 className="text-4xl md:text-5xl font-extrabold text-white mt-4">
+                      Explore VanMitra Platform
+                    </h2>
+                    <p className="text-emerald-200 mt-3 max-w-2xl mx-auto">
+                      Discover powerful tools for forest rights management and empower
+                      communities with data-driven insights.
+                    </p>
+                    <div className="mt-5 h-1 w-28 bg-gradient-to-r from-emerald-400 to-green-600 mx-auto rounded-full shadow-lg" />
+                  </div>
 
-                        <div className="bg-white rounded-lg p-4 mb-4 border border-green-100">
-                          <div className="text-xs text-green-600 mb-2">Map Preview</div>
-                          <div className="h-20 bg-green-50 rounded border border-dashed border-green-200 flex items-center justify-center">
-                            <div className="text-center">
-                              <Globe className="mx-auto text-green-400 mb-1" size={16} />
-                              <div className="text-xs text-green-600">Interactive Map</div>
-                            </div>
+                  {/* Features Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                    {[
+                      {
+                        title: "Interactive Atlas",
+                        desc: "Map-based visualization of claims & layers",
+                        icon: Layers,
+                        color: "emerald",
+                        href: "/atlas",
+                        preview: (
+                          <div className="h-28 flex items-center justify-center bg-emerald-500/5 rounded-lg">
+                            <Globe className="h-10 w-10 text-emerald-400" />
                           </div>
-                          <div className="mt-2 flex justify-between text-xs text-green-700">
-                            <span>Claims: {dashboardData.kpis?.claims || 0}</span>
-                            <span>Layers: 5+</span>
-                          </div>
-                        </div>
-
-                        <Link href="/atlas" className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm w-full justify-center">
-                          Open Atlas <ArrowRight size={14} />
-                        </Link>
-                      </div>
-
-                      {/* DSS Mini Preview */}
-                      <div className="bg-gradient-to-br from-blue-50 to-cyan-100 rounded-xl p-6 border border-blue-200 hover:shadow-lg transition-shadow">
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="h-10 w-10 rounded-lg bg-blue-600 flex items-center justify-center">
-                            <BookOpen className="text-white" size={20} />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-green-900">Decision Support</h3>
-                            <p className="text-sm text-green-700">Scheme recommendations</p>
-                          </div>
-                        </div>
-
-                        <div className="bg-white rounded-lg p-4 mb-4 border border-blue-100">
-                          <div className="text-xs text-blue-600 mb-2">Location Input</div>
-                          <div className="space-y-2">
+                        ),
+                      },
+                      {
+                        title: "Decision Support",
+                        desc: "Smart scheme recommendations for your location",
+                        icon: BookOpen,
+                        color: "blue",
+                        href: "/dss",
+                        preview: (
+                          <div className="h-28 flex flex-col justify-center items-center gap-2 bg-blue-500/5 rounded-lg">
                             <input
-                              type="number"
+                              type="text"
                               placeholder="Latitude"
-                              className="w-full px-2 py-1 text-xs border border-blue-200 rounded bg-blue-50"
+                              className="w-32 px-2 py-1 text-xs rounded bg-blue-950/20 border border-blue-400/30 text-blue-200"
                               readOnly
                             />
                             <input
-                              type="number"
+                              type="text"
                               placeholder="Longitude"
-                              className="w-full px-2 py-1 text-xs border border-blue-200 rounded bg-blue-50"
+                              className="w-32 px-2 py-1 text-xs rounded bg-blue-950/20 border border-blue-400/30 text-blue-200"
                               readOnly
                             />
                           </div>
-                          <div className="mt-2 text-xs text-blue-700">
-                            Get personalized scheme recommendations
+                        ),
+                      },
+                      {
+                        title: "OCR Processing",
+                        desc: "Digitize & extract data from documents",
+                        icon: Upload,
+                        color: "purple",
+                        href: "/ocr",
+                        preview: (
+                          <div className="h-28 border-2 border-dashed border-purple-400/40 rounded-lg flex items-center justify-center bg-purple-500/5">
+                            <Upload className="h-8 w-8 text-purple-400" />
+                            <span className="text-xs text-purple-200 ml-2">Drop file</span>
                           </div>
-                        </div>
-
-                        <Link href="/dss" className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm w-full justify-center">
-                          Get Recommendations <ArrowRight size={14} />
-                        </Link>
-                      </div>
-
-                      {/* OCR Mini Preview */}
-                      <div className="bg-gradient-to-br from-purple-50 to-violet-100 rounded-xl p-6 border border-purple-200 hover:shadow-lg transition-shadow">
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="h-10 w-10 rounded-lg bg-purple-600 flex items-center justify-center">
-                            <Upload className="text-white" size={20} />
+                        ),
+                      },
+                      {
+                        title: "Admin Dashboard",
+                        desc: "Manage claims, users & FRA documents",
+                        icon: Shield,
+                        color: "red",
+                        href: "/admin",
+                        preview: (
+                          <div className="h-28 flex flex-col justify-center items-center bg-red-500/5 rounded-lg">
+                            <Users className="h-8 w-8 text-red-400 mb-2" />
+                            <span className="text-xs text-red-200">Role: Super Admin</span>
                           </div>
-                          <div>
-                            <h3 className="font-semibold text-green-900">OCR Processing</h3>
-                            <p className="text-sm text-green-700">Document digitization</p>
-                          </div>
-                        </div>
-
-                        <div className="bg-white rounded-lg p-4 mb-4 border border-purple-100">
-                          <div className="text-xs text-purple-600 mb-2">Upload Document</div>
-                          <div className="h-16 border-2 border-dashed border-purple-200 rounded flex items-center justify-center bg-purple-50">
-                            <div className="text-center">
-                              <Upload className="mx-auto text-purple-400 mb-1" size={16} />
-                              <div className="text-xs text-purple-600">Drop image here</div>
+                        ),
+                      },
+                      {
+                        title: "Public Portal",
+                        desc: "Community transparency & FRA status",
+                        icon: Globe,
+                        color: "teal",
+                        href: "/public",
+                        preview: (
+                          <div className="h-28 grid grid-cols-3 text-center bg-teal-500/5 rounded-lg">
+                            <div>
+                              <p className="text-lg font-bold text-teal-300">123</p>
+                              <p className="text-xs text-teal-200">Claims</p>
+                            </div>
+                            <div>
+                              <p className="text-lg font-bold text-teal-300">45</p>
+                              <p className="text-xs text-teal-200">Granted</p>
+                            </div>
+                            <div>
+                              <p className="text-lg font-bold text-teal-300">67</p>
+                              <p className="text-xs text-teal-200">Villages</p>
                             </div>
                           </div>
-                          <div className="mt-2 text-xs text-purple-700">
-                            Extract text & create claims automatically
+                        ),
+                      },
+                      {
+                        title: "Analytics Hub",
+                        desc: "Advanced reports & visual insights",
+                        icon: BarChart3,
+                        color: "indigo",
+                        href: "/analytics",
+                        preview: (
+                          <div className="h-28 flex flex-col gap-2 justify-center px-4 bg-indigo-500/5 rounded-lg">
+                            <div className="h-2 w-3/4 bg-indigo-400/60 rounded"></div>
+                            <div className="h-2 w-1/2 bg-indigo-400/60 rounded"></div>
+                            <div className="h-2 w-5/6 bg-indigo-400/60 rounded"></div>
                           </div>
-                        </div>
-
-                        <Link href="/ocr" className="inline-flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm w-full justify-center">
-                          Process Document <ArrowRight size={14} />
-                        </Link>
-                      </div>
-
-                      {/* Admin Mini Preview */}
-                      <div className="bg-gradient-to-br from-orange-50 to-amber-100 rounded-xl p-6 border border-orange-200 hover:shadow-lg transition-shadow">
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="h-10 w-10 rounded-lg bg-orange-600 flex items-center justify-center">
-                            <Server className="text-white" size={20} />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-green-900">Admin Panel</h3>
-                            <p className="text-sm text-green-700">Document management</p>
-                          </div>
-                        </div>
-
-                        <div className="bg-white rounded-lg p-4 mb-4 border border-orange-100">
-                          <div className="text-xs text-orange-600 mb-2">Document Upload</div>
-                          <div className="space-y-2">
-                            <div className="h-8 bg-orange-50 rounded border border-orange-200 flex items-center px-2">
-                              <span className="text-xs text-orange-600">Select PDF/TIFF file...</span>
+                        ),
+                      },
+                    ].map((item, i) => (
+                      <motion.div
+                        key={i}
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: i * 0.1, duration: 0.5 }}
+                        whileHover={{ scale: 1.03, rotateX: 2, rotateY: -2 }}
+                        className="transform-gpu"
+                      >
+                        <GlassCard className="p-6 flex flex-col h-full backdrop-blur-xl border border-white/10 hover:shadow-xl hover:shadow-emerald-500/20 transition-all duration-300">
+                          {/* Card header */}
+                          <div className="flex items-center gap-3 mb-5">
+                            <div
+                              className={`h-12 w-12 rounded-full bg-${item.color}-500/20 flex items-center justify-center shadow-inner`}
+                            >
+                              <item.icon className={`h-6 w-6 text-${item.color}-400`} />
                             </div>
-                            <div className="flex gap-2">
-                              <button className="flex-1 bg-orange-600 text-white px-2 py-1 rounded text-xs" disabled>Upload</button>
-                              <button className="flex-1 border border-orange-200 px-2 py-1 rounded text-xs" disabled>Verify</button>
-                            </div>
-                          </div>
-                          <div className="mt-2 text-xs text-orange-700">
-                            Upload & verify FRA documents
-                          </div>
-                        </div>
-
-                        <Link href="/admin" className="inline-flex items-center gap-2 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors text-sm w-full justify-center">
-                          Admin Panel <ArrowRight size={14} />
-                        </Link>
-                      </div>
-
-                      {/* Public Mini Preview */}
-                      <div className="bg-gradient-to-br from-teal-50 to-cyan-100 rounded-xl p-6 border border-teal-200 hover:shadow-lg transition-shadow">
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="h-10 w-10 rounded-lg bg-teal-600 flex items-center justify-center">
-                            <Eye className="text-white" size={20} />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-green-900">Public View</h3>
-                            <p className="text-sm text-green-700">Aggregated insights</p>
-                          </div>
-                        </div>
-
-                        <div className="bg-white rounded-lg p-4 mb-4 border border-teal-100">
-                          <div className="text-xs text-teal-600 mb-2">Public Statistics</div>
-                          <div className="grid grid-cols-3 gap-2">
-                            <div className="text-center">
-                              <div className="text-lg font-bold text-teal-800">{dashboardData.kpis?.claims || 0}</div>
-                              <div className="text-xs text-teal-600">Claims</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-lg font-bold text-teal-800">{dashboardData.kpis?.grants || 0}</div>
-                              <div className="text-xs text-teal-600">Granted</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-lg font-bold text-teal-800">{filtered.length || 0}</div>
-                              <div className="text-xs text-teal-600">Villages</div>
+                            <div>
+                              <h3 className="text-lg font-semibold text-white">{item.title}</h3>
+                              <p className="text-sm text-emerald-200">{item.desc}</p>
                             </div>
                           </div>
-                          <div className="mt-2 text-xs text-teal-700">
-                            Public FRA progress overview
-                          </div>
-                        </div>
 
-                        <Link href="/public" className="inline-flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors text-sm w-full justify-center">
-                          View Public Data <ArrowRight size={14} />
-                        </Link>
-                      </div>
+                          {/* Card preview */}
+                          <div className="flex-1">{item.preview}</div>
 
-                      {/* Analytics Mini Preview */}
-                      <div className="bg-gradient-to-br from-indigo-50 to-blue-100 rounded-xl p-6 border border-indigo-200 hover:shadow-lg transition-shadow">
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="h-10 w-10 rounded-lg bg-indigo-600 flex items-center justify-center">
-                            <BarChart3 className="text-white" size={20} />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-green-900">Analytics Hub</h3>
-                            <p className="text-sm text-green-700">Advanced insights</p>
-                          </div>
-                        </div>
-
-                        <div className="bg-white rounded-lg p-4 mb-4 border border-indigo-100">
-                          <div className="text-xs text-indigo-600 mb-2">Analytics Dashboard</div>
-                          <div className="space-y-2">
-                            <div className="h-6 bg-indigo-100 rounded flex items-center px-2">
-                              <div className="w-3/4 h-2 bg-indigo-400 rounded"></div>
-                            </div>
-                            <div className="h-6 bg-indigo-100 rounded flex items-center px-2">
-                              <div className="w-1/2 h-2 bg-indigo-400 rounded"></div>
-                            </div>
-                            <div className="h-6 bg-indigo-100 rounded flex items-center px-2">
-                              <div className="w-5/6 h-2 bg-indigo-400 rounded"></div>
-                            </div>
-                          </div>
-                          <div className="mt-2 text-xs text-indigo-700">
-                            Detailed analytics & reporting
-                          </div>
-                        </div>
-
-                        <button className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm w-full justify-center">
-                          Coming Soon <ArrowRight size={14} />
-                        </button>
-                      </div>
-                    </div>
+                          {/* Card CTA */}
+                          <Link
+                            href={item.href}
+                            className={`mt-6 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-${item.color}-500 to-${item.color}-600 text-white font-medium text-sm hover:shadow-lg hover:shadow-${item.color}-500/40 transition-all`}
+                          >
+                            Open {item.title}
+                            <ArrowRight size={14} />
+                          </Link>
+                        </GlassCard>
+                      </motion.div>
+                    ))}
                   </div>
                 </motion.div>
-              </div>
+              </section>
+
+
+
             </>
           )}
         </main>
+        <Footer />
 
         {/* Detail modal for recommendation */}
         {selected && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div className="bg-white rounded-lg shadow-lg w-11/12 max-w-2xl p-6">
+            <GlassCard className="w-11/12 max-w-2xl p-6">
               <div className="flex items-start justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-green-900">{selected.village}</h3>
-                  <div className="text-sm text-green-700">Recommended: {selected.scheme}</div>
+                  <h3 className="text-lg font-semibold text-white">{selected.village}</h3>
+                  <div className="text-sm text-emerald-200">Recommended: {selected.scheme}</div>
                 </div>
                 <div>
-                  <button onClick={() => setSelected(null)} className="text-sm px-3 py-1 bg-slate-100 rounded-md">Close</button>
+                  <button
+                    onClick={() => setSelected(null)}
+                    className="text-sm px-3 py-1 bg-white/10 text-white rounded-md"
+                  >
+                    Close
+                  </button>
                 </div>
               </div>
 
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <GlassCard className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <h4 className="text-sm font-medium text-green-800">Priority score</h4>
-                  <div className="text-2xl font-bold text-green-900">{(selected.score * 100).toFixed(0)}%</div>
-                  <div className="mt-3 text-sm text-green-700">This recommendation is generated by combining rule-based eligibility and AI-derived indicators.</div>
-                </div>
-                <div>
-                  <h4 className="text-sm font-medium text-green-800">Actions</h4>
-                  <div className="mt-2 flex flex-col gap-2">
-                    <button className="inline-flex items-center gap-2 bg-green-700 text-white px-4 py-2 rounded-md">Create Plan</button>
-                    <button className="inline-flex items-center gap-2 border border-green-200 px-4 py-2 rounded-md">Assign to Officer</button>
+                  <h4 className="text-sm font-medium text-emerald-200">Priority score</h4>
+                  <div className="text-2xl font-bold text-white">
+                    {(selected.score * 100).toFixed(0)}%
+                  </div>
+                  <div className="mt-3 text-sm text-emerald-200">
+                    This recommendation is generated by combining rule-based eligibility and
+                    AI-derived indicators.
                   </div>
                 </div>
-              </div>
-            </div>
+                <div>
+                  <h4 className="text-sm font-medium text-emerald-200">Actions</h4>
+                  <div className="mt-2 flex flex-col gap-2">
+                    <button className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md">
+                      Create Plan
+                    </button>
+                    <button className="inline-flex items-center gap-2 border border-white/10 px-4 py-2 rounded-md text-white/90">
+                      Assign to Officer
+                    </button>
+                  </div>
+                </div>
+              </GlassCard>
+            </GlassCard>
           </div>
         )}
+
       </div>
     </ProtectedRoute>
   );
