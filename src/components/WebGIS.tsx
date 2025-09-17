@@ -73,8 +73,8 @@ export interface WebGISRef {
 
 const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
   {
-  // Default center set to central Madhya Pradesh (approximate)
-  center = [78.0, 23.3],
+    // Default center set to central Madhya Pradesh (approximate)
+    center = [78.0, 23.3],
     zoom = 8,
     layers = [],
     markers = [],
@@ -152,12 +152,12 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
         ],
       },
       center: center,
-  zoom: zoom,
-  // Restrict map pan/zoom so the user cannot zoom out past the India extent.
-  // India approximate bbox (west,south,east,north): [66, 5, 100, 38]
-  maxBounds: [[66.0, 5.0], [100.0, 38.0]],
-  // minZoom prevents zooming out too far; set to ~3.5 to keep India visible
-  minZoom: 3.5,
+      zoom: zoom,
+      // Restrict map pan/zoom so the user cannot zoom out past the India extent.
+      // India approximate bbox (west,south,east,north): [66, 5, 100, 38]
+      maxBounds: [[66.0, 5.0], [100.0, 38.0]],
+      // minZoom prevents zooming out too far; set to ~3.5 to keep India visible
+      minZoom: 3.5,
       pitch: 0,
       bearing: 0,
     })
@@ -350,7 +350,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
         } else {
           // Update existing source data
           try {
-            ;(map.current!.getSource(sourceId) as GeoJSONSource).setData(layer.data)
+            ; (map.current!.getSource(sourceId) as GeoJSONSource).setData(layer.data)
           } catch (error) {
             console.error("Error updating source", sourceId, ":", error)
           }
@@ -383,13 +383,13 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
             const h = (map.current as any)._pointLayerHandlers[pointHandlerKey]
             try {
               if (map.current) map.current.off("move", h)
-            } catch (e) {}
+            } catch (e) { }
             try {
               if (map.current) map.current.off("zoom", h)
-            } catch (e) {}
+            } catch (e) { }
             delete (map.current as any)._pointLayerHandlers[pointHandlerKey]
           }
-        } catch (e) {}
+        } catch (e) { }
 
         // Special-case: if this is the boundaries layer, we previously created
         // district/state sub-sources and sub-layers. Remove those explicitly.
@@ -418,7 +418,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
                     /* ignore */
                   }
                 }
-              } catch (e) {}
+              } catch (e) { }
             }
           }
         } catch (e) {
@@ -486,7 +486,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
               map.current.moveLayer(subFill)
             }
           }
-        } catch (e) {}
+        } catch (e) { }
 
         try {
           if (map.current.getLayer(subLayer)) {
@@ -498,7 +498,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
               map.current.moveLayer(subLayer)
             }
           }
-        } catch (e) {}
+        } catch (e) { }
 
         try {
           // Place outline ABOVE the anchor so users can click thin boundary lines even when other
@@ -517,7 +517,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
                 try {
                   // @ts-ignore
                   map.current.moveLayer(subOutline)
-                } catch (e) {}
+                } catch (e) { }
               }
             } else {
               // fallback: move outline to top
@@ -525,7 +525,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
               map.current.moveLayer(subOutline)
             }
           }
-        } catch (e) {}
+        } catch (e) { }
       }
 
       console.log('Placed boundaries sub-layers beneath application layers to keep claims clickable')
@@ -587,7 +587,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
             }
             try {
               map.current.moveLayer(layerConfig.id)
-            } catch (e) {}
+            } catch (e) { }
           } catch (error) {
             console.error("Error adding circle layer", layerConfig.id, ":", error)
           }
@@ -630,7 +630,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
                     // Use fixed radius instead of dynamic calculation
                     map.current.setPaintProperty(layerConfig.id, "circle-radius", 8)
                     map.current.setPaintProperty(layerConfig.id, "circle-stroke-width", 2)
-                  } catch (e) {}
+                  } catch (e) { }
                 }
               } catch (e) {
                 /* ignore update errors */
@@ -642,12 +642,12 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
               try {
                 map.current.off("move", (map.current as any)._pointLayerHandlers[layerConfig.id])
                 map.current.off("zoom", (map.current as any)._pointLayerHandlers[layerConfig.id])
-              } catch (e) {}
+              } catch (e) { }
             }
 
             map.current.on("move", updateFn)
             map.current.on("zoom", updateFn)
-            ;(map.current as any)._pointLayerHandlers[layerConfig.id] = updateFn
+              ; (map.current as any)._pointLayerHandlers[layerConfig.id] = updateFn
 
             // initialize immediately
             updateFn()
@@ -667,7 +667,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
             }
             try {
               map.current!.moveLayer(layerConfig.id)
-            } catch (e) {}
+            } catch (e) { }
           } catch (error) {
             console.error("Error adding line layer", layerConfig.id, ":", error)
           }
@@ -799,7 +799,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
             }
             try {
               map.current!.moveLayer(layerConfig.id)
-            } catch (e) {}
+            } catch (e) { }
           } catch (error) {
             console.error("Error adding default layer", layerConfig.id, ":", error)
           }
@@ -845,9 +845,9 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
     filteredMarkers.forEach((marker) => {
       const coords = normalizeCoords((marker as any).lng, (marker as any).lat)
       console.log("🗺️ Marker details:", marker.id, coords.lng, coords.lat, marker.color, marker.popup)
-      // Attach normalized values back to the marker copy to use below
-      ;(marker as any)._normLng = coords.lng
-      ;(marker as any)._normLat = coords.lat
+        // Attach normalized values back to the marker copy to use below
+        ; (marker as any)._normLng = coords.lng
+        ; (marker as any)._normLat = coords.lat
     })
 
     // Special-case: render `last-click` as a proper GeoJSON layer so it stays anchored
@@ -869,10 +869,10 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
             const existingDom = markersRef.current.find((m) => (m as any)._markerId === "last-click")
             if (existingDom) {
               console.log("Removing legacy DOM last-click marker to use layer instead")
-              try { existingDom.remove() } catch (e) {}
+              try { existingDom.remove() } catch (e) { }
               markersRef.current = markersRef.current.filter((m) => (m as any)._markerId !== "last-click")
             }
-          } catch (e) {}
+          } catch (e) { }
 
           // Add or update source
           const srcId = "source-last-click"
@@ -883,7 +883,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
             map.current.addSource(srcId, { type: "geojson", data: pointFeature as any })
           } else {
             try {
-              ;(map.current.getSource(srcId) as GeoJSONSource).setData(pointFeature as any)
+              ; (map.current.getSource(srcId) as GeoJSONSource).setData(pointFeature as any)
             } catch (e) {
               console.warn("Failed to setData for last-click source", e)
             }
@@ -893,9 +893,25 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
           const iconImageName = "last-click-icon-svg"
           const symbolLayerId = "layer-last-click-symbol"
           const sizePx = (lastClick as any).size ?? 48
-          // Build SVG for MapPin (using a simple pin path) with a subtle drop shadow filter
+          // Build a cleaner lucide-like MapPin SVG with a better drop-shadow
           const color = (lastClick as any).color || "#dc2626"
-          const svg = `<?xml version='1.0' encoding='UTF-8'?><svg xmlns='http://www.w3.org/2000/svg' width='${sizePx}' height='${sizePx}' viewBox='0 0 24 24' preserveAspectRatio='xMidYMid meet'><defs><filter id='ds' x='-50%' y='-50%' width='200%' height='200%'><feDropShadow dx='0' dy='2' stdDeviation='2' flood-color='rgba(0,0,0,0.35)' /></filter></defs><g filter='url(#ds)'><path d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z' fill='${color}' stroke='#fff' stroke-width='1.2'/><circle cx='12' cy='9' r='2.5' fill='#fff'/></g></svg>`
+         const svg = `<?xml version='1.0' encoding='UTF-8'?>
+<svg xmlns='http://www.w3.org/2000/svg' width='${sizePx}' height='${sizePx}' viewBox='0 0 24 24' preserveAspectRatio='xMidYMid meet'>
+  <defs>
+    <filter id='pin-shadow' x='-50%' y='-50%' width='200%' height='200%'>
+      <!-- Subtle drop shadow -->
+      <feDropShadow dx='0' dy='1.2' stdDeviation='1' flood-color='black' flood-opacity='0.3'/>
+    </filter>
+  </defs>
+  <g filter='url(#pin-shadow)'>
+    <path d='M12 2.5C9.243 2.5 7 4.743 7 7.5c0 4.25 5 9.75 5 9.75s5-5.5 5-9.75C17 4.743 14.757 2.5 12 2.5z'
+      fill='${color}' stroke='black' stroke-width='0.2'/>
+    <circle cx='12' cy='8' r='2.2' fill='#fff' stroke='black' stroke-width='0.3'/>
+  </g>
+</svg>`
+
+
+
 
           const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
 
@@ -974,8 +990,8 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
 
           // Keep the source data up-to-date
           try {
-            ;(map.current.getSource(srcId) as GeoJSONSource).setData(pointFeature as any)
-          } catch (e) {}
+            ; (map.current.getSource(srcId) as GeoJSONSource).setData(pointFeature as any)
+          } catch (e) { }
         } else {
           // No lastClick => remove any existing last-click layers/sources/images.
           // Remove layers first to ensure the source can be removed without MapLibre errors.
@@ -990,32 +1006,32 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
             // into `off` in the typed API, so we avoid calling `off` here.
             try {
               if (map.current.getLayer && map.current.getLayer(symbolLayerId)) {
-                try { map.current.removeLayer(symbolLayerId) } catch (e) {}
+                try { map.current.removeLayer(symbolLayerId) } catch (e) { }
               }
-            } catch (e) {}
+            } catch (e) { }
 
             // Remove circle layer if present (older variant)
             try {
               if (map.current.getLayer && map.current.getLayer(circleLayerId)) {
-                try { map.current.removeLayer(circleLayerId) } catch (e) {}
+                try { map.current.removeLayer(circleLayerId) } catch (e) { }
               }
-            } catch (e) {}
+            } catch (e) { }
 
             // Now remove the source
             try {
               if (map.current.getSource && map.current.getSource(srcId)) {
-                try { map.current.removeSource(srcId) } catch (e) {}
+                try { map.current.removeSource(srcId) } catch (e) { }
               }
-            } catch (e) {}
+            } catch (e) { }
 
             // Optionally remove the in-memory icon image if present
             try {
               // some maplibre builds expose hasImage/getImage/removeImage differently
               const hasImg = (map.current as any).hasImage ? (map.current as any).hasImage(iconImageName) : !!(map.current as any).getImage?.(iconImageName)
               if (hasImg) {
-                try { (map.current as any).removeImage?.(iconImageName) } catch (e) {}
+                try { (map.current as any).removeImage?.(iconImageName) } catch (e) { }
               }
-            } catch (e) {}
+            } catch (e) { }
           } catch (e) {
             /* ignore cleanup errors */
           }
@@ -1044,12 +1060,12 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
     const markersToKeep = markersRef.current.filter(marker => newMarkerIds.has((marker as any)._markerId))
     console.log("🗺️ Keeping markers:", markersToKeep.map(m => (m as any)._markerId))
 
-  // Create new markers for IDs that don't exist yet (exclude last-click - handled as layer)
-  const markersToCreate = domMarkers.filter((marker) => !existingMarkerIds.has(marker.id))
+    // Create new markers for IDs that don't exist yet (exclude last-click - handled as layer)
+    const markersToCreate = domMarkers.filter((marker) => !existingMarkerIds.has(marker.id))
     console.log("🗺️ Creating new markers:", markersToCreate.map(m => m.id))
 
-  // Update existing markers with new data (exclude last-click)
-  const markersToUpdate = domMarkers.filter((marker) => existingMarkerIds.has(marker.id))
+    // Update existing markers with new data (exclude last-click)
+    const markersToUpdate = domMarkers.filter((marker) => existingMarkerIds.has(marker.id))
     console.log("🗺️ Updating markers:", markersToUpdate.map(m => m.id))
 
     // Clear popups for removed markers
@@ -1061,7 +1077,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
     // Update popups ref
     popupsRef.current = popupsRef.current.filter(popup => {
       return markersToKeep.some(marker => (marker as any)._markerId === (popup as any)._markerId) ||
-             markersToUpdate.some(marker => marker.id === (popup as any)._markerId)
+        markersToUpdate.some(marker => marker.id === (popup as any)._markerId)
     })
 
     // Create new markers
@@ -1077,7 +1093,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
       const outline = (marker as any).outline || "#ffffff"
 
       console.log("🗺️ Processing marker with", marker.id, "baseSize:", baseSize, "color:", color)
-      
+
 
       const el = document.createElement("div")
       el.className = "marker"
@@ -1099,8 +1115,8 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
       // Build SVG with location icon for last-click marker
       let svg: string
       if (marker.id === "last-click") {
-        // Use a location pin icon for last-click markers
-        svg = `<?xml version='1.0' encoding='UTF-8'?><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='${baseSize}' height='${baseSize}'><path d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z' fill='${color}' stroke='${outline}' stroke-width='1'/></svg>`
+        // Use the improved lucide-like MapPin SVG for last-click markers
+        svg = `<?xml version='1.0' encoding='UTF-8'?><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='${baseSize}' height='${baseSize}'><defs><filter id='ds-local' x='-50%' y='-50%' width='200%' height='200%'><feGaussianBlur stdDeviation='1.6' result='b'/><feOffset dx='0' dy='1.6' result='o'/><feMerge><feMergeNode in='o'/><feMergeNode in='SourceGraphic'/></feMerge></filter></defs><g filter='url(#ds-local)'><path d='M12 2.6C9.29 2.6 7 4.89 7 7.6c0 4.1 4.9 9.4 5 9.5s5-5.4 5-9.5c0-2.71-2.29-5-5-5z' fill='${color}' stroke='${outline}' stroke-width='1'/><circle cx='12' cy='8' r='2.1' fill='${outline}'/></g></svg>`
       } else {
         // Use the existing map pin icon for other markers
         const labelText = "" // Single marker, no count
@@ -1140,8 +1156,8 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
       let mapMarker: maplibregl.Marker
 
       try {
-    mapMarker = new maplibregl.Marker({ element: el, anchor: "bottom", draggable: marker.id === "claim-area-center" })
-    mapMarker.setLngLat([lng, lat])        // Add marker to map
+        mapMarker = new maplibregl.Marker({ element: el, anchor: "bottom", draggable: marker.id === "claim-area-center" })
+        mapMarker.setLngLat([lng, lat])        // Add marker to map
         if (typeof (mapMarker as any).addTo === 'function') {
           (mapMarker as any).addTo(map.current!)
         } else {
@@ -1152,13 +1168,13 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
         // Fallback to standard marker
         mapMarker = new maplibregl.Marker({ color: marker.color || "#16a34a" })
           .setLngLat([marker.lng, marker.lat])
-        ;(mapMarker as any).addTo(map.current!)
+          ; (mapMarker as any).addTo(map.current!)
       }
 
-  // Store marker ID for tracking
-  (mapMarker as any)._markerId = marker.id
+      // Store marker ID for tracking
+      (mapMarker as any)._markerId = marker.id
 
-  console.log("🗺️ Added marker to map:", lng, lat, "Element:", el)
+      console.log("🗺️ Added marker to map:", lng, lat, "Element:", el)
       console.log("🗺️ Marker element in DOM:", document.body.contains(el))
       console.log("🗺️ Marker element visibility:", el.style.display, el.style.visibility)
       console.log("🗺️ Marker position on map:", mapMarker.getLngLat())
@@ -1170,62 +1186,62 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
       if (marker.popup) {
         const popup = new maplibregl.Popup({ offset: 25 })
         popup.setHTML(marker.popup)
-        ;(mapMarker as any).setPopup(popup)
-        // Store marker ID for popup tracking
-        ;(popup as any)._markerId = marker.id
+          ; (mapMarker as any).setPopup(popup)
+          // Store marker ID for popup tracking
+          ; (popup as any)._markerId = marker.id
         popupsRef.current.push(popup)
       }
 
-  // Add drag event handlers for the marker (only for claim-area-center)
-  if (marker.id === "claim-area-center") {
-    ;(mapMarker as any).on("dragstart", () => {
-      setDraggedMarker(marker.id)
-      setIsDragging(true)
-      map.current!.getCanvas().style.cursor = "grabbing"
-      ;(map.current as any).dragPan.disable() // Disable map dragging while dragging marker
+      // Add drag event handlers for the marker (only for claim-area-center)
+      if (marker.id === "claim-area-center") {
+        ; (mapMarker as any).on("dragstart", () => {
+          setDraggedMarker(marker.id)
+          setIsDragging(true)
+          map.current!.getCanvas().style.cursor = "grabbing"
+            ; (map.current as any).dragPan.disable() // Disable map dragging while dragging marker
+        })
+
+          ; (mapMarker as any).on("drag", () => {
+            // Update cursor during drag
+            map.current!.getCanvas().style.cursor = "grabbing"
+          })
+
+          ; (mapMarker as any).on("dragend", (e: any) => {
+            console.log("Marker dragend event:", marker.id, e.target.getLngLat())
+            setDraggedMarker(null)
+            setIsDragging(false)
+            map.current!.getCanvas().style.cursor = ""
+              ; (map.current as any).dragPan.enable() // Re-enable map dragging
+
+            // If this is the claim area marker, update the claim area center
+            if (marker.id === "claim-area-center" && onMapClick) {
+              console.log("Calling onMapClick with:", e.target.getLngLat())
+              onMapClick(e.target.getLngLat())
+            }
+          })
+      } newCreatedMarkers.push(mapMarker)
     })
 
-    ;(mapMarker as any).on("drag", () => {
-      // Update cursor during drag
-      map.current!.getCanvas().style.cursor = "grabbing"
-    })
-
-    ;(mapMarker as any).on("dragend", (e: any) => {
-      console.log("Marker dragend event:", marker.id, e.target.getLngLat())
-      setDraggedMarker(null)
-      setIsDragging(false)
-      map.current!.getCanvas().style.cursor = ""
-      ;(map.current as any).dragPan.enable() // Re-enable map dragging
-
-      // If this is the claim area marker, update the claim area center
-      if (marker.id === "claim-area-center" && onMapClick) {
-        console.log("Calling onMapClick with:", e.target.getLngLat())
-        onMapClick(e.target.getLngLat())
-      }
-    })
-  }      newCreatedMarkers.push(mapMarker)
-    })
-
-      // Update existing markers (exclude last-click - handled as layer)
-      markersToUpdate.forEach((marker) => {
-        const existingMarker = markersRef.current.find((m) => (m as any)._markerId === marker.id)
-        if (existingMarker) {
-          const lng = (marker as any)._normLng ?? Number(marker.lng)
-          const lat = (marker as any)._normLat ?? Number(marker.lat)
-          console.log("🗺️ Updating existing marker:", marker.id, "to:", lng, lat)
-          ;(existingMarker as any).setLngLat([lng, lat])
+    // Update existing markers (exclude last-click - handled as layer)
+    markersToUpdate.forEach((marker) => {
+      const existingMarker = markersRef.current.find((m) => (m as any)._markerId === marker.id)
+      if (existingMarker) {
+        const lng = (marker as any)._normLng ?? Number(marker.lng)
+        const lat = (marker as any)._normLat ?? Number(marker.lat)
+        console.log("🗺️ Updating existing marker:", marker.id, "to:", lng, lat)
+          ; (existingMarker as any).setLngLat([lng, lat])
 
         // Update popup if it changed
         if (marker.popup) {
           const existingPopup = popupsRef.current.find(p => (p as any)._markerId === marker.id)
           if (existingPopup) {
-            ;(existingPopup as any).setHTML(marker.popup)
+            ; (existingPopup as any).setHTML(marker.popup)
           } else {
             const popup = new maplibregl.Popup({ offset: 25 })
             popup.setHTML(marker.popup)
-            ;(existingMarker as any).setPopup(popup)
-            // Store marker ID for popup tracking
-            ;(popup as any)._markerId = marker.id
+              ; (existingMarker as any).setPopup(popup)
+              // Store marker ID for popup tracking
+              ; (popup as any)._markerId = marker.id
             popupsRef.current.push(popup)
           }
         }
@@ -1266,19 +1282,19 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
             /* per-marker error */
           }
         })
-      } catch (e) {}
+      } catch (e) { }
     }
 
     if (map.current) {
       try {
-        ;(map.current as any)._markerZoomHandler && map.current.off("move", (map.current as any)._markerZoomHandler)
-      } catch (e) {}
+        ; (map.current as any)._markerZoomHandler && map.current.off("move", (map.current as any)._markerZoomHandler)
+      } catch (e) { }
       try {
-        ;(map.current as any)._markerZoomHandler && map.current.off("zoom", (map.current as any)._markerZoomHandler)
-      } catch (e) {}
+        ; (map.current as any)._markerZoomHandler && map.current.off("zoom", (map.current as any)._markerZoomHandler)
+      } catch (e) { }
       map.current.on("move", updateMarkerSizes)
       map.current.on("zoom", updateMarkerSizes)
-      ;(map.current as any)._markerZoomHandler = updateMarkerSizes
+        ; (map.current as any)._markerZoomHandler = updateMarkerSizes
       updateMarkerSizes()
     }
 
@@ -1289,7 +1305,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
           map.current.off("zoom", (map.current as any)._markerZoomHandler)
           delete (map.current as any)._markerZoomHandler
         }
-      } catch (e) {}
+      } catch (e) { }
     }
   }, [markers, mapLoaded])
   const startMeasurement = useCallback(() => {
@@ -1354,7 +1370,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
 
         measurementLine.current = "measurement-line"
         if (map.current!.getSource(measurementLine.current)) {
-          ;(map.current!.getSource(measurementLine.current) as GeoJSONSource).setData(lineGeoJSON as any)
+          ; (map.current!.getSource(measurementLine.current) as GeoJSONSource).setData(lineGeoJSON as any)
         } else {
           map.current!.addSource(measurementLine.current, {
             type: "geojson",
@@ -1959,7 +1975,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
         } catch (e) {
           try {
             map.current && map.current.setCenter && map.current.setCenter([lng, lat])
-          } catch (err) {}
+          } catch (err) { }
         }
       },
     }),
