@@ -88,7 +88,7 @@ export default function AtlasPage() {
   }
 
   // Toasts disabled — replace with no-op to avoid UI notifications during tests
-  const pushToast = (_message: string, _type: "info" | "error" = "info") => {}
+  const pushToast = (_message: string, _type: "info" | "error" = "info") => { }
   const [mapKey, setMapKey] = useState(0) // Key to force WebGIS re-render
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null)
   const [mapZoom, setMapZoom] = useState<number>(7.5)
@@ -168,20 +168,20 @@ export default function AtlasPage() {
       const sp = searchParams
       const s = sp?.get("state") ?? stateFilter
       const d = sp?.get("district") ?? districtFilter
-  const v = sp?.get("village") ?? villageFilter
+      const v = sp?.get("village") ?? villageFilter
       const st = sp?.get("status") ?? statusFilter ?? "all"
       const ct = sp?.get("claim_type") ?? (claimTypeFilter ?? null)
 
       setPendingStateFilter(s)
       setPendingDistrictFilter(d)
-  setPendingVillageFilter(v)
+      setPendingVillageFilter(v)
       setPendingStatusFilter(st)
       setPendingClaimTypeFilter(ct ?? null)
 
       // Also commit the filters so the main claims fetch matches the URL on load
       setStateFilter(s)
       setDistrictFilter(d)
-  setVillageFilter(v)
+      setVillageFilter(v)
       setStatusFilter(st)
       setClaimTypeFilter(ct ?? null)
     } catch (e) {
@@ -259,7 +259,7 @@ export default function AtlasPage() {
             if (ctype) claimTypesSet.add(ctype.toUpperCase())
           })
 
-            if (!cancelled) {
+          if (!cancelled) {
             const statesArr = Array.from(statesSet).sort((a, b) => a.localeCompare(b))
             setStateOptions(statesArr)
             const districtsObj: Record<string, string[]> = {}
@@ -305,8 +305,8 @@ export default function AtlasPage() {
         setLoadingClaims(true)
         const params = new URLSearchParams()
         if (stateFilter && stateFilter !== "all") params.set("state", stateFilter)
-  if (districtFilter && districtFilter !== "all") params.set("district", districtFilter)
-  if (villageFilter && villageFilter !== "all") params.set("village", villageFilter)
+        if (districtFilter && districtFilter !== "all") params.set("district", districtFilter)
+        if (villageFilter && villageFilter !== "all") params.set("village", villageFilter)
         if (statusFilter === "" || statusFilter === "all") {
           params.set("status", "all")
         } else if (statusFilter) {
@@ -680,7 +680,7 @@ export default function AtlasPage() {
       const params = new URLSearchParams()
       if (pendingStateFilter && pendingStateFilter !== "all") params.set("state", pendingStateFilter)
       if (pendingDistrictFilter && pendingDistrictFilter !== "all") params.set("district", pendingDistrictFilter)
-  if (pendingVillageFilter && pendingVillageFilter !== "all") params.set("village", pendingVillageFilter)
+      if (pendingVillageFilter && pendingVillageFilter !== "all") params.set("village", pendingVillageFilter)
       if (pendingStatusFilter && pendingStatusFilter !== "all") params.set("status", pendingStatusFilter)
       if (pendingClaimTypeFilter) params.set("claim_type", pendingClaimTypeFilter)
       const qs = params.toString() ? `?${params.toString()}` : ""
@@ -711,7 +711,7 @@ export default function AtlasPage() {
   // so multiple UI paths can reuse it (feature click, previews, modals).
   const getBoundaryLabel = (p: any) => {
     if (!p) return undefined
-  const keys = [
+    const keys = [
       'tehsil',
       'TEHSIL',
       'tehsil_name',
@@ -827,7 +827,7 @@ export default function AtlasPage() {
   const [searchVillageUid, setSearchVillageUid] = useState<string | number | null>(null)
   const [searchStatus, setSearchStatus] = useState<string | null>("all")
   const [searchClaimType, setSearchClaimType] = useState<string | null>(null)
-  const [searchByUidExpanded, setSearchByUidExpanded] = useState<boolean>(true)
+  const [searchByUidExpanded, setSearchByUidExpanded] = useState<boolean>(false)
   // layer to show results from search-by-village-uid
   const [searchResultsLayer, setSearchResultsLayer] = useState<any | null>(null)
   const [searchLoading, setSearchLoading] = useState<boolean>(false)
@@ -861,10 +861,10 @@ export default function AtlasPage() {
         `/api/claims?village=${encodeURIComponent(vid)}${qs ? `&${q.toString()}` : ""}`,
       ]
 
-    let data: any = null
-    let lastErr: any = null
-    let usedUrl: string | null = null
-    for (const u of tryUrls) {
+      let data: any = null
+      let lastErr: any = null
+      let usedUrl: string | null = null
+      for (const u of tryUrls) {
         try {
           console.debug("Searching village via:", u)
           const res = await fetch(u)
@@ -873,7 +873,7 @@ export default function AtlasPage() {
             continue
           }
           data = await res.json()
-      usedUrl = u
+          usedUrl = u
           break
         } catch (e) {
           lastErr = e
@@ -1022,7 +1022,7 @@ export default function AtlasPage() {
     const { layer, feature, lngLat } = featureInfo as any
     const props = feature?.properties || {}
 
-    
+
 
     const isBoundary = String(layer?.id ?? layer?.name ?? "").toLowerCase().includes("boundary") ||
       String(props?.level ?? "").toLowerCase().includes("state") ||
@@ -1524,10 +1524,10 @@ export default function AtlasPage() {
         prevLayers.map((layer) =>
           layer.id === "claim-area"
             ? {
-                ...layer,
-                visible: true,
-                data: { type: "FeatureCollection", features: [circle] },
-              }
+              ...layer,
+              visible: true,
+              data: { type: "FeatureCollection", features: [circle] },
+            }
             : layer
         )
       )
@@ -1743,46 +1743,49 @@ export default function AtlasPage() {
 
   return (
     <ProtectedRoute>
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-emerald-900 text-white relative overflow-hidden">
-      <ThreeBackground />
-      <DecorativeElements />
-      <FloatingOrbs />
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-emerald-900 text-white relative overflow-hidden">
+        <ThreeBackground />
+        <DecorativeElements />
+        <FloatingOrbs />
 
-      {/* Mesh Gradient Overlay */}
-      <div className="fixed inset-0 bg-gradient-to-br from-green-900/20 via-transparent to-emerald-900/20 pointer-events-none z-1" />
+        {/* Mesh Gradient Overlay */}
+        <div className="fixed inset-0 bg-gradient-to-br from-green-900/20 via-transparent to-emerald-900/20 pointer-events-none z-1" />
 
-      {/* Animated Grid */}
-      <div className="fixed inset-0 opacity-10 pointer-events-none z-1">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `
+        {/* Animated Grid */}
+        <div className="fixed inset-0 opacity-10 pointer-events-none z-1">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `
             linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px),
             linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px)
           `,
-          backgroundSize: '50px 50px'
-        }} />
-      </div>
+            backgroundSize: '50px 50px'
+          }} />
+        </div>
 
-      <DecorativeBackground count={6} />
 
-      <Navbar />
+        <Navbar />
 
         <main className="relative z-10 max-w-7xl mx-auto px-6 py-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <section className="lg:col-span-8">
               <motion.div initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
-                <div className="rounded-2xl overflow-hidden shadow-2xl border border-green-300 bg-white">
-                  <div className="w-full h-[560px] p-6 relative">
-                    <div className="absolute inset-0 bg-green-800/6 pointer-events-none"></div>
+                <GlassCard className="p-0 overflow-hidden">
+                  <div className="w-full h-[560px] relative rounded-2xl">
+                    {/* subtle dark green tint overlay */}
+                    <div className="absolute inset-0 bg-green-900/10 rounded-2xl pointer-events-none" />
+
                     <div className="relative z-10 h-full">
                       <WebGIS
                         key={mapKey}
                         ref={webGISRef}
                         center={(mapCenter ?? stateCenter) as [number, number]}
                         zoom={mapZoom}
-                        // Ensure application layers (claims) are rendered above boundary layers so
-                        // claim clicks are not blocked. We put boundaryLayers first so WebGIS adds
-                        // them earlier and other layers are added on top.
-                        layers={searchResultsLayer ? [searchResultsLayer, ...boundaryLayers, ...layers] : [...boundaryLayers, ...layers]}
+                        // Ensure application layers (claims) are rendered above boundary layers
+                        layers={
+                          searchResultsLayer
+                            ? [searchResultsLayer, ...boundaryLayers, ...layers]
+                            : [...boundaryLayers, ...layers]
+                        }
                         markers={markers}
                         onFeatureClick={handleFeatureClick}
                         onMapClick={handleMapClick}
@@ -1796,10 +1799,11 @@ export default function AtlasPage() {
                       />
                     </div>
                   </div>
-                </div>
+                </GlassCard>
+
               </motion.div>
               <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <GlassCard className="p-4">
+                <GlassCard className="mt-4 p-4 pb-6 ">
                   <div className="flex items-center gap-2 mb-3">
                     <Ruler size={16} />
                     <h4 className="font-semibold text-white">Measurement Tools</h4>
@@ -1831,7 +1835,7 @@ export default function AtlasPage() {
                   </div>
                 </GlassCard>
 
-                <GlassCard className="p-4">
+                <GlassCard className="mt-4 p-4 pb-6">
                   <div className="flex items-center gap-2 mb-3">
                     <Download size={16} />
                     <h4 className="font-semibold text-white">Export Tools</h4>
@@ -1898,220 +1902,220 @@ export default function AtlasPage() {
                         className="overflow-hidden"
                       >
                         <div className="p-4 space-y-3">
-                      <div className="grid grid-cols-1 gap-3">
-                        <div>
-                          <label className="block text-sm text-green-300">State</label>
-                          <select
-                            value={newClaim.state_name}
-                            onChange={(e) => {
-                              const stateName = e.target.value
-                              setNewClaim((s) => ({ ...s, state_name: stateName, district_name: "", village_name: "" }))
-                              // Reset district and village when state changes
-                              setPendingDistrictFilter("")
-                              setPendingVillageFilter("")
-                            }}
-                            className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
-                          >
-                            <option value="">Select State</option>
-                            {(stateOptions.length ? stateOptions : STATES.map((s) => s.name)).map((s) => (
-                              <option key={s} value={s}>
-                                {s}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
+                          <div className="grid grid-cols-1 gap-3">
+                            <div>
+                              <label className="block text-sm text-green-300">State</label>
+                              <select
+                                value={newClaim.state_name}
+                                onChange={(e) => {
+                                  const stateName = e.target.value
+                                  setNewClaim((s) => ({ ...s, state_name: stateName, district_name: "", village_name: "" }))
+                                  // Reset district and village when state changes
+                                  setPendingDistrictFilter("")
+                                  setPendingVillageFilter("")
+                                }}
+                                className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                              >
+                                <option value="">Select State</option>
+                                {(stateOptions.length ? stateOptions : STATES.map((s) => s.name)).map((s) => (
+                                  <option key={s} value={s}>
+                                    {s}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
 
-                        <div>
-                          <label className="block text-sm text-green-300">District</label>
-                          <input
-                            type="text"
-                            value={newClaim.district_name}
-                            onChange={(e) => {
-                              const districtName = e.target.value
-                              setNewClaim((s) => ({ ...s, district_name: districtName, village_name: "" }))
-                              // Reset village when district changes
-                              setPendingVillageFilter("")
-                            }}
-                            className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
-                            placeholder="Enter district name"
-                          />
-                        </div>
+                            <div>
+                              <label className="block text-sm text-green-300">District</label>
+                              <input
+                                type="text"
+                                value={newClaim.district_name}
+                                onChange={(e) => {
+                                  const districtName = e.target.value
+                                  setNewClaim((s) => ({ ...s, district_name: districtName, village_name: "" }))
+                                  // Reset village when district changes
+                                  setPendingVillageFilter("")
+                                }}
+                                className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                                placeholder="Enter district name"
+                              />
+                            </div>
 
-                        <div>
-                          <label className="block text-sm text-green-300">Village</label>
-                          <div className="flex gap-2">
-                            <input
-                              type="text"
-                              value={newClaim.village_name}
-                              onChange={(e) => setNewClaim((s) => ({ ...s, village_name: e.target.value }))}
-                              className="mt-1 flex-1 rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
-                              placeholder="Enter village name"
-                            />
-                            <button
-                              onClick={goToVillageArea}
-                              disabled={!newClaim.village_name || !newClaim.state_name}
-                              className="mt-1 bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                              type="button"
-                            >
-                              Go to Area
-                            </button>
-                          </div>
-                        </div>
+                            <div>
+                              <label className="block text-sm text-green-300">Village</label>
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  value={newClaim.village_name}
+                                  onChange={(e) => setNewClaim((s) => ({ ...s, village_name: e.target.value }))}
+                                  className="mt-1 flex-1 rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                                  placeholder="Enter village name"
+                                />
+                                <button
+                                  onClick={goToVillageArea}
+                                  disabled={!newClaim.village_name || !newClaim.state_name}
+                                  className="mt-1 bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  type="button"
+                                >
+                                  Go to Area
+                                </button>
+                              </div>
+                            </div>
 
-                        <div>
-                          <label className="block text-sm text-green-300">Claim type</label>
-                          <select
-                            value={newClaim.claim_type}
-                            onChange={(e) => setNewClaim((s) => ({ ...s, claim_type: e.target.value }))}
-                            className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
-                          >
-                            <option value="">Select Claim Type</option>
-                            {claimTypeOptions.length ? (
-                              claimTypeOptions.map((ct) => (
-                                <option key={ct} value={ct}>
-                                  {ct}
-                                </option>
-                              ))
-                            ) : (
-                              <>
-                                <option value="IFR">IFR</option>
-                                <option value="CR">CR</option>
-                                <option value="CFR">CFR</option>
-                              </>
+                            <div>
+                              <label className="block text-sm text-green-300">Claim type</label>
+                              <select
+                                value={newClaim.claim_type}
+                                onChange={(e) => setNewClaim((s) => ({ ...s, claim_type: e.target.value }))}
+                                className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                              >
+                                <option value="">Select Claim Type</option>
+                                {claimTypeOptions.length ? (
+                                  claimTypeOptions.map((ct) => (
+                                    <option key={ct} value={ct}>
+                                      {ct}
+                                    </option>
+                                  ))
+                                ) : (
+                                  <>
+                                    <option value="IFR">IFR</option>
+                                    <option value="CR">CR</option>
+                                    <option value="CFR">CFR</option>
+                                  </>
+                                )}
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="block text-sm text-green-300">Claimed area (ha)</label>
+                              <input
+                                type="number"
+                                value={newClaim.claimed_area}
+                                onChange={(e) => {
+                                  const area = Number(e.target.value)
+                                  setNewClaim((s) => ({ ...s, claimed_area: area }))
+
+                                  // Calculate radius from area (assuming circular area)
+                                  // Area = πr², so r = sqrt(area/π)
+                                  // Convert hectares to square meters: area_m2 = area * 10000
+                                  // r = sqrt(area_m2 / π)
+                                  if (area > 0) {
+                                    const areaM2 = area * 10000
+                                    const radiusM = Math.sqrt(areaM2 / Math.PI)
+                                    setClaimAreaRadius(radiusM)
+                                    setAreaEntered(true)
+                                    if (markerPlaced) {
+                                      setClaimAreaVisible(true)
+                                    }
+                                  } else {
+                                    // Clear claim area when area is 0 or empty
+                                    setClaimAreaVisible(false)
+                                    setClaimAreaRadius(0)
+                                    setAreaEntered(false)
+                                    setMarkerPlaced(false)
+                                  }
+                                }}
+                                className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                                placeholder="Enter area in hectares"
+                              />
+
+                            </div>
+
+                            {lastClickedCoords && addClaimOpen && (
+                              <div>
+                                <label className="block text-sm text-green-300">Last Clicked Coordinates</label>
+                                <div className="mt-1 p-3 bg-slate-700/50 border border-slate-600 rounded-md">
+                                  <div className="text-sm text-green-100 font-mono">
+                                    <div><strong>Longitude:</strong> {lastClickedCoords[0].toFixed(6)}</div>
+                                    <div><strong>Latitude:</strong> {lastClickedCoords[1].toFixed(6)}</div>
+                                  </div>
+                                </div>
+                              </div>
                             )}
-                          </select>
-                        </div>
 
-                        <div>
-                          <label className="block text-sm text-green-300">Claimed area (ha)</label>
-                          <input
-                            type="number"
-                            value={newClaim.claimed_area}
-                            onChange={(e) => {
-                              const area = Number(e.target.value)
-                              setNewClaim((s) => ({ ...s, claimed_area: area }))
+                            {markerPlaced && claimAreaCenter && (
+                              <div>
+                                <label className="block text-sm text-green-300">Claim Center Coordinates</label>
+                                <div className="mt-1 p-3 bg-blue-500/20 border border-blue-400/30 rounded-md">
+                                  <div className="text-sm text-blue-100 font-mono">
+                                    <div><strong>Longitude:</strong> {claimAreaCenter[0].toFixed(6)}</div>
+                                    <div><strong>Latitude:</strong> {claimAreaCenter[1].toFixed(6)}</div>
+                                  </div>
+                                  <div className="text-xs text-blue-300 mt-1">
+                                    Drag the red marker on the map to change these coordinates
+                                  </div>
+                                </div>
+                              </div>
+                            )}
 
-                              // Calculate radius from area (assuming circular area)
-                              // Area = πr², so r = sqrt(area/π)
-                              // Convert hectares to square meters: area_m2 = area * 10000
-                              // r = sqrt(area_m2 / π)
-                              if (area > 0) {
-                                const areaM2 = area * 10000
-                                const radiusM = Math.sqrt(areaM2 / Math.PI)
-                                setClaimAreaRadius(radiusM)
-                                setAreaEntered(true)
-                                if (markerPlaced) {
-                                  setClaimAreaVisible(true)
+                            <div>
+                              <label className="block text-sm text-green-300">Claimant name</label>
+                              <input
+                                value={newClaim.claimant_name}
+                                onChange={(e) => setNewClaim((s) => ({ ...s, claimant_name: e.target.value }))}
+                                className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                                placeholder="Enter claimant name"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-sm text-green-300">Community name</label>
+                              <input
+                                value={newClaim.community_name}
+                                onChange={(e) => setNewClaim((s) => ({ ...s, community_name: e.target.value }))}
+                                className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                                placeholder="Enter community name"
+                              />
+                            </div>
+                          </div>
+
+                          {addClaimOpen && (
+                            <div className="bg-yellow-500/20 border border-yellow-400/30 rounded-md p-3">
+                              <p className="text-sm text-yellow-200">
+                                {!markerPlaced
+                                  ? "Click on the map to select a location for your claim."
+                                  : !areaEntered
+                                    ? "Location selected. Enter the claimed area to see the claim boundary."
+                                    : "Claim area is now visible on the map with a red marker. You can drag it to adjust the location."
                                 }
-                              } else {
-                                // Clear claim area when area is 0 or empty
+                              </p>
+                            </div>
+                          )}
+
+                          <div className="flex items-center gap-2 pt-3">
+                            <button
+                              disabled={submittingClaim || !newClaim.state_name || !newClaim.district_name || !newClaim.village_name || !newClaim.claim_type || !newClaim.claimed_area}
+                              onClick={submitNewClaim}
+                              className="bg-green-700 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {submittingClaim ? 'Submitting...' : 'Submit Claim'}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setAddClaimOpen(false)
                                 setClaimAreaVisible(false)
+                                setClaimAreaCenter(null)
                                 setClaimAreaRadius(0)
                                 setAreaEntered(false)
                                 setMarkerPlaced(false)
-                              }
-                            }}
-                            className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
-                            placeholder="Enter area in hectares"
-                          />
-
-                        </div>
-
-                        {lastClickedCoords && addClaimOpen && (
-                          <div>
-                            <label className="block text-sm text-green-300">Last Clicked Coordinates</label>
-                            <div className="mt-1 p-3 bg-slate-700/50 border border-slate-600 rounded-md">
-                              <div className="text-sm text-green-100 font-mono">
-                                <div><strong>Longitude:</strong> {lastClickedCoords[0].toFixed(6)}</div>
-                                <div><strong>Latitude:</strong> {lastClickedCoords[1].toFixed(6)}</div>
-                              </div>
-                            </div>
+                                setLastClickedCoords(null)
+                                setNewClaim({ state_name: "", district_name: "", village_name: "", claim_type: "", claimant_name: "", community_name: "", claimed_area: 0 })
+                                // Remove claim area marker
+                                setMarkers((prev) => {
+                                  const filtered = prev.filter(m => m.id !== "claim-area-center")
+                                  console.log("Cancel button: Removed claim marker, remaining markers:", filtered.length)
+                                  console.log("Cancel button: Removed marker IDs:", prev.filter(m => m.id === "claim-area-center").map(m => m.id))
+                                  return filtered
+                                })
+                              }}
+                              className="border border-green-400/30 text-green-300 px-4 py-2 rounded-md hover:bg-green-500/20 transition-colors"
+                            >
+                              Cancel
+                            </button>
                           </div>
-                        )}
-
-                        {markerPlaced && claimAreaCenter && (
-                          <div>
-                            <label className="block text-sm text-green-300">Claim Center Coordinates</label>
-                            <div className="mt-1 p-3 bg-blue-500/20 border border-blue-400/30 rounded-md">
-                              <div className="text-sm text-blue-100 font-mono">
-                                <div><strong>Longitude:</strong> {claimAreaCenter[0].toFixed(6)}</div>
-                                <div><strong>Latitude:</strong> {claimAreaCenter[1].toFixed(6)}</div>
-                              </div>
-                              <div className="text-xs text-blue-300 mt-1">
-                                Drag the red marker on the map to change these coordinates
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        <div>
-                          <label className="block text-sm text-green-300">Claimant name</label>
-                          <input
-                            value={newClaim.claimant_name}
-                            onChange={(e) => setNewClaim((s) => ({ ...s, claimant_name: e.target.value }))}
-                            className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
-                            placeholder="Enter claimant name"
-                          />
                         </div>
-
-                        <div>
-                          <label className="block text-sm text-green-300">Community name</label>
-                          <input
-                            value={newClaim.community_name}
-                            onChange={(e) => setNewClaim((s) => ({ ...s, community_name: e.target.value }))}
-                            className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
-                            placeholder="Enter community name"
-                          />
-                        </div>
-                      </div>
-
-                      {addClaimOpen && (
-                        <div className="bg-yellow-500/20 border border-yellow-400/30 rounded-md p-3">
-                          <p className="text-sm text-yellow-200">
-                            {!markerPlaced
-                              ? "Click on the map to select a location for your claim."
-                              : !areaEntered
-                                ? "Location selected. Enter the claimed area to see the claim boundary."
-                                : "Claim area is now visible on the map with a red marker. You can drag it to adjust the location."
-                            }
-                          </p>
-                        </div>
-                      )}
-
-                      <div className="flex items-center gap-2 pt-3">
-                        <button
-                          disabled={submittingClaim || !newClaim.state_name || !newClaim.district_name || !newClaim.village_name || !newClaim.claim_type || !newClaim.claimed_area}
-                          onClick={submitNewClaim}
-                          className="bg-green-700 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {submittingClaim ? 'Submitting...' : 'Submit Claim'}
-                        </button>
-                        <button
-                          onClick={() => {
-                            setAddClaimOpen(false)
-                            setClaimAreaVisible(false)
-                            setClaimAreaCenter(null)
-                            setClaimAreaRadius(0)
-                            setAreaEntered(false)
-                            setMarkerPlaced(false)
-                            setLastClickedCoords(null)
-                            setNewClaim({ state_name: "", district_name: "", village_name: "", claim_type: "", claimant_name: "", community_name: "", claimed_area: 0 })
-                            // Remove claim area marker
-                            setMarkers((prev) => {
-                              const filtered = prev.filter(m => m.id !== "claim-area-center")
-                              console.log("Cancel button: Removed claim marker, remaining markers:", filtered.length)
-                              console.log("Cancel button: Removed marker IDs:", prev.filter(m => m.id === "claim-area-center").map(m => m.id))
-                              return filtered
-                            })
-                          }}
-                          className="border border-green-400/30 text-green-300 px-4 py-2 rounded-md hover:bg-green-500/20 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                  )}
+                      </motion.div>
+                    )}
                   </AnimatePresence>
                 </GlassCard>
                 <GlassCard className="my-4 overflow-hidden">
@@ -2139,15 +2143,15 @@ export default function AtlasPage() {
                         className="overflow-hidden"
                       >
                         <div className="p-4 grid grid-cols-1 gap-2">
-                      <input value={(searchVillageUid ?? '') as any} onChange={(e) => setSearchVillageUid(e.target.value)} placeholder="Village UID (integer)" className="w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm" />
-                      <input value={searchStatus ?? ''} onChange={(e) => setSearchStatus(e.target.value)} placeholder="Status (optional)" className="w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm" />
-                      <input value={searchClaimType ?? ''} onChange={(e) => setSearchClaimType(e.target.value)} placeholder="Claim type (optional)" className="w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm" />
-                      <div className="flex items-center gap-2">
-                        <button disabled={searchLoading} onClick={() => runSearchByVillageUid()} className={`px-3 py-1 rounded-md ${searchLoading ? 'bg-gray-300 text-gray-700 cursor-not-allowed' : 'bg-green-700 text-white'}`}>
-                          {searchLoading ? 'Searching...' : 'Search'}
-                        </button>
-                        <button onClick={() => { setSearchVillageUid(''); setSearchStatus('all'); setSearchClaimType(''); setSearchResultsLayer(null); setVillagePanelOpen(false); setSearchLoading(false); }} className="border border-green-400/30 px-3 py-1 rounded-md text-green-300 hover:bg-green-500/20">Clear</button>
-                      </div>
+                          <input value={(searchVillageUid ?? '') as any} onChange={(e) => setSearchVillageUid(e.target.value)} placeholder="Village UID (integer)" className="w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm" />
+                          <input value={searchStatus ?? ''} onChange={(e) => setSearchStatus(e.target.value)} placeholder="Status (optional)" className="w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm" />
+                          <input value={searchClaimType ?? ''} onChange={(e) => setSearchClaimType(e.target.value)} placeholder="Claim type (optional)" className="w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm" />
+                          <div className="flex items-center gap-2">
+                            <button disabled={searchLoading} onClick={() => runSearchByVillageUid()} className={`px-3 py-1 rounded-md ${searchLoading ? 'bg-gray-300 text-gray-700 cursor-not-allowed' : 'bg-green-700 text-white'}`}>
+                              {searchLoading ? 'Searching...' : 'Search'}
+                            </button>
+                            <button onClick={() => { setSearchVillageUid(''); setSearchStatus('all'); setSearchClaimType(''); setSearchResultsLayer(null); setVillagePanelOpen(false); setSearchLoading(false); }} className="border border-green-400/30 px-3 py-1 rounded-md text-green-300 hover:bg-green-500/20">Clear</button>
+                          </div>
                         </div>
                       </motion.div>
                     )}
@@ -2197,147 +2201,147 @@ export default function AtlasPage() {
                       className="overflow-hidden"
                     >
                       <div className="p-4 space-y-3">
-                    <div>
-                      <label className="block text-sm text-green-300">State</label>
-                      <select
-                        value={pendingStateFilter}
-                        onChange={(e) => handleStateChange(e.target.value)}
-                        className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
-                      >
-                        <option value="all">All</option>
-                        {(stateOptions.length ? stateOptions : STATES.map((s) => s.name)).map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm text-green-300">District</label>
-                      <select
-                        value={pendingDistrictFilter}
-                        onChange={(e) => handleDistrictChange(e.target.value)}
-                        className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
-                      >
-                        <option value="all">All</option>
-                        {pendingStateFilter !== "all"
-                          ? districtOptionsByState[pendingStateFilter] &&
-                            districtOptionsByState[pendingStateFilter].length
-                            ? districtOptionsByState[pendingStateFilter].map((d) => (
-                              <option key={d} value={d}>
-                                {d}
+                        <div>
+                          <label className="block text-sm text-green-300">State</label>
+                          <select
+                            value={pendingStateFilter}
+                            onChange={(e) => handleStateChange(e.target.value)}
+                            className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                          >
+                            <option value="all">All</option>
+                            {(stateOptions.length ? stateOptions : STATES.map((s) => s.name)).map((s) => (
+                              <option key={s} value={s}>
+                                {s}
                               </option>
-                            ))
-                            : (STATES.find((s) => s.name === pendingStateFilter)?.districts || []).map((d) => (
-                              <option key={d} value={d}>
-                                {d}
-                              </option>
-                            ))
-                          : null}
-                      </select>
-                    </div>
+                            ))}
+                          </select>
+                        </div>
 
-                    <div>
-                      <label className="block text-sm text-green-300">Status</label>
-                      <select
-                        value={pendingStatusFilter}
-                        onChange={(e) => setPendingStatusFilter(e.target.value)}
-                        className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
-                      >
-                        <option value="all">All</option>
-                        {statusOptions.length ? (
-                          statusOptions.map((s) => (
-                            <option key={s} value={s}>
-                              {String(s).charAt(0).toUpperCase() + String(s).slice(1)}
-                            </option>
-                          ))
-                        ) : (
-                          <>
-                            <option value="approved">Approved</option>
-                            <option value="pending">Pending</option>
-                            <option value="rejected">Rejected</option>
-                          </>
-                        )}
-                      </select>
-                    </div>
+                        <div>
+                          <label className="block text-sm text-green-300">District</label>
+                          <select
+                            value={pendingDistrictFilter}
+                            onChange={(e) => handleDistrictChange(e.target.value)}
+                            className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                          >
+                            <option value="all">All</option>
+                            {pendingStateFilter !== "all"
+                              ? districtOptionsByState[pendingStateFilter] &&
+                                districtOptionsByState[pendingStateFilter].length
+                                ? districtOptionsByState[pendingStateFilter].map((d) => (
+                                  <option key={d} value={d}>
+                                    {d}
+                                  </option>
+                                ))
+                                : (STATES.find((s) => s.name === pendingStateFilter)?.districts || []).map((d) => (
+                                  <option key={d} value={d}>
+                                    {d}
+                                  </option>
+                                ))
+                              : null}
+                          </select>
+                        </div>
 
-                    <div>
-                      <label className="block text-sm text-green-300">Village</label>
-                      <select
-                        value={pendingVillageFilter}
-                        onChange={(e) => setPendingVillageFilter(e.target.value)}
-                        className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
-                      >
-                        <option value="all">All</option>
-                        {pendingDistrictFilter && pendingDistrictFilter !== "all"
-                          ? // Prefer district-scoped villages when district is selected
-                            (villageOptionsByStateAndDistrict[pendingStateFilter] && villageOptionsByStateAndDistrict[pendingStateFilter][pendingDistrictFilter]
-                              ? villageOptionsByStateAndDistrict[pendingStateFilter][pendingDistrictFilter].map((v) => (
+                        <div>
+                          <label className="block text-sm text-green-300">Status</label>
+                          <select
+                            value={pendingStatusFilter}
+                            onChange={(e) => setPendingStatusFilter(e.target.value)}
+                            className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                          >
+                            <option value="all">All</option>
+                            {statusOptions.length ? (
+                              statusOptions.map((s) => (
+                                <option key={s} value={s}>
+                                  {String(s).charAt(0).toUpperCase() + String(s).slice(1)}
+                                </option>
+                              ))
+                            ) : (
+                              <>
+                                <option value="approved">Approved</option>
+                                <option value="pending">Pending</option>
+                                <option value="rejected">Rejected</option>
+                              </>
+                            )}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm text-green-300">Village</label>
+                          <select
+                            value={pendingVillageFilter}
+                            onChange={(e) => setPendingVillageFilter(e.target.value)}
+                            className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                          >
+                            <option value="all">All</option>
+                            {pendingDistrictFilter && pendingDistrictFilter !== "all"
+                              ? // Prefer district-scoped villages when district is selected
+                              (villageOptionsByStateAndDistrict[pendingStateFilter] && villageOptionsByStateAndDistrict[pendingStateFilter][pendingDistrictFilter]
+                                ? villageOptionsByStateAndDistrict[pendingStateFilter][pendingDistrictFilter].map((v) => (
                                   <option key={v} value={v}>
                                     {v}
                                   </option>
                                 ))
-                              : // fallback to state-wide villages for the selected state
+                                : // fallback to state-wide villages for the selected state
                                 (villageOptionsByState[pendingStateFilter] || []).map((v) => (
                                   <option key={v} value={v}>
                                     {v}
                                   </option>
                                 )))
-                          : // no district selected: show state-wide list if available otherwise global list
-                          (pendingStateFilter !== "all"
-                            ? (villageOptionsByState[pendingStateFilter] || []).map((v) => (
-                                <option key={v} value={v}>
-                                  {v}
+                              : // no district selected: show state-wide list if available otherwise global list
+                              (pendingStateFilter !== "all"
+                                ? (villageOptionsByState[pendingStateFilter] || []).map((v) => (
+                                  <option key={v} value={v}>
+                                    {v}
+                                  </option>
+                                ))
+                                : villageOptions.map((v) => (
+                                  <option key={v} value={v}>
+                                    {v}
+                                  </option>
+                                )))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm text-green-300">Claim type</label>
+                          <select
+                            value={pendingClaimTypeFilter ?? ""}
+                            onChange={(e) => setPendingClaimTypeFilter(e.target.value || null)}
+                            className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                          >
+                            <option value="">any</option>
+                            {claimTypeOptions.length ? (
+                              claimTypeOptions.map((ct) => (
+                                <option key={ct} value={ct}>
+                                  {ct}
                                 </option>
                               ))
-                            : villageOptions.map((v) => (
-                                <option key={v} value={v}>
-                                  {v}
-                                </option>
-                              )))}
-                      </select>
-                    </div>
+                            ) : (
+                              <option value="">(any)</option>
+                            )}
+                          </select>
+                        </div>
 
-                    <div>
-                      <label className="block text-sm text-green-300">Claim type</label>
-                      <select
-                        value={pendingClaimTypeFilter ?? ""}
-                        onChange={(e) => setPendingClaimTypeFilter(e.target.value || null)}
-                        className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
-                      >
-                        <option value="">any</option>
-                        {claimTypeOptions.length ? (
-                          claimTypeOptions.map((ct) => (
-                            <option key={ct} value={ct}>
-                              {ct}
-                            </option>
-                          ))
-                        ) : (
-                          <option value="">(any)</option>
-                        )}
-                      </select>
-                    </div>
-
-                    <div>
-                      <button
-                        onClick={handleApplyFilters}
-                        disabled={isApplyingFilters}
-                        className="w-full inline-flex items-center justify-center gap-2 bg-green-700 text-white px-4 py-2 rounded-md shadow-md hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isApplyingFilters ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            Applying...
-                          </>
-                        ) : (
-                          "Apply Filters"
-                        )}
-                      </button>
-                    </div>
-                    </div>
-                  </motion.div>
-                )}
+                        <div>
+                          <button
+                            onClick={handleApplyFilters}
+                            disabled={isApplyingFilters}
+                            className="w-full inline-flex items-center justify-center gap-2 bg-green-700 text-white px-4 py-2 rounded-md shadow-md hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isApplyingFilters ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                Applying...
+                              </>
+                            ) : (
+                              "Apply Filters"
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
                 </AnimatePresence>
               </GlassCard>
 
@@ -2396,7 +2400,7 @@ export default function AtlasPage() {
                     </label>
                   </div>
                 </div>
-                <div className="p-3 border-t border-slate-700/50 bg-slate-800/30 flex items-center gap-2">
+                <div className="p-3 border-t border-emerald-700/50 bg-emerald-800/30 flex items-center gap-2 rounded-b-2xl">
                   <button
                     onClick={() => {
                       // Commit pending selections
@@ -2475,7 +2479,7 @@ export default function AtlasPage() {
                     <div className="text-xs text-green-400">No claim types available</div>
                   )}
 
-                  <div className="pt-2 border-t border-slate-700/50">
+                  <div className="pt-2 border-t border-emerald-700/50">
                     <div className="text-xs text-green-400">
                       <div className="font-medium mb-1 text-white">Note:</div>
                       <div>Symbols for claim centroids have been removed for a cleaner overview.</div>
@@ -2535,7 +2539,7 @@ export default function AtlasPage() {
                             // ignore
                           }
                         }}
-                        className="inline-flex items-center gap-2 text-sm px-3 py-1 bg-white border border-gray-200 rounded-md hover:bg-gray-50"
+                        className="inline-flex items-center gap-2 text-sm px-4 py-2 bg-emerald-800/30 border border-emerald-600/50 text-emerald-100 rounded-xl hover:bg-emerald-700/40 transition-colors duration-200"
                       >
                         <ZoomIn size={16} />
                         <span>Zoom</span>
@@ -2550,7 +2554,7 @@ export default function AtlasPage() {
                             pushToast('Copy failed', 'error')
                           }
                         }}
-                        className="inline-flex items-center gap-2 text-sm px-3 py-1 bg-white border border-gray-200 rounded-md hover:bg-gray-50"
+                        className="inline-flex items-center gap-2 text-sm px-4 py-2 bg-emerald-800/30 border border-emerald-600/50 text-emerald-100 rounded-xl hover:bg-emerald-700/40 transition-colors duration-200"
                       >
                         <Copy size={16} />
                         <span>Copy</span>
@@ -2564,7 +2568,7 @@ export default function AtlasPage() {
                             pushToast('Export failed', 'error')
                           }
                         }}
-                        className="inline-flex items-center gap-2 text-sm px-3 py-1 bg-green-700 text-white rounded-md hover:bg-green-600"
+                        className="inline-flex items-center gap-2 text-sm px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition-colors duration-200 shadow-lg hover:shadow-xl"
                       >
                         <FileDown size={16} />
                         <span>Export</span>
@@ -2572,32 +2576,32 @@ export default function AtlasPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="p-3 bg-gray-50 rounded-md">
-                      <div className="text-xs text-gray-500">Area</div>
-                      <div className="mt-1 text-lg font-semibold text-gray-900">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                    <div className="p-4 bg-emerald-800/30 rounded-2xl border border-emerald-700/30">
+                      <div className="text-xs text-emerald-300/70 font-medium">Area</div>
+                      <div className="mt-2 text-xl font-bold text-white">
                         {formatArea(selectedFeature.properties?._area_ha ?? selectedFeature.properties?.Shape_Area ? Number(selectedFeature.properties?._area_ha ?? (selectedFeature.properties?.Shape_Area / 10000)) : null)}
                       </div>
                     </div>
-                    <div className="p-3 bg-gray-50 rounded-md">
-                      <div className="text-xs text-gray-500">Claims inside</div>
-                      <div className="mt-1 text-lg font-semibold text-gray-900">
-                        {selectedFeature.properties?._counting ? <span className="text-sm text-gray-500">Counting...</span> : (selectedFeature.properties?.claims_count?.toString() ?? '—')}
+                    <div className="p-4 bg-emerald-800/30 rounded-2xl border border-emerald-700/30">
+                      <div className="text-xs text-emerald-300/70 font-medium">Claims inside</div>
+                      <div className="mt-2 text-xl font-bold text-white">
+                        {selectedFeature.properties?._counting ? <span className="text-sm text-emerald-400/70">Counting...</span> : (selectedFeature.properties?.claims_count?.toString() ?? '—')}
                       </div>
                     </div>
-                    <div className="p-3 bg-gray-50 rounded-md">
-                      <div className="text-xs text-gray-500">Level</div>
-                      <div className="mt-1 text-sm text-gray-700">{friendlyLevel(selectedFeature.properties?.level ?? selectedFeature.layer)}</div>
+                    <div className="p-4 bg-emerald-800/30 rounded-2xl border border-emerald-700/30">
+                      <div className="text-xs text-emerald-300/70 font-medium">Level</div>
+                      <div className="mt-2 text-lg font-semibold text-emerald-100">{friendlyLevel(selectedFeature.properties?.level ?? selectedFeature.layer)}</div>
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t">
-                    <h4 className="text-sm font-semibold text-gray-900 mb-2">Properties</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-700 max-h-48 overflow-auto">
+                  <div className="pt-4 border-t border-emerald-700/30">
+                    <h4 className="text-lg font-semibold text-white mb-4">Properties</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-emerald-100 max-h-48 overflow-auto">
                       {selectedFeature.properties && Object.entries(selectedFeature.properties).slice(0, 50).map(([k, v]) => (
-                        <div key={k} className="flex justify-between gap-2 border-b border-gray-100 py-1">
-                          <div className="text-gray-500">{humanizeKey(k)}</div>
-                          <div className="font-medium break-words text-right">{k === '_area_ha' || k === 'Shape_Area' ? formatArea(v) : String(v)}</div>
+                        <div key={k} className="flex justify-between gap-3 border-b border-emerald-700/20 py-2">
+                          <div className="text-emerald-300/70 font-medium">{humanizeKey(k)}</div>
+                          <div className="font-semibold break-words text-right text-white">{k === '_area_ha' || k === 'Shape_Area' ? formatArea(v) : String(v)}</div>
                         </div>
                       ))}
                     </div>
@@ -2605,62 +2609,63 @@ export default function AtlasPage() {
                 </div>
               ) : (
                 <>
-                  <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-4 space-y-4">
+                  <div className="rounded-3xl border border-emerald-700/50 bg-emerald-900/95 shadow-lg p-6 space-y-6">
                     {/* Status + Claim Type */}
                     <div className="flex items-center justify-between">
-                      <div className="flex gap-2">
+                      <div className="flex gap-3">
                         <span
-                          className={`px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide ${String(selectedFeature.properties?.status).toLowerCase() === "approved"
-                            ? "bg-green-100 text-green-700 border border-green-200"
-                            : "bg-yellow-100 text-yellow-700 border border-yellow-200"
-                            }`}
+                          className={`px-4 py-2 rounded-full text-xs font-semibold tracking-wide border ${
+                            String(selectedFeature.properties?.status).toLowerCase() === "approved"
+                              ? "bg-emerald-700/30 text-emerald-100 border-emerald-600/50"
+                              : "bg-amber-700/30 text-amber-100 border-amber-600/50"
+                          }`}
                         >
                           {String(selectedFeature.properties?.status ?? "").toUpperCase()}
                         </span>
-                        <span className="px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide bg-gray-100 text-gray-700 border border-gray-200">
+                        <span className="px-4 py-2 rounded-full text-xs font-semibold tracking-wide bg-slate-700/50 text-slate-200 border border-slate-600/50">
                           {String(selectedFeature.properties?.claim_type ?? "").toUpperCase()}
                         </span>
                       </div>
                     </div>
 
                     {/* Details Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-xs text-gray-500">Land area</p>
-                        <p className="text-sm font-semibold text-gray-900">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div className="space-y-1">
+                        <p className="text-xs text-emerald-300/70 font-medium">Land area</p>
+                        <p className="text-lg font-bold text-white">
                           {selectedFeature.properties?.land_area ?? "—"} ha
                         </p>
                       </div>
 
-                      <div>
-                        <p className="text-xs text-gray-500">State</p>
+                      <div className="space-y-1">
+                        <p className="text-xs text-emerald-300/70 font-medium">State</p>
                         <button
                           onClick={() => onStateClick(selectedFeature.properties?.state)}
-                          className="text-sm font-semibold text-blue-600 hover:underline hover:text-blue-800 transition"
+                          className="text-lg font-bold text-emerald-200 hover:text-emerald-100 transition-colors duration-200 hover:underline"
                         >
                           {selectedFeature.properties?.state ?? "—"}
                         </button>
                       </div>
 
-                      <div>
-                        <p className="text-xs text-gray-500">District</p>
+                      <div className="space-y-1">
+                        <p className="text-xs text-emerald-300/70 font-medium">District</p>
                         <button
                           onClick={() =>
                             onDistrictClick(selectedFeature.properties?.district)
                           }
-                          className="text-sm font-semibold text-blue-600 hover:underline hover:text-blue-800 transition"
+                          className="text-lg font-bold text-emerald-200 hover:text-emerald-100 transition-colors duration-200 hover:underline"
                         >
                           {selectedFeature.properties?.district ?? "—"}
                         </button>
                       </div>
 
-                      <div>
-                        <p className="text-xs text-gray-500">Village</p>
+                      <div className="space-y-1">
+                        <p className="text-xs text-emerald-300/70 font-medium">Village</p>
                         <button
                           onClick={() =>
                             onVillageClick(selectedFeature.properties?.village)
                           }
-                          className="text-sm font-semibold text-blue-600 hover:underline hover:text-blue-800 transition"
+                          className="text-lg font-bold text-emerald-200 hover:text-emerald-100 transition-colors duration-200 hover:underline"
                         >
                           {selectedFeature.properties?.village ?? "—"}
                         </button>
@@ -2668,15 +2673,15 @@ export default function AtlasPage() {
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t">
-                    <div className="flex items-center gap-2">
+                  <div className="pt-4 border-t border-emerald-700/30">
+                    <div className="flex flex-wrap items-center gap-3">
                       <button
                         onClick={() => {
                           router.push(
                             `/atlas/${encodeURIComponent(selectedFeature.properties?.claim_id ?? selectedFeature.properties?.id ?? "")}`,
                           )
                         }}
-                        className="inline-flex items-center gap-2 px-3 py-1 bg-green-700 text-white rounded-md text-sm"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-medium transition-colors duration-200 shadow-lg hover:shadow-xl"
                       >
                         Open detail
                       </button>
@@ -2684,7 +2689,7 @@ export default function AtlasPage() {
                         onClick={() => {
                           /* show edit modal */
                         }}
-                        className="inline-flex items-center gap-2 px-3 py-1 border rounded-md text-sm"
+                        className="inline-flex items-center gap-2 px-4 py-2 border border-emerald-600/50 bg-emerald-800/30 hover:bg-emerald-700/40 text-emerald-100 rounded-xl text-sm font-medium transition-colors duration-200"
                       >
                         Edit
                       </button>
@@ -2692,7 +2697,7 @@ export default function AtlasPage() {
                         onClick={() => {
                           /* report action */
                         }}
-                        className="inline-flex items-center gap-2 px-3 py-1 border rounded-md text-sm"
+                        className="inline-flex items-center gap-2 px-4 py-2 border border-emerald-600/50 bg-emerald-800/30 hover:bg-emerald-700/40 text-emerald-100 rounded-xl text-sm font-medium transition-colors duration-200"
                       >
                         Report
                       </button>
@@ -2700,7 +2705,7 @@ export default function AtlasPage() {
                         onClick={() => {
                           /* verify action */
                         }}
-                        className="inline-flex items-center gap-2 px-3 py-1 border rounded-md text-sm"
+                        className="inline-flex items-center gap-2 px-4 py-2 border border-emerald-600/50 bg-emerald-800/30 hover:bg-emerald-700/40 text-emerald-100 rounded-xl text-sm font-medium transition-colors duration-200"
                       >
                         Verify
                       </button>
@@ -2715,7 +2720,7 @@ export default function AtlasPage() {
         {/* Footer */}
         <Footer />
 
-  {/* Toast UI removed */}
+        {/* Toast UI removed */}
       </div>
     </ProtectedRoute>
   )

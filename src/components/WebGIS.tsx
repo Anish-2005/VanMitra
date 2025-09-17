@@ -1808,9 +1808,15 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
       {/* Loading Overlay */}
       {isLoadingData && (
         <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center z-20">
-          <div className="bg-white rounded-lg p-4 shadow-lg flex items-center gap-3">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600"></div>
-            <span className="text-sm font-medium text-gray-700">Loading map data...</span>
+          <div className="bg-emerald-900/95 border border-emerald-700/50 rounded-3xl p-6 shadow-2xl flex items-center gap-4 backdrop-blur-sm">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-emerald-400 border-t-transparent"></div>
+              <div className="absolute inset-0 rounded-full border-2 border-green-300/30 animate-ping"></div>
+            </div>
+            <div>
+              <span className="text-white font-medium">Loading map data...</span>
+              <div className="text-xs text-emerald-300 mt-1">Please wait</div>
+            </div>
           </div>
         </div>
       )}
@@ -1818,10 +1824,13 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
       {/* Map error overlay */}
       {mapError && (
         <div className="absolute inset-0 flex items-center justify-center z-40">
-          <div className="bg-white/95 rounded-lg p-6 shadow-lg max-w-lg text-center">
-            <h3 className="text-lg font-semibold text-red-600">Map error</h3>
-            <p className="text-sm text-gray-700 mt-2">{mapError}</p>
-            <div className="mt-4 flex justify-center gap-2">
+          <div className="bg-emerald-900/95 border border-emerald-700/50 rounded-3xl p-6 shadow-2xl max-w-lg text-center backdrop-blur-sm">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <div className="w-3 h-3 bg-red-400 rounded-full animate-pulse"></div>
+              <h3 className="text-lg font-semibold text-white">Map error</h3>
+            </div>
+            <p className="text-emerald-300 mb-6">{mapError}</p>
+            <div className="flex justify-center gap-3">
               <button
                 onClick={() => {
                   // Simple retry: remove and re-create the map by forcing unload
@@ -1840,7 +1849,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
                     setMapError(String(err))
                   }
                 }}
-                className="px-3 py-2 bg-blue-600 text-white rounded"
+                className="px-6 py-2 rounded-2xl bg-emerald-600 text-white hover:bg-emerald-700 transition-all duration-200 font-medium"
               >
                 Retry
               </button>
@@ -1854,21 +1863,22 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
         <div className="absolute top-4 left-4 z-10 space-y-2">
           {/* Layer Control */}
           {showLayerControls && (
-            <div className="bg-white rounded-lg shadow-lg p-3 border border-gray-200">
-              <div className="flex items-center gap-2 mb-2">
-                <Layers size={16} />
-                <span className="text-sm font-medium">Layers</span>
+            <div className="bg-emerald-900/95 border border-emerald-700/50 rounded-3xl shadow-2xl p-4 backdrop-blur-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <Layers size={16} className="text-emerald-300" />
+                <span className="text-sm font-semibold text-white">Layers</span>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {currentLayers.map((layer) => (
-                  <label key={layer.id} className="flex items-center gap-2 text-sm">
+                  <label key={layer.id} className="flex items-center gap-3 text-sm text-emerald-300 hover:text-white transition-colors p-2 rounded-xl hover:bg-emerald-800/30">
                     <input
                       type="checkbox"
                       checked={layer.visible}
                       onChange={() => toggleLayer(layer.id)}
-                      className="rounded"
+                      className="rounded border-emerald-600 bg-emerald-800/50 text-green-400 focus:ring-green-400 focus:ring-2"
                     />
-                    {layer.name}
+                    <span className="font-medium">{layer.name}</span>
                   </label>
                 ))}
               </div>
@@ -1877,26 +1887,36 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
 
           {/* Measurement Control */}
           {showMeasurementControls && enableMeasurement && (
-            <div className="bg-white rounded-lg shadow-lg p-3 border border-gray-200">
-              <div className="flex items-center gap-2 mb-2">
-                <Ruler size={16} />
-                <span className="text-sm font-medium">Measure</span>
+            <div className="bg-emerald-900/95 border border-emerald-700/50 rounded-3xl shadow-2xl p-4 backdrop-blur-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <Ruler size={16} className="text-emerald-300" />
+                <span className="text-sm font-semibold text-white">Measure</span>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {!isMeasuring ? (
                   <button
                     onClick={startMeasurement}
-                    className="w-full text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                    className="w-full text-sm bg-emerald-600 text-white px-4 py-2 rounded-2xl hover:bg-emerald-700 transition-all duration-200 font-medium"
                   >
                     Start Measurement
                   </button>
                 ) : (
-                  <div className="text-xs text-gray-600">Click two points to measure distance</div>
+                  <div className="text-xs text-emerald-400 bg-emerald-800/30 p-3 rounded-xl border border-emerald-700/30">
+                    Click two points to measure distance
+                  </div>
                 )}
-                {measurementDistance && <div className="text-xs">Distance: {measurementDistance.toFixed(2)} km</div>}
+                {measurementDistance && (
+                  <div className="text-xs text-emerald-300 bg-emerald-800/30 p-3 rounded-xl border border-emerald-700/30">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                      Distance: {measurementDistance.toFixed(2)} km
+                    </div>
+                  </div>
+                )}
                 <button
                   onClick={clearMeasurement}
-                  className="w-full text-sm bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600"
+                  className="w-full text-sm bg-gray-600 text-white px-4 py-2 rounded-2xl hover:bg-gray-700 transition-all duration-200 font-medium"
                 >
                   Clear
                 </button>
@@ -1908,19 +1928,23 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
 
       {/* Export Status */}
       {isExporting && (
-        <div className="absolute top-4 right-4 z-10 bg-blue-500 text-white px-3 py-2 rounded-lg shadow-lg">
-          <div className="flex items-center gap-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-            <span className="text-sm">Exporting map...</span>
+        <div className="absolute top-4 right-4 z-10 bg-emerald-900/95 border border-emerald-700/50 text-white px-4 py-3 rounded-2xl shadow-2xl backdrop-blur-sm">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-5 w-5 border-2 border-emerald-400 border-t-transparent"></div>
+              <div className="absolute inset-0 rounded-full border-2 border-green-300/30 animate-ping"></div>
+            </div>
+            <span className="text-sm font-medium">Exporting map...</span>
           </div>
         </div>
       )}
 
       {measurementDistance && (
-        <div className="absolute bottom-4 left-4 z-10 bg-green-500 text-white px-3 py-2 rounded-lg shadow-lg">
-          <div className="flex items-center gap-2">
-            <Ruler size={16} />
-            <span className="text-sm">Distance: {measurementDistance.toFixed(2)} km</span>
+        <div className="absolute bottom-4 left-4 z-10 bg-emerald-900/95 border border-emerald-700/50 text-white px-4 py-3 rounded-2xl shadow-2xl backdrop-blur-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            <Ruler size={16} className="text-emerald-300" />
+            <span className="text-sm font-medium">Distance: {measurementDistance.toFixed(2)} km</span>
           </div>
         </div>
       )}

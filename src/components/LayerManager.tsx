@@ -99,7 +99,7 @@ export default function LayerManager({
             </h4>
             <div className="space-y-2">
               {layers.map(layer => (
-                <div key={layer.id} className="border border-slate-700/50 rounded p-2 bg-slate-800/30">
+                <div key={layer.id} className="border border-emerald-700/50 rounded-2xl p-3 bg-emerald-800/30 hover:bg-emerald-800/50 transition-all duration-200">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <button
@@ -132,7 +132,7 @@ export default function LayerManager({
                   </div>
 
                   {editingLayer === layer.id && (
-                    <div className="space-y-2 mt-2 pt-2 border-t border-slate-700/50">
+                    <div className="space-y-2 mt-2 pt-2 border-t border-emerald-700/50">
                       <div>
                         <label className="block text-sm text-green-300">Name</label>
                         <input
@@ -231,7 +231,7 @@ export default function LayerManager({
               </h4>
               <div className="space-y-2">
                 {markers.map((marker, idx) => (
-                  <div key={`${marker.id ?? 'marker'}-${idx}`} className="border border-slate-700/50 rounded p-2 bg-slate-800/30">
+                  <div key={`${marker.id ?? 'marker'}-${idx}`} className="border border-emerald-700/50 rounded-2xl p-3 bg-emerald-800/30 hover:bg-emerald-800/50 transition-all duration-200">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <div
@@ -258,7 +258,7 @@ export default function LayerManager({
                     </div>
 
                     {editingMarker === marker.id && (
-                      <div className="space-y-2 mt-2 pt-2 border-t border-slate-700/50">
+                      <div className="space-y-2 mt-2 pt-2 border-t border-emerald-700/50">
                         <div>
                           <label className="block text-sm text-green-300">Label</label>
                           <input

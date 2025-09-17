@@ -717,5 +717,5 @@ export default function MapPreview({
     } catch (e) {}
   }, [JSON.stringify(center), zoom, JSON.stringify(markers.map((m: any) => [m.lng, m.lat])), showCenterMarker]);
 
-  return <div ref={ref} className="w-full h-full rounded-md overflow-hidden" />;
+  return <div ref={ref} className="w-full h-full rounded-3xl overflow-hidden bg-emerald-900/95 border border-emerald-700/50 backdrop-blur-sm shadow-2xl" />;
 }
