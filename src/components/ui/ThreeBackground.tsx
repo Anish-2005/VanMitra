@@ -2,6 +2,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import * as THREE from 'three';
+import { useTheme } from "../ThemeProvider";
 
 interface ThreeBackgroundProps {
   className?: string;
@@ -9,11 +10,14 @@ interface ThreeBackgroundProps {
 
 const ThreeBackground: React.FC<ThreeBackgroundProps> = ({ className = "" }) => {
   const [isClient, setIsClient] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const { theme } = useTheme();
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const particlesRef = useRef<THREE.Points | null>(null);
   const frameRef = useRef<number | null>(null);
+  const materialRef = useRef<THREE.ShaderMaterial | null>(null);
 
   // Seeded randomness for deterministic positioning
   const seeded = (i: number, salt = 1) =>
@@ -21,7 +25,10 @@ const ThreeBackground: React.FC<ThreeBackgroundProps> = ({ className = "" }) => 
 
   useEffect(() => {
     setIsClient(true);
+    setMounted(true);
   }, []);
+
+  const isLight = mounted && theme === 'light';
 
   useEffect(() => {
     if (!isClient || !mountRef.current) return;
@@ -45,10 +52,50 @@ const ThreeBackground: React.FC<ThreeBackgroundProps> = ({ className = "" }) => 
       const colors = new Float32Array(particleCount * 3);
       const sizes = new Float32Array(particleCount);
 
+      const updateParticleColors = () => {
+        const isLightTheme = mounted && theme === 'light';
+        
+        for (let i = 0; i < particleCount * 3; i += 3) {
+          const particleIndex = i / 3;
+          const r1 = seeded(particleIndex, 1);
+          const r2 = seeded(particleIndex, 2);
+
+          if (isLightTheme) {
+            // Light theme colors - softer, brighter greens
+            if (r1 > 0.7) {
+              colors[i] = 0.4;     // R (softer green)
+              colors[i + 1] = 0.9; // G
+              colors[i + 2] = 0.5; // B
+            } else if (r2 > 0.6) {
+              colors[i] = 0.5;     // R
+              colors[i + 1] = 0.8; // G (medium green)
+              colors[i + 2] = 0.6; // B
+            } else {
+              colors[i] = 0.6;     // R
+              colors[i + 1] = 0.95; // G (bright green)
+              colors[i + 2] = 0.7; // B
+            }
+          } else {
+            // Dark theme colors - deeper, richer greens
+            if (r1 > 0.7) {
+              colors[i] = 0.1;     // R (dark green)
+              colors[i + 1] = 0.8; // G
+              colors[i + 2] = 0.2; // B
+            } else if (r2 > 0.6) {
+              colors[i] = 0.2;     // R
+              colors[i + 1] = 0.6; // G (medium green)
+              colors[i + 2] = 0.3; // B
+            } else {
+              colors[i] = 0.3;     // R
+              colors[i + 1] = 0.9; // G (bright green)
+              colors[i + 2] = 0.4; // B
+            }
+          }
+        }
+      };
+
       for (let i = 0; i < particleCount * 3; i += 3) {
         const particleIndex = i / 3;
-
-        // Use seeded randomness for consistent positioning
         const r1 = seeded(particleIndex, 1);
         const r2 = seeded(particleIndex, 2);
         const r3 = seeded(particleIndex, 3);
@@ -57,24 +104,12 @@ const ThreeBackground: React.FC<ThreeBackgroundProps> = ({ className = "" }) => 
         positions[i + 1] = (r2 - 0.5) * 40; // Y position
         positions[i + 2] = (r3 - 0.5) * 40; // Z position
 
-        // Varied green tones
-        if (r1 > 0.7) {
-          colors[i] = 0.1;     // R (dark green)
-          colors[i + 1] = 0.8; // G
-          colors[i + 2] = 0.2; // B
-        } else if (r2 > 0.6) {
-          colors[i] = 0.2;     // R
-          colors[i + 1] = 0.6; // G (medium green)
-          colors[i + 2] = 0.3; // B
-        } else {
-          colors[i] = 0.3;     // R
-          colors[i + 1] = 0.9; // G (bright green)
-          colors[i + 2] = 0.4; // B
-        }
-
         // Varied sizes
         sizes[particleIndex] = 0.02 + r3 * 0.08;
       }
+
+      // Initialize colors
+      updateParticleColors();
 
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -108,7 +143,9 @@ const ThreeBackground: React.FC<ThreeBackgroundProps> = ({ className = "" }) => 
             if (r > 0.5) discard;
 
             float alpha = 1.0 - smoothstep(0.0, 0.5, r);
-            gl_FragColor = vec4(vColor, alpha * 0.8);
+            // Adjust opacity based on theme - lighter for light theme
+            float themeOpacity = ${isLight ? '0.6' : '0.8'};
+            gl_FragColor = vec4(vColor, alpha * themeOpacity);
           }
         `,
         transparent: true,
@@ -116,6 +153,7 @@ const ThreeBackground: React.FC<ThreeBackgroundProps> = ({ className = "" }) => 
         blending: THREE.AdditiveBlending
       });
 
+      materialRef.current = material;
       const particles = new THREE.Points(geometry, material);
       scene.add(particles);
       particlesRef.current = particles;
@@ -180,7 +218,61 @@ const ThreeBackground: React.FC<ThreeBackgroundProps> = ({ className = "" }) => 
       console.warn('Three.js initialization failed:', error);
       return () => { };
     }
-  }, [isClient]);
+  }, [isClient, theme, mounted]);
+
+  // Update particle colors when theme changes
+  useEffect(() => {
+    if (!materialRef.current || !particlesRef.current) return;
+
+    const particles = particlesRef.current;
+    const geometry = particles.geometry as THREE.BufferGeometry;
+    const colorAttribute = geometry.getAttribute('color') as THREE.BufferAttribute;
+    
+    if (!colorAttribute) return;
+
+    const colors = colorAttribute.array as Float32Array;
+    const particleCount = colors.length / 3;
+
+    for (let i = 0; i < particleCount * 3; i += 3) {
+      const particleIndex = i / 3;
+      const r1 = seeded(particleIndex, 1);
+      const r2 = seeded(particleIndex, 2);
+
+      if (isLight) {
+        // Light theme colors - softer, brighter greens
+        if (r1 > 0.7) {
+          colors[i] = 0.4;     // R (softer green)
+          colors[i + 1] = 0.9; // G
+          colors[i + 2] = 0.5; // B
+        } else if (r2 > 0.6) {
+          colors[i] = 0.5;     // R
+          colors[i + 1] = 0.8; // G (medium green)
+          colors[i + 2] = 0.6; // B
+        } else {
+          colors[i] = 0.6;     // R
+          colors[i + 1] = 0.95; // G (bright green)
+          colors[i + 2] = 0.7; // B
+        }
+      } else {
+        // Dark theme colors - deeper, richer greens
+        if (r1 > 0.7) {
+          colors[i] = 0.1;     // R (dark green)
+          colors[i + 1] = 0.8; // G
+          colors[i + 2] = 0.2; // B
+        } else if (r2 > 0.6) {
+          colors[i] = 0.2;     // R
+          colors[i + 1] = 0.6; // G (medium green)
+          colors[i + 2] = 0.3; // B
+        } else {
+          colors[i] = 0.3;     // R
+          colors[i + 1] = 0.9; // G (bright green)
+          colors[i + 2] = 0.4; // B
+        }
+      }
+    }
+
+    colorAttribute.needsUpdate = true;
+  }, [theme, isLight]);
 
   // Don't render on server to prevent hydration mismatch
   if (!isClient) {

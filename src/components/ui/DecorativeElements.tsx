@@ -8,7 +8,12 @@ import { useTheme } from "../ThemeProvider";
 const DecorativeElements = () => {
   const [isClient, setIsClient] = useState(false);
   const { theme } = useTheme();
-  const isLight = theme === 'light';
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setIsClient(true);
+    setMounted(true);
+  }, []);
 
   // Seeded randomness for deterministic positioning
   const seeded = (i: number, salt = 1) =>
@@ -17,14 +22,12 @@ const DecorativeElements = () => {
   // Floating icons pool - forest/nature themed
   const floatIcons = [Leaf, Sprout, Droplets, Trees];
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
   // Don't render on server to prevent hydration mismatch
   if (!isClient) {
     return null;
   }
+
+  const isLight = mounted && theme === 'light';
 
   // Color definitions for both themes
   const colors = {
