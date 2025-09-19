@@ -180,6 +180,51 @@ html { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* Light theme override when `.light` class is present on <html> */
+.light {
+  --background: #f6fbf7;
+  --foreground: #0f2f1f;
+  --card: #ffffff;
+  --card-foreground: #0f2f1f;
+  --popover: #ffffff;
+  --popover-foreground: #0f2f1f;
+  --primary: #3fa25b;
+  --primary-foreground: #ffffff;
+  --secondary: #e6f6ec;
+  --secondary-foreground: #0f2f1f;
+  --muted: #6b7280;
+  --muted-foreground: #4b5563;
+  --accent: #16a34a;
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --border: rgba(15,23,21,0.06);
+  --input: rgba(15,23,21,0.04);
+  --ring: rgba(63,162,91,0.18);
+  --chart-1: #16a34a;
+  --chart-2: #059669;
+  --chart-3: #10b981;
+  --chart-4: #34d399;
+  --chart-5: #a7f3d0;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0f2f1f;
+  --sidebar-primary: #3fa25b;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #16a34a;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgba(15,23,21,0.06);
+  --sidebar-ring: rgba(63,162,91,0.18);
+}
+
+/* Small overrides so components using utility classes keep readable in light mode */
+.light .text-white { color: var(--fg) !important; }
+.light .bg-white\/10 { background-color: rgba(15,23,21,0.04) !important; }
+.light .bg-white\/20 { background-color: rgba(15,23,21,0.06) !important; }
+.light .border-white\/10 { border-color: rgba(15,23,21,0.04) !important; }
+.light .border-white\/20 { border-color: rgba(15,23,21,0.06) !important; }
+.light .text-green-300 { color: var(--primary-500) !important; }
+.light .text-green-100 { color: var(--primary-200) !important; }
+
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

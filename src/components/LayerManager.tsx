@@ -66,13 +66,14 @@ export default function LayerManager({
   return (
     <GlassCard className="overflow-hidden mb-6">
       <div
-        className="flex items-center justify-between p-3 bg-slate-800/50 cursor-pointer"
+        className="flex items-center justify-between p-3 cursor-pointer"
         onClick={() => setIsExpanded(!isExpanded)}
+        style={{ background: 'rgba(0,0,0,0.12)', borderRadius: '0.5rem' }}
       >
         <div className="flex items-center gap-2">
           <Layers size={16} />
-          <span className="font-medium text-white">Layer Manager</span>
-          <span className="text-sm text-green-300">({layers.length})</span>
+          <span className="font-medium" style={{ color: 'var(--foreground)' }}>Layer Manager</span>
+          <span className="text-sm" style={{ color: 'var(--primary-300)' }}>({layers.length})</span>
         </div>
         <div className={`transform transition-transform ${isExpanded ? "rotate-180" : ""}`}>▼</div>
       </div>
@@ -90,16 +91,16 @@ export default function LayerManager({
             }}
             className="overflow-hidden max-h-96"
           >
-            <div className="p-4 space-y-3 overflow-y-auto max-h-96 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-slate-800/30 [&::-webkit-scrollbar-thumb]:bg-slate-600 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb:hover]:bg-slate-500">
+            <div className="p-4 space-y-3 overflow-y-auto max-h-96" style={{ scrollbarWidth: 'thin' }}>
           {/* Layers Section */}
           <div>
-            <h4 className="text-sm font-medium text-white mb-2 flex items-center gap-2">
+            <h4 className="text-sm font-medium mb-2 flex items-center gap-2" style={{ color: 'var(--foreground)'}}>
               <Layers size={14} />
               Map Layers ({layers.length})
             </h4>
             <div className="space-y-2">
               {layers.map(layer => (
-                <div key={layer.id} className="border border-emerald-700/50 rounded-2xl p-3 bg-emerald-800/30 hover:bg-emerald-800/50 transition-all duration-200">
+                <div key={layer.id} className="rounded-2xl p-3 transition-all duration-200" style={{ border: '1px solid rgba(16,185,129,0.12)', background: 'rgba(16,185,129,0.04)'}}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <button
@@ -112,19 +113,20 @@ export default function LayerManager({
                         {stagedVisibility[layer.id] ? <Eye size={14} /> : <EyeOff size={14} />}
                         </button>
 
-                        <span className="text-sm font-medium text-white">{layer.name}</span>
-                      <span className="text-xs text-green-300 uppercase">{layer.type}</span>
+                        <span className="text-sm font-medium" style={{ color: 'var(--foreground)'}}>{layer.name}</span>
+                      <span className="text-xs" style={{ color: 'var(--primary-300)'}}>{layer.type}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => setEditingLayer(editingLayer === layer.id ? null : layer.id)}
-                        className="text-green-400 hover:text-green-300"
+                        title="Settings"
+                        style={{ color: 'var(--primary-400)'}}
                       >
                         <Settings size={14} />
                       </button>
                       <button
                         onClick={() => onLayerRemove(layer.id)}
-                        className="text-red-400 hover:text-red-300"
+                        style={{ color: 'var(--destructive)'}}
                       >
                         <Trash2 size={14} />
                       </button>
@@ -134,39 +136,42 @@ export default function LayerManager({
                   {editingLayer === layer.id && (
                     <div className="space-y-2 mt-2 pt-2 border-t border-emerald-700/50">
                       <div>
-                        <label className="block text-sm text-green-300">Name</label>
+                        <label className="block text-sm" style={{ color: 'var(--primary-300)'}}>Name</label>
                         <input
                           type="text"
                           value={layer.name}
                           onChange={(e) => onLayerUpdate(layer.id, { name: e.target.value })}
-                          className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                          className="mt-1 w-full rounded-md p-2"
+                          style={{ border: '1px solid rgba(16,185,129,0.12)', background: 'rgba(0,0,0,0.06)', color: 'var(--foreground)'}}
                         />
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-sm text-green-300">Fill Color</label>
+                          <label className="block text-sm" style={{ color: 'var(--primary-300)'}}>Fill Color</label>
                           <input
                             type="color"
                             value={layer.style.fillColor || '#3b82f6'}
                             onChange={(e) => handleStyleChange(layer.id, 'fillColor', e.target.value)}
-                            className="mt-1 w-full h-8 border border-green-400/30 rounded bg-slate-800/50"
+                            className="mt-1 w-full h-8 border border-green-400/30 rounded"
+                            style={{ border: '1px solid rgba(16,185,129,0.12)', background: 'rgba(0,0,0,0.06)'}}
                           />
                         </div>
                         <div>
-                          <label className="block text-sm text-green-300">Stroke Color</label>
+                          <label className="block text-sm" style={{ color: 'var(--primary-300)'}}>Stroke Color</label>
                           <input
                             type="color"
                             value={layer.style.strokeColor || '#ffffff'}
                             onChange={(e) => handleStyleChange(layer.id, 'strokeColor', e.target.value)}
-                            className="mt-1 w-full h-8 border border-green-400/30 rounded bg-slate-800/50"
+                            className="mt-1 w-full h-8 border border-green-400/30 rounded"
+                            style={{ border: '1px solid rgba(16,185,129,0.12)', background: 'rgba(0,0,0,0.06)'}}
                           />
                         </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-sm text-green-300">Stroke Width</label>
+                          <label className="block text-sm" style={{ color: 'var(--primary-300)'}}>Stroke Width</label>
                           <input
                             type="number"
                             min="0"
@@ -174,11 +179,12 @@ export default function LayerManager({
                             step="0.5"
                             value={layer.style.strokeWidth || 2}
                             onChange={(e) => handleStyleChange(layer.id, 'strokeWidth', parseFloat(e.target.value))}
-                            className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                            className="mt-1 w-full rounded-md p-2"
+                            style={{ border: '1px solid rgba(16,185,129,0.12)', background: 'rgba(0,0,0,0.06)', color: 'var(--foreground)'}}
                           />
                         </div>
                         <div>
-                          <label className="block text-sm text-green-300">Opacity</label>
+                          <label className="block text-sm" style={{ color: 'var(--primary-300)'}}>Opacity</label>
                           <input
                             type="number"
                             min="0"
@@ -186,7 +192,8 @@ export default function LayerManager({
                             step="0.1"
                             value={layer.style.opacity || 0.8}
                             onChange={(e) => handleStyleChange(layer.id, 'opacity', parseFloat(e.target.value))}
-                            className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                            className="mt-1 w-full rounded-md p-2"
+                            style={{ border: '1px solid rgba(16,185,129,0.12)', background: 'rgba(0,0,0,0.06)', color: 'var(--foreground)'}}
                           />
                         </div>
                       </div>
@@ -198,7 +205,8 @@ export default function LayerManager({
             {/* Apply / Reset controls for staged visibility */}
             <div className="mt-3 flex items-center gap-2">
               <button
-                className="bg-green-700 text-white px-4 py-2 rounded-md shadow-md hover:bg-green-600 transition-colors"
+                className="px-4 py-2 rounded-md shadow-md"
+                style={{ background: 'var(--primary-600)', color: 'var(--card-foreground)'}}
                 onClick={() => {
                   // compute diffs and call onLayerToggle for each layer that changed
                   layers.forEach(l => {
@@ -211,7 +219,8 @@ export default function LayerManager({
                 }}
               >Apply</button>
               <button
-                className="border border-green-400/30 text-green-300 px-4 py-2 rounded-md hover:bg-green-500/20 transition-colors"
+                className="px-4 py-2 rounded-md"
+                style={{ border: '1px solid rgba(16,185,129,0.12)', color: 'var(--primary-300)'}}
                 onClick={() => {
                   // reset staged visibility to current props
                   const reset: Record<string, boolean> = {};

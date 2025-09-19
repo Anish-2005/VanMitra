@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { useTheme } from "@/components/ThemeProvider";
 import { motion, AnimatePresence, useScroll, useTransform, useSpring, useInView } from "framer-motion";
 import * as THREE from 'three';
 import {
@@ -23,9 +24,9 @@ import AnimatedCounter from "@/components/ui/AnimatedCounter";
 const FloatingOrbs = dynamic(() => import('@/components/ui/FloatingOrbs'), { ssr: false });
 const DecorativeElements = dynamic(() => import('@/components/ui/DecorativeElements'), { ssr: false });
 
-
-
 export default function Home() {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [email, setEmail] = useState("");
@@ -81,34 +82,29 @@ export default function Home() {
     }
   };
 
-
-
-
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-emerald-900 text-white relative overflow-hidden">
+    <div className={
+      `min-h-screen relative overflow-hidden ${isLight ?
+        'bg-gradient-to-br from-emerald-50 via-green-100 to-teal-100 text-slate-900' :
+        'bg-gradient-to-br from-slate-900 via-green-900 to-emerald-900 text-white'}`
+    }>
       <ThreeBackground />
       <DecorativeElements />
       <FloatingOrbs />
 
       {/* Mesh Gradient Overlay */}
-      <div className="fixed inset-0 bg-gradient-to-br from-green-900/20 via-transparent to-emerald-900/20 pointer-events-none z-1" />
+      <div className={isLight ? "fixed inset-0 bg-gradient-to-br from-white/40 via-transparent to-emerald-100/20 pointer-events-none z-1" : "fixed inset-0 bg-gradient-to-br from-green-900/20 via-transparent to-emerald-900/20 pointer-events-none z-1"} />
 
       {/* Animated Grid */}
-      <div className="fixed inset-0 opacity-10 pointer-events-none z-1">
+      <div className={isLight ? "fixed inset-0 opacity-10 pointer-events-none z-1" : "fixed inset-0 opacity-10 pointer-events-none z-1"}>
         <div className="absolute inset-0" style={{
-          backgroundImage: `
-            linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px)
-          `,
+          backgroundImage: isLight ? `linear-gradient(rgba(16, 185, 129, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 185, 129, 0.05) 1px, transparent 1px)` : `linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px)`,
           backgroundSize: '50px 50px'
         }} />
       </div>
 
       {/* Header */}
       <Navbar />
-
-
 
       {/* Login Modal */}
       <AnimatePresence>
@@ -120,23 +116,23 @@ export default function Home() {
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              className={isLight ? "absolute inset-0 bg-white/60 backdrop-blur-sm" : "absolute inset-0 bg-black/60 backdrop-blur-sm"}
               onClick={() => setLoginOpen(false)}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             />
             <motion.div
-              className="relative bg-gradient-to-br from-slate-800 to-green-800 rounded-3xl shadow-2xl p-8 w-full max-w-md mx-4 border border-white/20 backdrop-blur-xl"
+              className={`relative rounded-3xl shadow-2xl p-8 w-full max-w-md mx-4 backdrop-blur-xl ${isLight ? 'bg-white border border-slate-200' : 'bg-gradient-to-br from-slate-800 to-green-800 border border-white/20'}`}
               initial={{ scale: 0.8, opacity: 0, y: 50 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.8, opacity: 0, y: 50 }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
             >
-              <h3 className="text-2xl font-bold text-white mb-6 text-center">Welcome Back</h3>
+              <h3 className={`text-2xl font-bold mb-6 text-center ${isLight ? 'text-slate-900' : 'text-white'}`}>Welcome Back</h3>
               {error && (
                 <motion.p
-                  className="text-red-400 mb-4 text-center"
+                  className="text-red-500 mb-4 text-center"
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
@@ -150,7 +146,7 @@ export default function Home() {
                   placeholder="Email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-green-300 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                  className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 ${isLight ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500' : 'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'}`}
                   whileFocus={{ scale: 1.02 }}
                 />
                 <motion.input
@@ -158,7 +154,7 @@ export default function Home() {
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-green-300 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                  className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 ${isLight ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500' : 'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'}`}
                   whileFocus={{ scale: 1.02 }}
                 />
                 <MagneticButton onClick={handleLogin} className="w-full">
@@ -171,7 +167,7 @@ export default function Home() {
       </AnimatePresence>
 
       {/* Main Content */}
-      <main id="atlas" className="relative z-10 max-w-7xl mx-auto px-6 py-16">
+      <main id="atlas" className={`relative z-10 max-w-7xl mx-auto px-6 py-16 ${isLight ? 'text-slate-900' : 'text-white'}`}>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
           {/* Hero Section */}
           <motion.section
@@ -182,18 +178,18 @@ export default function Home() {
           >
             <motion.div variants={itemVariants}>
               <motion.div
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 mb-6"
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 ${isLight ? 'bg-green-100 border border-green-200 text-green-800' : 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 text-green-300'}`}
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", stiffness: 200, damping: 15 }}
               >
-                <Sparkles size={16} className="text-green-400" />
-                <span className="text-green-300 font-medium">Next-Gen Forest Rights Platform</span>
+                <Sparkles size={16} className={isLight ? 'text-green-600' : 'text-green-400'} />
+                <span className="font-medium">Next-Gen Forest Rights Platform</span>
               </motion.div>
 
               <h2 className="text-5xl lg:text-5xl font-extrabold leading-tight mb-6">
                 <motion.span
-                  className="bg-gradient-to-r from-white via-green-300 to-emerald-300 bg-clip-text text-transparent"
+                  className={isLight ? 'text-slate-900' : 'bg-gradient-to-r from-white via-green-300 to-emerald-300 bg-clip-text text-transparent'}
                   initial={{ opacity: 0, y: 50 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2, duration: 0.8 }}
@@ -202,7 +198,7 @@ export default function Home() {
                 </motion.span>
                 <br />
                 <motion.span
-                  className="bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent"
+                  className={isLight ? 'text-green-700' : 'bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent'}
                   initial={{ opacity: 0, y: 50 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4, duration: 0.8 }}
@@ -211,7 +207,7 @@ export default function Home() {
                 </motion.span>
                 <br />
                 <motion.span
-                  className="text-white"
+                  className={isLight ? 'text-slate-800' : 'text-white'}
                   initial={{ opacity: 0, y: 50 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.6, duration: 0.8 }}
@@ -222,32 +218,52 @@ export default function Home() {
             </motion.div>
 
             <motion.div
-              className="text-xl text-green-100 leading-relaxed max-w-2xl mb-8"
+              className={`text-xl leading-relaxed max-w-2xl mb-8 ${isLight ? 'text-slate-700' : 'text-green-100'}`}
               variants={itemVariants}
             >
               A revolutionary{" "}
               <Tooltip content="Web-based Geographic Information System - A platform for displaying, analyzing, and managing spatial data through web browsers">
-                <span className="text-green-300 font-semibold underline decoration-dotted cursor-help">WebGIS</span>
+                <span className={`${isLight ? 'text-green-700 font-semibold underline decoration-dotted cursor-help' : 'text-green-300 font-semibold underline decoration-dotted cursor-help'}`}>WebGIS</span>
               </Tooltip>{" "}
               platform that transforms Forest Rights Act records, maps community assets with{" "}
               <Tooltip content="Artificial Intelligence algorithms that automatically detect and classify features from satellite images">
-                <span className="text-green-300 font-semibold underline decoration-dotted cursor-help">AI-powered</span>
+                <span className={`${isLight ? 'text-green-700 font-semibold underline decoration-dotted cursor-help' : 'text-green-300 font-semibold underline decoration-dotted cursor-help'}`}>AI-powered</span>
               </Tooltip>{" "}
               satellite imagery, and delivers intelligent decision support for targeted rural development.
-            </motion.div>            <motion.div
+            </motion.div>
+
+            <motion.div
               className="flex flex-wrap gap-3 mb-12 pr-1"
               variants={itemVariants}
             >
-              <MagneticButton className="group">
-
-                <ArrowRight size={20} className=" group-hover:translate-x-1 transition-transform" />
+              <MagneticButton
+                className={`group ${isLight
+                  ? 'bg-green-600 hover:bg-green-700 text-white border-green-700'
+                  : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white border-white/20'
+                  }`}
+              >
+                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                 Explore Atlas
               </MagneticButton>
-              <MagneticButton variant="secondary">
+
+              <MagneticButton
+                variant={isLight ? "outline" : "secondary"}
+                className={isLight
+                  ? "border-green-600 text-green-700 hover:bg-green-50 hover:border-green-700 hover:text-green-800"
+                  : ""
+                }
+              >
                 <Globe size={16} className="mr-2" />
                 Request Demo
               </MagneticButton>
-              <MagneticButton variant="secondary">
+
+              <MagneticButton
+                variant={isLight ? "outline" : "secondary"}
+                className={isLight
+                  ? "border-green-600 text-green-700 hover:bg-green-50 hover:border-green-700 hover:text-green-800"
+                  : ""
+                }
+              >
                 <Zap size={16} className="mr-2" />
                 DSS Features
               </MagneticButton>
@@ -264,17 +280,17 @@ export default function Home() {
                 { icon: Layers, title: "AI assets", value: 12, subtitle: "ponds, farms, homesteads" }
               ].map((stat, i) => (
                 <motion.div key={i} variants={itemVariants}>
-                  <GlassCard className="p-6">
+                  <GlassCard className={`p-6 ${isLight ? 'bg-white/90 border border-slate-200 text-slate-900 shadow-md' : ''}`}>
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="p-2 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500">
+                      <div className={`p-2 rounded-xl ${isLight ? 'bg-gradient-to-r from-green-400 to-emerald-400' : 'bg-gradient-to-r from-green-500 to-emerald-500'}`}>
                         <stat.icon size={20} className="text-white" />
                       </div>
-                      <h4 className="font-semibold text-green-100">{stat.title}</h4>
+                      <h4 className={`font-semibold ${isLight ? 'text-slate-800' : 'text-green-100'}`}>{stat.title}</h4>
                     </div>
-                    <div className="text-3xl font-bold text-white mb-1">
+                    <div className={`text-3xl font-bold mb-1 ${isLight ? 'text-slate-900' : 'text-white'}`}>
                       <AnimatedCounter value={stat.value} />
                     </div>
-                    <div className="text-sm text-green-300">{stat.subtitle}</div>
+                    <div className={`text-sm ${isLight ? 'text-green-700' : 'text-green-300'}`}>{stat.subtitle}</div>
                   </GlassCard>
                 </motion.div>
               ))}
@@ -288,12 +304,12 @@ export default function Home() {
               transition={{ duration: 0.8 }}
               viewport={{ once: true }}
             >
-              <GlassCard className="p-8 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-400/20">
+              <GlassCard className={`p-8 ${isLight ? 'bg-gradient-to-r from-amber-100 to-orange-100 border-amber-200 text-amber-900' : 'bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-400/20 text-green-100'}`}>
                 <div className="flex items-center gap-3 mb-4">
-                  <Shield size={24} className="text-amber-400" />
-                  <h3 className="text-2xl font-semibold text-white">Problem Background</h3>
+                  <Shield size={24} className={isLight ? 'text-amber-600' : 'text-amber-400'} />
+                  <h3 className={`text-2xl font-semibold ${isLight ? 'text-amber-900' : 'text-white'}`}>Problem Background</h3>
                 </div>
-                <div className="text-green-100 leading-relaxed">
+                <div className="leading-relaxed">
                   The Forest Rights Act (FRA), 2006 recognizes the rights of forest-dwelling communities
                   over land and forest resources. However, significant challenges persist with legacy
                   records being scattered, non-digitized, and difficult to verify, lacking centralized
@@ -315,10 +331,10 @@ export default function Home() {
               whileHover={{ scale: 1.02 }}
               transition={{ type: "spring", stiffness: 200 }}
             >
-              <GlassCard className="p-8 bg-gradient-to-br from-green-600/20 to-emerald-600/20 border-green-400/30 relative overflow-hidden">
+              <GlassCard className={`p-8 ${isLight ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 text-slate-900' : 'bg-gradient-to-br from-green-600/20 to-emerald-600/20 border-green-400/30 text-white'}`}>
                 {/* Animated background pattern */}
                 <div className="absolute inset-0 opacity-10">
-                  <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-transparent animate-pulse" />
+                  <div className={`absolute inset-0 ${isLight ? 'bg-gradient-to-r from-green-200/20 to-transparent' : 'bg-gradient-to-r from-green-400/20 to-transparent'} animate-pulse`} />
                 </div>
 
                 <div className="relative z-10 flex flex-col items-center space-y-6 px-4 md:px-0">
@@ -337,61 +353,59 @@ export default function Home() {
                       <path
                         d="M500,50 L550,150 L600,200 L650,250 L600,300 L550,350 L500,400 L450,350 L400,300 L450,250 L400,200 L450,150 Z"
                         fill="url(#mpGradient)"
-                        stroke="white"
+                        stroke={isLight ? "#059669" : "white"}
                         strokeWidth="4"
                       />
                       <defs>
                         <linearGradient id="mpGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor="#22c55e" />
-                          <stop offset="100%" stopColor="#10b981" />
+                          <stop offset="0%" stopColor={isLight ? "#34d399" : "#22c55e"} />
+                          <stop offset="100%" stopColor={isLight ? "#10b981" : "#10b981"} />
                         </linearGradient>
                       </defs>
                     </svg>
                   </motion.div>
 
-
                   {/* Pilot & claims counter */}
                   <div className="text-center mb-4">
-                    <div className="text-sm text-green-300 font-medium mb-2 tracking-wide">Pilot: Madhya Pradesh</div>
-                    <div className="text-4xl md:text-5xl font-extrabold text-white flex justify-center items-center gap-4">
+                    <div className={`text-sm font-medium mb-2 tracking-wide ${isLight ? 'text-green-700' : 'text-green-300'}`}>Pilot: Madhya Pradesh</div>
+                    <div className={`text-4xl md:text-5xl font-extrabold flex justify-center items-center gap-4 ${isLight ? 'text-slate-900' : 'text-white'}`}>
                       <div className="flex items-center gap-1">
                         <AnimatedCounter value={claimsTotal} />
-                        <span className="text-lg md:text-xl font-semibold text-green-300">claims</span>
+                        <span className={`text-lg md:text-xl font-semibold ${isLight ? 'text-green-700' : 'text-green-300'}`}>claims</span>
                       </div>
-                      <span className="text-green-500 font-bold">•</span>
+                      <span className={isLight ? 'text-green-600 font-bold' : 'text-green-500 font-bold'}>•</span>
                       <div className="flex items-center gap-1">
                         <AnimatedCounter value={claimsGranted} />
-                        <span className="text-lg md:text-xl font-semibold text-green-300">granted</span>
+                        <span className={`text-lg md:text-xl font-semibold ${isLight ? 'text-green-700' : 'text-green-300'}`}>granted</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Stats Cards */}
                   <div className="w-full max-w-md flex flex-col gap-4">
-                    <GlassCard className="p-5 bg-white/10 backdrop-blur-md rounded-2xl hover:scale-105 transition-transform duration-300 shadow-lg">
+                    <GlassCard className={`p-5 backdrop-blur-md rounded-2xl hover:scale-105 transition-transform duration-300 shadow-lg ${isLight ? 'bg-green-50/80 border border-green-200' : 'bg-white/10'}`}>
                       <div className="flex justify-between items-center">
-                        <span className="text-green-200 font-medium">AI-derived ponds:</span>
-                        <span className="font-bold text-white text-lg">412</span>
+                        <span className={isLight ? 'text-green-700 font-medium' : 'text-green-200 font-medium'}>AI-derived ponds:</span>
+                        <span className={`font-bold text-lg ${isLight ? 'text-slate-900' : 'text-white'}`}>412</span>
                       </div>
                       <div className="flex justify-between items-center mt-2">
-                        <span className="text-green-200 font-medium">Cropland area:</span>
-                        <span className="font-bold text-white text-lg">3,120 ha</span>
+                        <span className={isLight ? 'text-green-700 font-medium' : 'text-green-200 font-medium'}>Cropland area:</span>
+                        <span className={`font-bold text-lg ${isLight ? 'text-slate-900' : 'text-white'}`}>3,120 ha</span>
                       </div>
                     </GlassCard>
 
-                    <GlassCard className="p-5 bg-white/10 backdrop-blur-md rounded-2xl hover:scale-105 transition-transform duration-300 shadow-lg">
+                    <GlassCard className={`p-5 backdrop-blur-md rounded-2xl hover:scale-105 transition-transform duration-300 shadow-lg ${isLight ? 'bg-amber-50/80 border border-amber-200' : 'bg-white/10'}`}>
                       <div className="flex justify-between items-center">
-                        <span className="text-green-200 font-medium">Water index:</span>
-                        <span className="font-bold text-amber-300 text-lg">Low</span>
+                        <span className={isLight ? 'text-amber-700 font-medium' : 'text-green-200 font-medium'}>Water index:</span>
+                        <span className={`font-bold text-lg ${isLight ? 'text-amber-600' : 'text-amber-300'}`}>Low</span>
                       </div>
                       <div className="flex justify-between items-center mt-2">
-                        <span className="text-green-200 font-medium">Vulnerability score:</span>
-                        <span className="font-bold text-red-300 text-lg">High</span>
+                        <span className={isLight ? 'text-amber-700 font-medium' : 'text-green-200 font-medium'}>Vulnerability score:</span>
+                        <span className={`font-bold text-lg ${isLight ? 'text-red-600' : 'text-red-300'}`}>High</span>
                       </div>
                     </GlassCard>
                   </div>
                 </div>
-
               </GlassCard>
             </motion.div>
 
@@ -422,21 +436,21 @@ export default function Home() {
                 }
               ].map((tech, i) => (
                 <motion.div key={i} variants={itemVariants}>
-                  <GlassCard className="p-6">
+                  <GlassCard className={`p-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
                     <div className="flex items-center gap-3 mb-3">
                       <Tooltip content={tech.tooltip} position="top">
                         <div className={`p-3 rounded-xl bg-gradient-to-r from-${tech.color}-500 to-${tech.color}-600 cursor-help`}>
                           <tech.icon size={20} className="text-white" />
                         </div>
                       </Tooltip>
-                      <h4 className="font-semibold text-white">{tech.title}</h4>
+                      <h4 className={`font-semibold ${isLight ? 'text-slate-800' : 'text-white'}`}>{tech.title}</h4>
                     </div>
-                    <div className="text-green-100 mb-4 leading-relaxed">{tech.description}</div>
+                    <div className={`mb-4 leading-relaxed ${isLight ? 'text-slate-700' : 'text-green-100'}`}>{tech.description}</div>
                     <div className="flex flex-wrap gap-2">
                       {tech.tags.map((tag, j) => (
                         <motion.span
                           key={j}
-                          className={`text-xs px-3 py-1 bg-${tech.color}-500/20 text-${tech.color}-300 rounded-full border border-${tech.color}-400/30`}
+                          className={`text-xs px-3 py-1 rounded-full border ${isLight ? `bg-${tech.color}-100 text-${tech.color}-800 border-${tech.color}-200` : `bg-${tech.color}-500/20 text-${tech.color}-300 border-${tech.color}-400/30`}`}
                           whileHover={{ scale: 1.05 }}
                         >
                           {tag}
@@ -466,15 +480,15 @@ export default function Home() {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h3 className="text-4xl font-bold text-white mb-4 flex items-center justify-center gap-3">
-              <FileText size={32} className="text-green-400" />
+            <h3 className={`text-4xl font-bold mb-4 flex items-center justify-center gap-3 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+              <FileText size={32} className={isLight ? 'text-green-600' : 'text-green-400'} />
               OCR & Document Processing
             </h3>
-            <div className="w-24 h-1 bg-gradient-to-r from-green-400 to-emerald-400 mx-auto rounded-full"></div>
+            <div className={`w-24 h-1 bg-gradient-to-r from-green-400 to-emerald-400 mx-auto rounded-full`}></div>
           </motion.div>
 
-          <GlassCard className="p-8 text-center">
-            <div className="text-green-100 text-lg leading-relaxed">
+          <GlassCard className={`p-8 text-center ${isLight ? 'bg-white/80 border border-slate-200' : ''}`}>
+            <div className={`text-lg leading-relaxed ${isLight ? 'text-slate-700' : 'text-green-100'}`}>
               Advanced Optical Character Recognition for digitizing Forest Rights Act documents,
               extracting key information, and enabling searchable archives.
             </div>
@@ -497,15 +511,15 @@ export default function Home() {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h3 className="text-4xl font-bold text-white mb-4 flex items-center justify-center gap-3">
-              <Globe size={32} className="text-green-400" />
+            <h3 className={`text-4xl font-bold mb-4 flex items-center justify-center gap-3 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+              <Globe size={32} className={isLight ? 'text-green-600' : 'text-green-400'} />
               Public Data Portal
             </h3>
-            <div className="w-24 h-1 bg-gradient-to-r from-green-400 to-emerald-400 mx-auto rounded-full"></div>
+            <div className={`w-24 h-1 bg-gradient-to-r from-green-400 to-emerald-400 mx-auto rounded-full`}></div>
           </motion.div>
 
-          <GlassCard className="p-8 text-center">
-            <div className="text-green-100 text-lg leading-relaxed">
+          <GlassCard className={`p-8 text-center ${isLight ? 'bg-white/80 border border-slate-200' : ''}`}>
+            <div className={`text-lg leading-relaxed ${isLight ? 'text-slate-700' : 'text-green-100'}`}>
               Open access to geospatial data, satellite imagery, and community asset maps
               for research, planning, and development initiatives.
             </div>
@@ -528,11 +542,11 @@ export default function Home() {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h3 className="text-4xl font-bold text-white mb-4 flex items-center justify-center gap-3">
-              <Cpu size={32} className="text-green-400" />
+            <h3 className={`text-4xl font-bold mb-4 flex items-center justify-center gap-3 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+              <Cpu size={32} className={isLight ? 'text-green-600' : 'text-green-400'} />
               What We Provide
             </h3>
-            <div className="w-24 h-1 bg-gradient-to-r from-green-400 to-emerald-400 mx-auto rounded-full"></div>
+            <div className={`w-24 h-1 bg-gradient-to-r from-green-400 to-emerald-400 mx-auto rounded-full`}></div>
           </motion.div>
 
           <motion.div
@@ -549,11 +563,11 @@ export default function Home() {
                 description: (
                   <>
                     <Tooltip content="PostgreSQL extension for spatial data types and operations, enabling advanced geospatial queries and analysis">
-                      <span className="text-green-300 font-semibold underline decoration-dotted cursor-help">PostgreSQL + PostGIS</span>
+                      <span className={`font-semibold underline decoration-dotted cursor-help ${isLight ? 'text-green-700' : 'text-green-300'}`}>PostgreSQL + PostGIS</span>
                     </Tooltip>
                     , S3/Blob storage for COGs, metadata in{" "}
                     <Tooltip content="Columnar file format optimized for analytics and big data processing">
-                      <span className="text-green-300 font-semibold underline decoration-dotted cursor-help">Parquet/GeoParquet</span>
+                      <span className={`font-semibold underline decoration-dotted cursor-help ${isLight ? 'text-green-700' : 'text-green-300'}`}>Parquet/GeoParquet</span>
                     </Tooltip>
                     .
                   </>
@@ -567,11 +581,11 @@ export default function Home() {
                 description: (
                   <>
                     <Tooltip content="SpatioTemporal Asset Catalog - a specification for organizing and discovering geospatial data">
-                      <span className="text-green-300 font-semibold underline decoration-dotted cursor-help">STAC</span>
+                      <span className={`font-semibold underline decoration-dotted cursor-help ${isLight ? 'text-green-700' : 'text-green-300'}`}>STAC</span>
                     </Tooltip>{" "}
                     catalog,{" "}
                     <Tooltip content="Dynamic tile server for cloud-optimized geospatial data">
-                      <span className="text-green-300 font-semibold underline decoration-dotted cursor-help">Titiler</span>
+                      <span className={`font-semibold underline decoration-dotted cursor-help ${isLight ? 'text-green-700' : 'text-green-300'}`}>Titiler</span>
                     </Tooltip>{" "}
                     for dynamic tiles, use Sentinel/Resourcesat/Planet depending on budget.
                   </>
@@ -586,11 +600,11 @@ export default function Home() {
                   <>
                     Rule engine + ML scoring (
                     <Tooltip content="Extreme Gradient Boosting - a scalable machine learning algorithm for classification and regression">
-                      <span className="text-green-300 font-semibold underline decoration-dotted cursor-help">XGBoost</span>
+                      <span className={`font-semibold underline decoration-dotted cursor-help ${isLight ? 'text-green-700' : 'text-green-300'}`}>XGBoost</span>
                     </Tooltip>
                     ) with{" "}
                     <Tooltip content="SHapley Additive exPlanations - a method for explaining machine learning model predictions">
-                      <span className="text-green-300 font-semibold underline decoration-dotted cursor-help">SHAP</span>
+                      <span className={`font-semibold underline decoration-dotted cursor-help ${isLight ? 'text-green-700' : 'text-green-300'}`}>SHAP</span>
                     </Tooltip>{" "}
                     explanations for prioritisation.
                   </>
@@ -605,21 +619,21 @@ export default function Home() {
                 whileHover={{ y: -10 }}
                 transition={{ type: "spring", stiffness: 300 }}
               >
-                <GlassCard className="p-8 h-full group">
+                <GlassCard className={`p-8 h-full group ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
                   <motion.div
                     className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${service.gradient} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}
                   >
                     <service.icon size={24} className="text-white" />
                   </motion.div>
 
-                  <h4 className="text-xl font-semibold text-white mb-4">{service.title}</h4>
-                  <div className="text-green-100 mb-6 leading-relaxed">{service.description}</div>
+                  <h4 className={`text-xl font-semibold mb-4 ${isLight ? 'text-slate-800' : 'text-white'}`}>{service.title}</h4>
+                  <div className={`mb-6 leading-relaxed ${isLight ? 'text-slate-700' : 'text-green-100'}`}>{service.description}</div>
 
                   <div className="flex flex-wrap gap-2">
                     {service.tags.map((tag, j) => (
                       <motion.span
                         key={j}
-                        className="text-xs px-3 py-1 bg-white/10 hover:bg-green-500/20 text-green-300 rounded-full border border-white/20 hover:border-green-400/30 transition-all duration-300"
+                        className={`text-xs px-3 py-1 rounded-full border transition-all duration-300 ${isLight ? 'bg-slate-100 hover:bg-green-100 text-slate-800 border-slate-200 hover:border-green-300' : 'bg-white/10 hover:bg-green-500/20 text-green-300 border-white/20 hover:border-green-400/30'}`}
                         whileHover={{ scale: 1.1 }}
                       >
                         {tag}
@@ -648,11 +662,11 @@ export default function Home() {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h3 className="text-4xl font-bold text-white mb-4 flex items-center justify-center gap-3">
-              <BarChart3 size={32} className="text-green-400" />
+            <h3 className={`text-4xl font-bold mb-4 flex items-center justify-center gap-3 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+              <BarChart3 size={32} className={isLight ? 'text-green-600' : 'text-green-400'} />
               Implementation Roadmap
             </h3>
-            <div className="w-24 h-1 bg-gradient-to-r from-green-400 to-emerald-400 mx-auto rounded-full"></div>
+            <div className={`w-24 h-1 bg-gradient-to-r from-green-400 to-emerald-400 mx-auto rounded-full`}></div>
           </motion.div>
 
           <motion.div
@@ -670,11 +684,11 @@ export default function Home() {
                 description: (
                   <>
                     <Tooltip content="Optical Character Recognition - technology to convert images of text into machine-readable text">
-                      <span className="text-green-300 font-semibold underline decoration-dotted cursor-help">OCR</span>
+                      <span className={`font-semibold underline decoration-dotted cursor-help ${isLight ? 'text-green-700' : 'text-green-300'}`}>OCR</span>
                     </Tooltip>
                     ,{" "}
                     <Tooltip content="Named Entity Recognition - AI technique to identify and classify named entities in text">
-                      <span className="text-green-300 font-semibold underline decoration-dotted cursor-help">NER</span>
+                      <span className={`font-semibold underline decoration-dotted cursor-help ${isLight ? 'text-green-700' : 'text-green-300'}`}>NER</span>
                     </Tooltip>{" "}
                     extraction, human review flow, PostGIS ingestion with data validation and standardization.
                   </>
@@ -689,11 +703,11 @@ export default function Home() {
                 description: (
                   <>
                     <Tooltip content="Pre-rendered map tiles that can be efficiently served and displayed at multiple zoom levels">
-                      <span className="text-green-300 font-semibold underline decoration-dotted cursor-help">Vector tiles</span>
+                      <span className={`font-semibold underline decoration-dotted cursor-help ${isLight ? 'text-green-700' : 'text-green-300'}`}>Vector tiles</span>
                     </Tooltip>
                     , STAC layers, filters and progress dashboards with{" "}
                     <Tooltip content="Web-based Geographic Information System - interactive maps and spatial data visualization in browsers">
-                      <span className="text-green-300 font-semibold underline decoration-dotted cursor-help">WebGIS</span>
+                      <span className={`font-semibold underline decoration-dotted cursor-help ${isLight ? 'text-green-700' : 'text-green-300'}`}>WebGIS</span>
                     </Tooltip>{" "}
                     integration.
                   </>
@@ -720,7 +734,7 @@ export default function Home() {
                 whileHover={{ scale: 1.02 }}
                 transition={{ type: "spring", stiffness: 200 }}
               >
-                <GlassCard className="p-8 flex items-start gap-6 group">
+                <GlassCard className={`p-8 flex items-start gap-6 group ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
                   <motion.div
                     className={`p-4 bg-gradient-to-r from-${phase.color}-500 to-${phase.color}-600 rounded-2xl flex-shrink-0 group-hover:scale-110 transition-transform duration-300`}
                   >
@@ -729,19 +743,19 @@ export default function Home() {
 
                   <div className="flex-1">
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-4">
-                      <h4 className="text-xl font-semibold text-white">{phase.phase}</h4>
-                      <span className={`text-${phase.color}-300 font-medium px-3 py-1 bg-${phase.color}-500/20 rounded-full text-sm`}>
+                      <h4 className={`text-xl font-semibold ${isLight ? 'text-slate-800' : 'text-white'}`}>{phase.phase}</h4>
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${isLight ? `bg-${phase.color}-100 text-${phase.color}-800` : `bg-${phase.color}-500/20 text-${phase.color}-300`}`}>
                         {phase.duration}
                       </span>
                     </div>
 
-                    <div className="text-green-100 mb-4 leading-relaxed">{phase.description}</div>
+                    <div className={`mb-4 leading-relaxed ${isLight ? 'text-slate-700' : 'text-green-100'}`}>{phase.description}</div>
 
                     <div className="flex flex-wrap gap-2">
                       {phase.tags.map((tag, j) => (
                         <motion.span
                           key={j}
-                          className={`text-xs px-3 py-1 bg-${phase.color}-500/20 text-${phase.color}-300 rounded-full border border-${phase.color}-400/30`}
+                          className={`text-xs px-3 py-1 rounded-full border ${isLight ? `bg-${phase.color}-100 text-${phase.color}-800 border-${phase.color}-200` : `bg-${phase.color}-500/20 text-${phase.color}-300 border-${phase.color}-400/30`}`}
                           whileHover={{ scale: 1.05 }}
                         >
                           {tag}
@@ -768,7 +782,7 @@ export default function Home() {
             whileHover={{ scale: 1.02 }}
             transition={{ type: "spring", stiffness: 200 }}
           >
-            <GlassCard className="p-12 bg-gradient-to-r from-green-600/20 to-emerald-600/20 border-green-400/30 relative overflow-hidden">
+            <GlassCard className={`p-12 relative overflow-hidden ${isLight ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200' : 'bg-gradient-to-r from-green-600/20 to-emerald-600/20 border-green-400/30'}`}>
               {/* Animated background effects */}
               <div className="absolute inset-0 opacity-20">
                 {[...Array(20)].map((_, i) => {
@@ -779,7 +793,7 @@ export default function Home() {
                   return (
                     <motion.div
                       key={i}
-                      className="absolute w-2 h-2 bg-green-400 rounded-full"
+                      className={`absolute w-2 h-2 rounded-full ${isLight ? 'bg-green-500' : 'bg-green-400'}`}
                       style={{
                         left: `${(seeded(1) * 100).toFixed(3)}%`,
                         top: `${(seeded(2) * 100).toFixed(3)}%`,
@@ -800,27 +814,27 @@ export default function Home() {
 
               <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
                 <div className="flex-1 text-center lg:text-left">
-                  <h3 className="text-3xl font-bold text-white mb-4 flex items-center justify-center lg:justify-start gap-3">
-                    <Target size={32} className="text-green-400" />
+                  <h3 className={`text-3xl font-bold mb-4 flex items-center justify-center lg:justify-start gap-3 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                    <Target size={32} className={isLight ? 'text-green-600' : 'text-green-400'} />
                     Decision Support System
                   </h3>
-                  <div className="text-green-100 text-lg leading-relaxed mb-6">
+                  <div className={`text-lg leading-relaxed mb-6 ${isLight ? 'text-slate-700' : 'text-green-100'}`}>
                     A rules + ML engine to layer CSS schemes and prioritize interventions like borewells,
                     livelihoods, and restoration actions with explainability for officers. Integrates with{" "}
                     <Tooltip content="Pradhan Mantri Kisan Samman Nidhi - Direct income support scheme for farmers">
-                      <span className="text-green-300 font-semibold underline decoration-dotted cursor-help">PM-KISAN</span>
+                      <span className={`font-semibold underline decoration-dotted cursor-help ${isLight ? 'text-green-700' : 'text-green-300'}`}>PM-KISAN</span>
                     </Tooltip>
                     ,{" "}
                     <Tooltip content="National rural drinking water program to provide safe and adequate drinking water">
-                      <span className="text-green-300 font-semibold underline decoration-dotted cursor-help">Jal Jeevan Mission</span>
+                      <span className={`font-semibold underline decoration-dotted cursor-help ${isLight ? 'text-green-700' : 'text-green-300'}`}>Jal Jeevan Mission</span>
                     </Tooltip>
                     ,{" "}
                     <Tooltip content="Mahatma Gandhi National Rural Employment Guarantee Act - Rural employment scheme">
-                      <span className="text-green-300 font-semibold underline decoration-dotted cursor-help">MGNREGA</span>
+                      <span className={`font-semibold underline decoration-dotted cursor-help ${isLight ? 'text-green-700' : 'text-green-300'}`}>MGNREGA</span>
                     </Tooltip>
                     , and{" "}
                     <Tooltip content="Digital Agriculture Mission for Unified Gujarat Agriculture - Agricultural development initiative">
-                      <span className="text-green-300 font-semibold underline decoration-dotted cursor-help">DAJGUA</span>
+                      <span className={`font-semibold underline decoration-dotted cursor-help ${isLight ? 'text-green-700' : 'text-green-300'}`}>DAJGUA</span>
                     </Tooltip>{" "}
                     schemes for targeted development.
                   </div>
@@ -829,7 +843,7 @@ export default function Home() {
                     {["Scheme Integration", "Priority Ranking", "Explainable AI"].map((tag, i) => (
                       <motion.span
                         key={i}
-                        className="text-sm px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-300 rounded-full border border-green-400/30 hover:border-green-400/50 transition-all duration-300"
+                        className={`text-sm px-4 py-2 rounded-full border transition-all duration-300 ${isLight ? 'bg-green-100 hover:bg-green-200 text-green-800 border-green-200' : 'bg-green-500/20 hover:bg-green-500/30 text-green-300 border-green-400/30 hover:border-green-400/50'}`}
                         whileHover={{ scale: 1.05 }}
                       >
                         {tag}
@@ -865,11 +879,11 @@ export default function Home() {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h3 className="text-4xl font-bold text-white mb-4 flex items-center justify-center gap-3">
-              <Users size={32} className="text-green-400" />
+            <h3 className={`text-4xl font-bold mb-4 flex items-center justify-center gap-3 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+              <Users size={32} className={isLight ? 'text-green-600' : 'text-green-400'} />
               For Official Usage
             </h3>
-            <div className="w-24 h-1 bg-gradient-to-r from-green-400 to-emerald-400 mx-auto rounded-full"></div>
+            <div className={`w-24 h-1 bg-gradient-to-r from-green-400 to-emerald-400 mx-auto rounded-full`}></div>
           </motion.div>
 
           <motion.div
@@ -911,15 +925,15 @@ export default function Home() {
                 whileHover={{ y: -10, rotateY: 5 }}
                 transition={{ type: "spring", stiffness: 300 }}
               >
-                <GlassCard className="p-8 text-center h-full group">
+                <GlassCard className={`p-8 text-center h-full group ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
                   <motion.div
                     className={`w-20 h-20 rounded-3xl bg-gradient-to-r ${user.gradient} flex items-center justify-center mx-auto mb-6 group-hover:scale-110 group-hover:rotate-12 transition-all duration-300`}
                   >
                     <user.icon size={28} className="text-white" />
                   </motion.div>
 
-                  <h4 className="text-lg font-semibold text-white mb-3">{user.title}</h4>
-                  <div className="text-green-100 leading-relaxed">{user.description}</div>
+                  <h4 className={`text-lg font-semibold mb-3 ${isLight ? 'text-slate-800' : 'text-white'}`}>{user.title}</h4>
+                  <div className={`leading-relaxed ${isLight ? 'text-slate-700' : 'text-green-100'}`}>{user.description}</div>
                 </GlassCard>
               </motion.div>
             ))}
