@@ -2,6 +2,7 @@
 
 import React, { useMemo, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useTheme } from "../ThemeProvider";
 
 interface FloatingOrbsProps {
   className?: string;
@@ -9,6 +10,8 @@ interface FloatingOrbsProps {
 
 const FloatingOrbs: React.FC<FloatingOrbsProps> = ({ className = "" }) => {
   const [isClient, setIsClient] = useState(false);
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
 
   // Seeded randomness for deterministic positioning
   const seeded = (i: number, salt = 1) =>
@@ -43,14 +46,16 @@ const FloatingOrbs: React.FC<FloatingOrbsProps> = ({ className = "" }) => {
             height: orb.size,
             left: `${orb.x}%`,
             top: `${orb.y}%`,
-            background: `radial-gradient(circle, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 50%, transparent 100%)`,
+            background: isLight 
+              ? `radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.04) 50%, transparent 100%)`
+              : `radial-gradient(circle, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.05) 50%, transparent 100%)`,
             filter: 'blur(40px)',
           }}
           animate={{
             x: [0, 100, -50, 0],
             y: [0, -100, 50, 0],
             scale: [1, 1.2, 0.8, 1],
-            opacity: [0.3, 0.6, 0.2, 0.3]
+            opacity: isLight ? [0.2, 0.4, 0.1, 0.2] : [0.3, 0.6, 0.2, 0.3]
           }}
           transition={{
             duration: orb.duration,

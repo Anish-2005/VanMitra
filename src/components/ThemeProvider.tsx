@@ -16,6 +16,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
     try {
       if (typeof window !== "undefined") {
+        // Prefer the `data-theme` attribute set by the beforeInteractive script in layout
+        const attr = document.documentElement.getAttribute('data-theme');
+        if (attr === 'light' || attr === 'dark') return attr as Theme;
+
         const stored = localStorage.getItem("theme");
         if (stored === "light" || stored === "dark") return stored as Theme;
         // respect system preference if not set

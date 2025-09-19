@@ -26,7 +26,9 @@ const DecorativeElements = dynamic(() => import('@/components/ui/DecorativeEleme
 
 export default function Home() {
   const { theme } = useTheme();
-  const isLight = theme === 'light';
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  const isLight = mounted && theme === 'light';
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [email, setEmail] = useState("");

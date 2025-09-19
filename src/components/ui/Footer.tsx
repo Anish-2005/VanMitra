@@ -3,8 +3,12 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Leaf } from "lucide-react";
+import { useTheme } from "../ThemeProvider";
 
 const Footer: React.FC = () => {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
+
   return (
     <motion.footer
       className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 mt-24"
@@ -14,21 +18,37 @@ const Footer: React.FC = () => {
       viewport={{ once: true }}
     >
       <motion.div
-        className="flex flex-col sm:flex-row items-center justify-between gap-6 sm:gap-8 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-slate-900/90 to-emerald-900/90 backdrop-blur-xl border border-emerald-700/30 shadow-2xl"
+        className={`flex flex-col sm:flex-row items-center justify-between gap-6 sm:gap-8 p-6 sm:p-8 rounded-3xl backdrop-blur-xl border shadow-2xl ${
+          isLight
+            ? 'bg-gradient-to-br from-white via-green-50 to-emerald-100 border-green-300/80 shadow-lg'
+            : 'bg-gradient-to-r from-slate-900/90 to-emerald-900/90 border-emerald-700/30'
+        }`}
         whileHover={{ scale: 1.01 }}
         transition={{ type: "spring", stiffness: 200 }}
       >
         <div className="flex items-center gap-3 sm:gap-4">
           <motion.div
-            className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg"
+            className={`h-10 w-10 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center shadow-lg ${
+              isLight
+                ? 'bg-gradient-to-br from-green-600 to-emerald-700'
+                : 'bg-gradient-to-br from-emerald-400 to-emerald-600'
+            }`}
             whileHover={{ rotate: 360 }}
             transition={{ duration: 0.6 }}
           >
             <Leaf className="text-white" size={18} />
           </motion.div>
           <div>
-            <div className="text-base sm:text-lg font-semibold text-white">VanMitra</div>
-            <div className="text-xs sm:text-sm text-emerald-300">© {new Date().getFullYear()}:-   For tribal land rights</div>
+            <div className={`text-base sm:text-lg font-semibold ${
+              isLight ? 'text-green-900' : 'text-white'
+            }`}>
+              VanMitra
+            </div>
+            <div className={`text-xs sm:text-sm ${
+              isLight ? 'text-green-700' : 'text-emerald-300'
+            }`}>
+              © {new Date().getFullYear()}:- For tribal land rights
+            </div>
           </div>
         </div>
 
@@ -37,7 +57,11 @@ const Footer: React.FC = () => {
             <a
               key={link}
               href={`/${link.toLowerCase()}`}
-              className="text-emerald-200 hover:text-white transition-colors duration-300 relative text-sm sm:text-base"
+              className={`transition-colors duration-300 relative text-sm sm:text-base ${
+                isLight
+                  ? 'text-green-800 hover:text-green-900 font-medium'
+                  : 'text-emerald-200 hover:text-white'
+              }`}
             >
               <motion.span
                 whileHover={{ scale: 1.05, y: -1 }}
@@ -48,7 +72,11 @@ const Footer: React.FC = () => {
               >
                 {link}
                 <motion.div
-                  className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-emerald-400 to-emerald-500 origin-left"
+                  className={`absolute -bottom-1 left-0 w-full h-0.5 origin-left ${
+                    isLight
+                      ? 'bg-gradient-to-r from-green-600 to-emerald-700'
+                      : 'bg-gradient-to-r from-emerald-400 to-emerald-500'
+                  }`}
                   initial={{ scaleX: 0 }}
                   whileHover={{ scaleX: 1 }}
                   transition={{ duration: 0.3 }}
