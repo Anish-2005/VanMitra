@@ -142,7 +142,7 @@ const Navbar: React.FC = () => {
         >
           <motion.div
             className={`relative h-14 w-14 rounded-2xl flex items-center justify-center shadow-2xl overflow-hidden ${isLight ? 'border border-green-200' : 'border border-white/8'}`}
-            style={{ background: isLight ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg,var(--primary-500),var(--primary-600))'}}
+            style={{ background: isLight ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg,var(--primary-500),var(--primary-600))' }}
             whileHover={{ scale: 1.05, rotate: 5 }}
             transition={{ type: "spring", stiffness: 300 }}
           >
@@ -186,22 +186,22 @@ const Navbar: React.FC = () => {
           </motion.div>
           <div>
             <motion.h1
-  className="text-2xl font-bold tracking-tight"
-  style={{ 
-    backgroundImage: isLight 
-      ? 'linear-gradient(135deg, #059669, #047857)' 
-      : 'linear-gradient(to right, white, #a7f3d0, #6ee7b7)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-    backgroundClip: 'text',
-    color: 'transparent'
-  }}
-  initial={{ opacity: 0, x: -20 }}
-  animate={{ opacity: 1, x: 0 }}
-  transition={{ delay: 0.2 }}
->
-  VanMitra
-</motion.h1>
+              className="text-2xl font-bold tracking-tight"
+              style={{
+                backgroundImage: isLight
+                  ? 'linear-gradient(135deg, #059669, #047857)'
+                  : 'linear-gradient(to right, white, #a7f3d0, #6ee7b7)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                color: 'transparent'
+              }}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              VanMitra
+            </motion.h1>
             <motion.p
               className="text-sm font-medium"
               initial={{ opacity: 0, x: -20 }}
@@ -247,9 +247,9 @@ const Navbar: React.FC = () => {
               <MagneticButton
                 onClick={handleSignOut}
                 className="ml-6 px-8 py-3 font-semibold rounded-2xl shadow-lg hover:shadow-2xl"
-                style={isLight ? 
-                  { background: 'linear-gradient(90deg, #ef4444, #f97316)', color: 'white', border: '1px solid rgba(0,0,0,0.08)' } : 
-                  { background: 'linear-gradient(90deg,var(--destructive),#fb923c)', color: 'var(--card-foreground)', border: '1px solid rgba(255,255,255,0.08)'}
+                style={isLight ?
+                  { background: 'linear-gradient(90deg, #ef4444, #f97316)', color: 'white', border: '1px solid rgba(0,0,0,0.08)' } :
+                  { background: 'linear-gradient(90deg,var(--destructive),#fb923c)', color: 'var(--card-foreground)', border: '1px solid rgba(255,255,255,0.08)' }
                 }
               >
                 Sign out
@@ -264,9 +264,9 @@ const Navbar: React.FC = () => {
               <MagneticButton
                 onClick={handleSignIn}
                 className="ml-6 px-8 py-3 font-semibold rounded-2xl shadow-lg hover:shadow-2xl"
-                style={isLight ? 
-                  { background: 'linear-gradient(90deg, #059669, #047857)', color: 'white', border: '1px solid rgba(0,0,0,0.08)' } : 
-                  { background: 'linear-gradient(90deg,var(--primary-600),var(--primary-700))', color: 'var(--card-foreground)', border: '1px solid rgba(255,255,255,0.08)'}
+                style={isLight ?
+                  { background: 'linear-gradient(90deg, #059669, #047857)', color: 'white', border: '1px solid rgba(0,0,0,0.08)' } :
+                  { background: 'linear-gradient(90deg,var(--primary-600),var(--primary-700))', color: 'var(--card-foreground)', border: '1px solid rgba(255,255,255,0.08)' }
                 }
               >
                 Sign in
@@ -322,10 +322,10 @@ const Navbar: React.FC = () => {
             {/* Backdrop */}
             <motion.div
               className="absolute inset-0 backdrop-blur-sm"
-              style={isLight 
-  ? { background: 'linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(240,253,244,0.6))' } 
-  : { background: 'linear-gradient(to bottom, rgba(15,23,42,0.8), rgba(6,78,59,0.6))' }
-}
+              style={isLight
+                ? { background: 'linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(240,253,244,0.6))' }
+                : { background: 'linear-gradient(to bottom, rgba(9, 55, 42, 0.8), rgba(18, 139, 107, 0.6))' }
+              }
 
               onClick={onMobileMenuToggle}
               initial={{ opacity: 0 }}
@@ -336,10 +336,11 @@ const Navbar: React.FC = () => {
             {/* Sidebar */}
             <motion.aside
               className="absolute top-0 right-0 w-80 h-full backdrop-blur-xl shadow-2xl"
-              style={isLight ? 
-                { background: 'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(240,253,244,0.98))', borderLeft: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 0 40px rgba(0,0,0,0.1)' } : 
-                { background: 'linear-gradient(180deg, rgba(4,18,11,0.95), rgba(16,24,20,0.95))', borderLeft: '1px solid rgba(255,255,255,0.06)' }
+              style={isLight
+                ? { background: 'linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(155, 204, 170, 0.6))' }
+                : { background: 'linear-gradient(to bottom, rgba(10, 38, 30, 0.8), rgba(11, 84, 36, 0.6))' }
               }
+
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
@@ -390,10 +391,10 @@ const Navbar: React.FC = () => {
                       navigateToPage(item.route);
                       onMobileMenuToggle();
                     }}
-                    className={`group relative w-full p-4 rounded-2xl text-left font-medium transition-all duration-300 backdrop-blur-sm border overflow-hidden ${isLight ? 
-                      'text-green-800 hover:text-green-900 bg-white/50 border-green-100 hover:border-green-300 hover:bg-green-50' : 
+                    className={`group relative w-full p-4 rounded-2xl text-left font-medium transition-all duration-300 backdrop-blur-sm border overflow-hidden ${isLight ?
+                      'text-green-800 hover:text-green-900 bg-white/50 border-green-100 hover:border-green-300 hover:bg-green-50' :
                       'text-green-100 hover:text-white border-transparent hover:border-white/20 hover:bg-white/10'
-                    }`}
+                      }`}
                     variants={{
                       hidden: { x: 50, opacity: 0 },
                       visible: {
@@ -417,10 +418,10 @@ const Navbar: React.FC = () => {
 
                     <div className="relative flex items-center gap-4">
                       <motion.div
-                        className={`p-2 rounded-xl transition-colors ${isLight ? 
-                          'bg-green-100 group-hover:bg-green-200 text-green-700' : 
+                        className={`p-2 rounded-xl transition-colors ${isLight ?
+                          'bg-green-100 group-hover:bg-green-200 text-green-700' :
                           'bg-white/10 group-hover:bg-white/20 text-green-400 group-hover:text-emerald-300'
-                        }`}
+                          }`}
                         whileHover={{ rotate: 5 }}
                       >
                         <item.icon size={18} />
@@ -442,10 +443,10 @@ const Navbar: React.FC = () => {
 
               {/* User Section */}
               <motion.div
-                className={`absolute bottom-0 left-0 right-0 p-6 border-t ${isLight ? 
-                  'border-green-100 bg-gradient-to-t from-white/20 to-transparent' : 
+                className={`absolute bottom-0 left-0 right-0 p-6 border-t ${isLight ?
+                  'border-green-100 bg-gradient-to-t from-white/20 to-transparent' :
                   'border-white/10 bg-gradient-to-t from-black/20 to-transparent'
-                }`}
+                  }`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.8 }}
@@ -454,10 +455,10 @@ const Navbar: React.FC = () => {
                   <div className="space-y-4">
                     {/* User Info */}
                     <motion.div
-                      className={`flex items-center gap-3 p-3 rounded-xl border ${isLight ? 
-                        'bg-green-50 border-green-200' : 
+                      className={`flex items-center gap-3 p-3 rounded-xl border ${isLight ?
+                        'bg-green-50 border-green-200' :
                         'bg-white/5 border-white/10'
-                      }`}
+                        }`}
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: 0.9 }}
@@ -481,10 +482,10 @@ const Navbar: React.FC = () => {
                         handleSignOut();
                         onMobileMenuToggle();
                       }}
-                      className={`w-full font-semibold rounded-xl shadow-lg hover:shadow-2xl border ${isLight ? 
-                        'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-400 hover:to-orange-400 text-white border-red-300' : 
+                      className={`w-full font-semibold rounded-xl shadow-lg hover:shadow-2xl border ${isLight ?
+                        'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-400 hover:to-orange-400 text-white border-red-300' :
                         'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-400 hover:to-orange-400 text-white border-white/20'
-                      }`}
+                        }`}
                     >
                       Sign out
                     </MagneticButton>
@@ -507,10 +508,10 @@ const Navbar: React.FC = () => {
                         handleSignIn();
                         onMobileMenuToggle();
                       }}
-                      className={`w-full font-semibold rounded-xl shadow-lg hover:shadow-2xl border ${isLight ? 
-                        'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white border-green-300' : 
+                      className={`w-full font-semibold rounded-xl shadow-lg hover:shadow-2xl border ${isLight ?
+                        'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white border-green-300' :
                         'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white border-white/20'
-                      }`}
+                        }`}
                     >
                       Sign in
                     </MagneticButton>
@@ -573,10 +574,10 @@ const Navbar: React.FC = () => {
 
                 {error && (
                   <motion.div
-                    className={`mb-6 p-4 rounded-xl backdrop-blur-sm ${isLight ? 
-                      'bg-red-100 border border-red-300 text-red-800' : 
+                    className={`mb-6 p-4 rounded-xl backdrop-blur-sm ${isLight ?
+                      'bg-red-100 border border-red-300 text-red-800' :
                       'bg-red-900/20 border border-red-700/50 text-red-300'
-                    }`}
+                      }`}
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                   >
@@ -589,10 +590,10 @@ const Navbar: React.FC = () => {
                   <motion.button
                     onClick={handleGoogleSignIn}
                     disabled={isGoogleSigningIn || isSigningIn}
-                    className={`w-full py-4 px-6 rounded-2xl font-medium transition-all duration-300 backdrop-blur-sm focus:outline-none focus:ring-2 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed ${isLight ? 
-                      'bg-white border border-green-200 text-green-800 hover:bg-green-50 focus:ring-green-400' : 
+                    className={`w-full py-4 px-6 rounded-2xl font-medium transition-all duration-300 backdrop-blur-sm focus:outline-none focus:ring-2 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed ${isLight ?
+                      'bg-white border border-green-200 text-green-800 hover:bg-green-50 focus:ring-green-400' :
                       'bg-white/10 border border-white/20 text-white hover:bg-white/20 focus:ring-green-400'
-                    }`}
+                      }`}
                     whileHover={{ scale: isGoogleSigningIn || isSigningIn ? 1 : 1.02 }}
                     whileTap={{ scale: isGoogleSigningIn || isSigningIn ? 1 : 0.98 }}
                   >
@@ -636,10 +637,10 @@ const Navbar: React.FC = () => {
                       <div className={`w-full border-t ${isLight ? 'border-green-200' : 'border-white/20'}`}></div>
                     </div>
                     <div className="relative flex justify-center text-sm">
-                      <span className={`px-4 font-medium ${isLight ? 
-                        'bg-white text-green-700' : 
+                      <span className={`px-4 font-medium ${isLight ?
+                        'bg-white text-green-700' :
                         'bg-gradient-to-br from-slate-800 to-green-800 text-green-300'
-                      }`}>or</span>
+                        }`}>or</span>
                     </div>
                   </div>
 
@@ -656,10 +657,10 @@ const Navbar: React.FC = () => {
                       placeholder="Email address"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className={`w-full px-4 py-4 rounded-2xl backdrop-blur-sm focus:outline-none focus:ring-2 focus:border-green-400 transition-all ${isLight ? 
-                        'bg-white border border-green-200 text-green-900 placeholder-green-600 focus:ring-green-400' : 
+                      className={`w-full px-4 py-4 rounded-2xl backdrop-blur-sm focus:outline-none focus:ring-2 focus:border-green-400 transition-all ${isLight ?
+                        'bg-white border border-green-200 text-green-900 placeholder-green-600 focus:ring-green-400' :
                         'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'
-                      }`}
+                        }`}
                       whileFocus={{ scale: 1.01 }}
                       disabled={isSigningIn || isGoogleSigningIn}
                     />
@@ -668,10 +669,10 @@ const Navbar: React.FC = () => {
                       placeholder="Password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className={`w-full px-4 py-4 rounded-2xl backdrop-blur-sm focus:outline-none focus:ring-2 focus:border-green-400 transition-all ${isLight ? 
-                        'bg-white border border-green-200 text-green-900 placeholder-green-600 focus:ring-green-400' : 
+                      className={`w-full px-4 py-4 rounded-2xl backdrop-blur-sm focus:outline-none focus:ring-2 focus:border-green-400 transition-all ${isLight ?
+                        'bg-white border border-green-200 text-green-900 placeholder-green-600 focus:ring-green-400' :
                         'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'
-                      }`}
+                        }`}
                       whileFocus={{ scale: 1.01 }}
                       disabled={isSigningIn || isGoogleSigningIn}
                     />
@@ -679,8 +680,8 @@ const Navbar: React.FC = () => {
                       type="submit"
                       className="w-full py-4"
                       disabled={isSigningIn || isGoogleSigningIn}
-                      style={isLight ? 
-                        { background: 'linear-gradient(90deg, #059669, #047857)', color: 'white' } : 
+                      style={isLight ?
+                        { background: 'linear-gradient(90deg, #059669, #047857)', color: 'white' } :
                         { background: 'linear-gradient(90deg,var(--primary-600),var(--primary-700))', color: 'var(--card-foreground)' }
                       }
                     >
@@ -693,10 +694,10 @@ const Navbar: React.FC = () => {
                   <p className={isLight ? 'text-green-700 text-sm' : 'text-green-300 text-sm'}>
                     Don't have an account?{" "}
                     <button
-                      className={`underline font-medium transition-colors ${isLight ? 
-                        'text-green-600 hover:text-green-800' : 
+                      className={`underline font-medium transition-colors ${isLight ?
+                        'text-green-600 hover:text-green-800' :
                         'text-green-400 hover:text-green-300'
-                      }`}
+                        }`}
                       onClick={() => {
                         setLoginOpen(false);
                         // Could redirect to sign up page here

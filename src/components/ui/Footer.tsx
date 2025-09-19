@@ -1,13 +1,15 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Leaf } from "lucide-react";
 import { useTheme } from "../ThemeProvider";
 
 const Footer: React.FC = () => {
   const { theme } = useTheme();
-  const isLight = theme === 'light';
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  const isLight = mounted && theme === 'light';
 
   return (
     <motion.footer

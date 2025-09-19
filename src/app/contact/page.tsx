@@ -18,8 +18,13 @@ import FloatingOrbs from "@/components/ui/FloatingOrbs";
 import DecorativeElements from "@/components/ui/DecorativeElements";
 import GlassCard from "@/components/ui/GlassCard";
 import MagneticButton from "@/components/ui/MagneticButton";
+import { useTheme } from "@/components/ThemeProvider";
 
 export default function Contact() {
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  const isLight = mounted && theme === 'light';
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [email, setEmail] = useState("");
@@ -85,21 +90,30 @@ export default function Contact() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-emerald-900 text-white relative overflow-hidden">
+    <div className={`min-h-screen relative overflow-hidden ${
+      isLight 
+        ? 'bg-gradient-to-br from-white via-emerald-50 to-green-50 text-slate-900' 
+        : 'bg-gradient-to-br from-slate-900 via-green-900 to-emerald-900 text-white'
+    }`}>
       <ThreeBackground />
       <DecorativeElements />
       <FloatingOrbs />
 
       {/* Mesh Gradient Overlay */}
-      <div className="fixed inset-0 bg-gradient-to-br from-green-900/20 via-transparent to-emerald-900/20 pointer-events-none z-1" />
+      <div className={isLight 
+        ? "fixed inset-0 bg-gradient-to-br from-white/40 via-transparent to-emerald-100/20 pointer-events-none z-1" 
+        : "fixed inset-0 bg-gradient-to-br from-green-900/20 via-transparent to-emerald-900/20 pointer-events-none z-1"
+      } />
 
       {/* Animated Grid */}
-      <div className="fixed inset-0 opacity-10 pointer-events-none z-1">
+      <div className={isLight 
+        ? "fixed inset-0 opacity-10 pointer-events-none z-1" 
+        : "fixed inset-0 opacity-10 pointer-events-none z-1"
+      }>
         <div className="absolute inset-0" style={{
-          backgroundImage: `
-            linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px)
-          `,
+          backgroundImage: isLight 
+            ? `linear-gradient(rgba(16, 185, 129, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 185, 129, 0.05) 1px, transparent 1px)`
+            : `linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px)`,
           backgroundSize: '50px 50px'
         }} />
       </div>
@@ -117,23 +131,25 @@ export default function Contact() {
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              className={isLight ? "absolute inset-0 bg-white/60 backdrop-blur-sm" : "absolute inset-0 bg-black/60 backdrop-blur-sm"}
               onClick={() => setLoginOpen(false)}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             />
             <motion.div
-              className="relative bg-gradient-to-br from-slate-800 to-green-800 rounded-3xl shadow-2xl p-8 w-full max-w-md mx-4 border border-white/20 backdrop-blur-xl"
+              className={`relative rounded-3xl shadow-2xl p-8 w-full max-w-md mx-4 backdrop-blur-xl ${
+                isLight ? 'bg-white border border-slate-200' : 'bg-gradient-to-br from-slate-800 to-green-800 border border-white/20'
+              }`}
               initial={{ scale: 0.8, opacity: 0, y: 50 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.8, opacity: 0, y: 50 }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
             >
-              <h3 className="text-2xl font-bold text-white mb-6 text-center">Welcome Back</h3>
+              <h3 className={`text-2xl font-bold mb-6 text-center ${isLight ? 'text-slate-900' : 'text-white'}`}>Welcome Back</h3>
               {error && (
                 <motion.p
-                  className="text-red-400 mb-4 text-center"
+                  className="text-red-500 mb-4 text-center"
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
@@ -147,7 +163,11 @@ export default function Contact() {
                   placeholder="Email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-green-300 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                  className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 ${
+                    isLight 
+                      ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500' 
+                      : 'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'
+                  }`}
                   whileFocus={{ scale: 1.02 }}
                 />
                 <motion.input
@@ -155,7 +175,11 @@ export default function Contact() {
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-green-300 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                  className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 ${
+                    isLight 
+                      ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500' 
+                      : 'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'
+                  }`}
                   whileFocus={{ scale: 1.02 }}
                 />
                 <MagneticButton onClick={handleLogin} className="w-full">
@@ -168,7 +192,7 @@ export default function Contact() {
       </AnimatePresence>
 
       {/* Main Content */}
-      <main className="relative z-10 max-w-6xl mx-auto px-6 py-16">
+      <main className={`relative z-10 max-w-6xl mx-auto px-6 py-16 ${isLight ? 'text-slate-900' : 'text-white'}`}>
         <motion.div
           className="text-center mb-16"
           initial={{ y: 50, opacity: 0 }}
@@ -176,18 +200,25 @@ export default function Contact() {
           transition={{ duration: 0.8 }}
         >
           <motion.div
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 mb-6"
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 ${
+              isLight 
+                ? 'bg-green-100 border border-green-200 text-green-800' 
+                : 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 text-green-300'
+            }`}
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 200, damping: 15 }}
           >
-            <MessageSquare size={16} className="text-green-400" />
-            <span className="text-green-300 font-medium">Get In Touch</span>
+            <MessageSquare size={16} className={isLight ? 'text-green-600' : 'text-green-400'} />
+            <span className="font-medium">Get In Touch</span>
           </motion.div>
 
           <h1 className="text-4xl lg:text-5xl font-extrabold leading-tight mb-6">
             <motion.span
-              className="bg-gradient-to-r from-white via-green-300 to-emerald-300 bg-clip-text text-transparent"
+              className={isLight 
+                ? 'text-green-700' 
+                : 'bg-gradient-to-r from-white via-green-300 to-emerald-300 bg-clip-text text-transparent'
+              }
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.8 }}
@@ -207,8 +238,8 @@ export default function Contact() {
           >
             <motion.div variants={itemVariants}>
               <GlassCard className="p-8 mb-8">
-                <h2 className="text-2xl font-bold text-white mb-6">Let's Connect</h2>
-                <p className="text-green-100 leading-relaxed mb-8">
+                <h2 className={`text-2xl font-bold mb-6 ${isLight ? 'text-slate-800' : 'text-white'}`}>Let's Connect</h2>
+                <p className={`leading-relaxed mb-8 ${isLight ? 'text-slate-700' : 'text-green-100'}`}>
                   Have questions about VanMitra? Need technical support? Want to explore partnership opportunities?
                   We're here to help you navigate the world of forest rights and geospatial technology.
                 </p>
@@ -219,9 +250,9 @@ export default function Contact() {
                       <Mail size={20} className="text-white" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-white">Email</h3>
-                      <p className="text-green-300">contact@vanmitra.org</p>
-                      <p className="text-green-300">support@vanmitra.org</p>
+                      <h3 className={`text-lg font-semibold ${isLight ? 'text-slate-800' : 'text-white'}`}>Email</h3>
+                      <p className={isLight ? 'text-blue-700' : 'text-green-300'}>contact@vanmitra.org</p>
+                      <p className={isLight ? 'text-blue-700' : 'text-green-300'}>support@vanmitra.org</p>
                     </div>
                   </div>
 
@@ -230,9 +261,9 @@ export default function Contact() {
                       <Phone size={20} className="text-white" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-white">Phone</h3>
-                      <p className="text-green-300">+91 98765 43210</p>
-                      <p className="text-green-300">Mon-Fri, 9:00 AM - 6:00 PM IST</p>
+                      <h3 className={`text-lg font-semibold ${isLight ? 'text-slate-800' : 'text-white'}`}>Phone</h3>
+                      <p className={isLight ? 'text-green-700' : 'text-green-300'}>+91 98765 43210</p>
+                      <p className={isLight ? 'text-green-700' : 'text-green-300'}>Mon-Fri, 9:00 AM - 6:00 PM IST</p>
                     </div>
                   </div>
 
@@ -241,9 +272,9 @@ export default function Contact() {
                       <MapPinIcon size={20} className="text-white" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-white">Location</h3>
-                      <p className="text-green-300">Bhopal, Madhya Pradesh</p>
-                      <p className="text-green-300">India</p>
+                      <h3 className={`text-lg font-semibold ${isLight ? 'text-slate-800' : 'text-white'}`}>Location</h3>
+                      <p className={isLight ? 'text-purple-700' : 'text-green-300'}>Bhopal, Madhya Pradesh</p>
+                      <p className={isLight ? 'text-purple-700' : 'text-green-300'}>India</p>
                     </div>
                   </div>
 
@@ -252,9 +283,9 @@ export default function Contact() {
                       <ClockIcon size={20} className="text-white" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-white">Response Time</h3>
-                      <p className="text-green-300">Within 24 hours</p>
-                      <p className="text-green-300">Priority support for urgent issues</p>
+                      <h3 className={`text-lg font-semibold ${isLight ? 'text-slate-800' : 'text-white'}`}>Response Time</h3>
+                      <p className={isLight ? 'text-amber-700' : 'text-green-300'}>Within 24 hours</p>
+                      <p className={isLight ? 'text-amber-700' : 'text-green-300'}>Priority support for urgent issues</p>
                     </div>
                   </div>
                 </div>
@@ -262,19 +293,23 @@ export default function Contact() {
             </motion.div>
 
             <motion.div variants={itemVariants}>
-              <GlassCard className="p-8 bg-gradient-to-r from-green-600/20 to-emerald-600/20 border-green-400/30">
-                <h3 className="text-xl font-bold text-white mb-4">Quick Links</h3>
+              <GlassCard className={`p-8 ${
+                isLight 
+                  ? 'bg-gradient-to-r from-green-100 to-emerald-100 border-green-300/60' 
+                  : 'bg-gradient-to-r from-green-600/20 to-emerald-600/20 border-green-400/30'
+              }`}>
+                <h3 className={`text-xl font-bold mb-4 ${isLight ? 'text-slate-800' : 'text-white'}`}>Quick Links</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <MagneticButton variant="secondary" className="text-sm">
+                  <MagneticButton variant={isLight ? "outline" : "secondary"} className="text-sm">
                     Documentation
                   </MagneticButton>
-                  <MagneticButton variant="secondary" className="text-sm">
+                  <MagneticButton variant={isLight ? "outline" : "secondary"} className="text-sm">
                     API Reference
                   </MagneticButton>
-                  <MagneticButton variant="secondary" className="text-sm">
+                  <MagneticButton variant={isLight ? "outline" : "secondary"} className="text-sm">
                     Support Center
                   </MagneticButton>
-                  <MagneticButton variant="secondary" className="text-sm">
+                  <MagneticButton variant={isLight ? "outline" : "secondary"} className="text-sm">
                     Community Forum
                   </MagneticButton>
                 </div>
@@ -290,7 +325,7 @@ export default function Contact() {
           >
             <motion.div variants={itemVariants}>
               <GlassCard className="p-8">
-                <h2 className="text-2xl font-bold text-white mb-6">Send us a Message</h2>
+                <h2 className={`text-2xl font-bold mb-6 ${isLight ? 'text-slate-800' : 'text-white'}`}>Send us a Message</h2>
 
                 <form onSubmit={handleContactSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -300,7 +335,11 @@ export default function Contact() {
                         placeholder="Your Name"
                         value={contactForm.name}
                         onChange={(e) => setContactForm({...contactForm, name: e.target.value})}
-                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-green-300 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                        className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 ${
+                          isLight 
+                            ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500' 
+                            : 'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'
+                        }`}
                         required
                       />
                     </motion.div>
@@ -311,7 +350,11 @@ export default function Contact() {
                         placeholder="Your Email"
                         value={contactForm.email}
                         onChange={(e) => setContactForm({...contactForm, email: e.target.value})}
-                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-green-300 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                        className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 ${
+                          isLight 
+                            ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500' 
+                            : 'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'
+                        }`}
                         required
                       />
                     </motion.div>
@@ -323,7 +366,11 @@ export default function Contact() {
                       placeholder="Subject"
                       value={contactForm.subject}
                       onChange={(e) => setContactForm({...contactForm, subject: e.target.value})}
-                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-green-300 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                      className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 ${
+                        isLight 
+                          ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500' 
+                          : 'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'
+                      }`}
                       required
                     />
                   </motion.div>
@@ -334,7 +381,11 @@ export default function Contact() {
                       value={contactForm.message}
                       onChange={(e) => setContactForm({...contactForm, message: e.target.value})}
                       rows={6}
-                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-green-300 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-green-400 resize-none"
+                      className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 resize-none ${
+                        isLight 
+                          ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500' 
+                          : 'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'
+                      }`}
                       required
                     />
                   </motion.div>
@@ -364,7 +415,7 @@ export default function Contact() {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl font-bold text-white mb-4">Frequently Asked Questions</h2>
+            <h2 className={`text-3xl font-bold mb-4 ${isLight ? 'text-slate-800' : 'text-white'}`}>Frequently Asked Questions</h2>
             <div className="w-24 h-1 bg-gradient-to-r from-green-400 to-emerald-400 mx-auto rounded-full"></div>
           </motion.div>
 
@@ -395,8 +446,8 @@ export default function Contact() {
             ].map((faq, i) => (
               <motion.div key={i} variants={itemVariants}>
                 <GlassCard className="p-6">
-                  <h3 className="text-lg font-semibold text-white mb-3">{faq.question}</h3>
-                  <p className="text-green-100 leading-relaxed">{faq.answer}</p>
+                  <h3 className={`text-lg font-semibold mb-3 ${isLight ? 'text-slate-800' : 'text-white'}`}>{faq.question}</h3>
+                  <p className={`leading-relaxed ${isLight ? 'text-slate-700' : 'text-green-100'}`}>{faq.answer}</p>
                 </GlassCard>
               </motion.div>
             ))}

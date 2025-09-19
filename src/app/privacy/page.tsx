@@ -75,28 +75,27 @@ export default function Privacy() {
   };
 
   return (
-    <div className={`min-h-screen relative overflow-hidden ${
-      isLight 
-        ? 'bg-gradient-to-br from-white via-emerald-50 to-green-50 text-slate-900' 
-        : 'bg-gradient-to-br from-slate-900 via-green-900 to-emerald-900 text-white'
-    }`}>
+    <div className={`min-h-screen relative overflow-hidden ${isLight
+      ? 'bg-gradient-to-br from-white via-emerald-50 to-green-50 text-slate-900'
+      : 'bg-gradient-to-br from-slate-900 via-green-900 to-emerald-900 text-white'
+      }`}>
       <ThreeBackground />
       <DecorativeElements />
       <FloatingOrbs />
 
       {/* Mesh Gradient Overlay */}
-      <div className={isLight 
-        ? "fixed inset-0 bg-gradient-to-br from-white/40 via-transparent to-emerald-100/20 pointer-events-none z-1" 
+      <div className={isLight
+        ? "fixed inset-0 bg-gradient-to-br from-white/40 via-transparent to-emerald-100/20 pointer-events-none z-1"
         : "fixed inset-0 bg-gradient-to-br from-green-900/20 via-transparent to-emerald-900/20 pointer-events-none z-1"
       } />
 
       {/* Animated Grid */}
-      <div className={isLight 
-        ? "fixed inset-0 opacity-10 pointer-events-none z-1" 
+      <div className={isLight
+        ? "fixed inset-0 opacity-10 pointer-events-none z-1"
         : "fixed inset-0 opacity-10 pointer-events-none z-1"
       }>
         <div className="absolute inset-0" style={{
-          backgroundImage: isLight 
+          backgroundImage: isLight
             ? `linear-gradient(rgba(16, 185, 129, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 185, 129, 0.05) 1px, transparent 1px)`
             : `linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px)`,
           backgroundSize: '50px 50px'
@@ -123,9 +122,8 @@ export default function Privacy() {
               exit={{ opacity: 0 }}
             />
             <motion.div
-              className={`relative rounded-3xl shadow-2xl p-8 w-full max-w-md mx-4 backdrop-blur-xl ${
-                isLight ? 'bg-white border border-slate-200' : 'bg-gradient-to-br from-slate-800 to-green-800 border border-white/20'
-              }`}
+              className={`relative rounded-3xl shadow-2xl p-8 w-full max-w-md mx-4 backdrop-blur-xl ${isLight ? 'bg-white border border-slate-200' : 'bg-gradient-to-br from-slate-800 to-green-800 border border-white/20'
+                }`}
               initial={{ scale: 0.8, opacity: 0, y: 50 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.8, opacity: 0, y: 50 }}
@@ -148,11 +146,10 @@ export default function Privacy() {
                   placeholder="Email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 ${
-                    isLight 
-                      ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500' 
-                      : 'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'
-                  }`}
+                  className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 ${isLight
+                    ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500'
+                    : 'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'
+                    }`}
                   whileFocus={{ scale: 1.02 }}
                 />
                 <motion.input
@@ -160,11 +157,10 @@ export default function Privacy() {
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 ${
-                    isLight 
-                      ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500' 
-                      : 'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'
-                  }`}
+                  className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 ${isLight
+                    ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500'
+                    : 'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'
+                    }`}
                   whileFocus={{ scale: 1.02 }}
                 />
                 <MagneticButton onClick={handleLogin} className="w-full">
@@ -185,11 +181,10 @@ export default function Privacy() {
           transition={{ duration: 0.8 }}
         >
           <motion.div
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 ${
-              isLight 
-                ? 'bg-green-100 border border-green-200 text-green-800' 
-                : 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 text-green-300'
-            }`}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 ${isLight
+              ? 'bg-green-100 border border-green-200 text-green-800'
+              : 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 text-green-300'
+              }`}
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 200, damping: 15 }}
@@ -200,8 +195,8 @@ export default function Privacy() {
 
           <h1 className="text-4xl lg:text-5xl font-extrabold leading-tight mb-6">
             <motion.span
-              className={isLight 
-                ? 'text-green-700' 
+              className={isLight
+                ? 'text-green-700'
                 : 'bg-gradient-to-r from-white via-green-300 to-emerald-300 bg-clip-text text-transparent'
               }
               initial={{ opacity: 0, y: 50 }}
@@ -366,11 +361,10 @@ export default function Privacy() {
 
           {/* Contact Us */}
           <motion.div variants={itemVariants}>
-            <GlassCard className={`p-8 ${
-              isLight 
-                ? 'bg-gradient-to-r from-green-100 to-emerald-100 border-green-300/60' 
+            <GlassCard className={`p-8 ${isLight
+                ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200/80'
                 : 'bg-gradient-to-r from-green-600/20 to-emerald-600/20 border-green-400/30'
-            }`}>
+              }`}>
               <div className="text-center">
                 <h2 className={`text-2xl font-bold mb-4 ${isLight ? 'text-slate-800' : 'text-white'}`}>Contact Us</h2>
                 <p className={`mb-6 ${isLight ? 'text-slate-700' : 'text-green-100'}`}>
@@ -378,10 +372,16 @@ export default function Privacy() {
                   please contact us at:
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <MagneticButton variant={isLight ? "outline" : "secondary"}>
+                  <MagneticButton
+                    variant={isLight ? "outline" : "secondary"}
+                    className={isLight ? "border-green-600 text-green-700 hover:bg-green-50 hover:text-green-800" : ""}
+                  >
                     privacy@vanmitra.org
                   </MagneticButton>
-                  <MagneticButton variant={isLight ? "outline" : "secondary"}>
+                  <MagneticButton
+                    variant={isLight ? "outline" : "secondary"}
+                    className={isLight ? "border-green-600 text-green-700 hover:bg-green-50 hover:text-green-800" : ""}
+                  >
                     Visit Contact Page
                   </MagneticButton>
                 </div>

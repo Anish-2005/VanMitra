@@ -3,7 +3,8 @@
 
 import { useAuth } from './AuthProvider';
 import { useRouter } from 'next/navigation';
-import { useEffect, ReactNode } from 'react';
+import { useEffect, ReactNode, useState } from 'react';
+import { useTheme } from './ThemeProvider';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -11,6 +12,10 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  const isLight = mounted && theme === 'light';
   const router = useRouter();
 
   useEffect(() => {
@@ -25,10 +30,16 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-900 via-green-900 to-emerald-900 flex items-center justify-center">
+      <div className={`min-h-screen flex items-center justify-center ${
+        isLight 
+          ? 'bg-gradient-to-br from-white via-emerald-50 to-green-50' 
+          : 'bg-gradient-to-br from-emerald-900 via-green-900 to-emerald-900'
+      }`}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-400 mx-auto mb-4"></div>
-          <p className="text-white">Checking authentication...</p>
+          <div className={`animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4 ${
+            isLight ? 'border-green-600' : 'border-green-400'
+          }`}></div>
+          <p className={isLight ? 'text-slate-700' : 'text-white'}>Checking authentication...</p>
         </div>
       </div>
     );
@@ -36,24 +47,46 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-900 via-green-900 to-emerald-900 flex items-center justify-center">
-        <div className="bg-emerald-900/95 border border-emerald-700/50 rounded-3xl shadow-2xl p-8 max-w-md mx-4 text-center backdrop-blur-sm">
+      <div className={`min-h-screen flex items-center justify-center ${
+        isLight 
+          ? 'bg-gradient-to-br from-white via-emerald-50 to-green-50' 
+          : 'bg-gradient-to-br from-emerald-900 via-green-900 to-emerald-900'
+      }`}>
+        <div className={`rounded-3xl shadow-2xl p-8 max-w-md mx-4 text-center backdrop-blur-sm ${
+          isLight 
+            ? 'bg-white/95 border border-green-200/80' 
+            : 'bg-emerald-900/95 border border-emerald-700/50'
+        }`}>
           <div className="flex items-center justify-center gap-3 mb-6">
-            <div className="w-4 h-4 bg-green-400 rounded-full animate-pulse"></div>
+            <div className={`w-4 h-4 rounded-full animate-pulse ${
+              isLight ? 'bg-green-600' : 'bg-green-400'
+            }`}></div>
             <div className="text-6xl">🔒</div>
-            <div className="w-4 h-4 bg-green-400 rounded-full animate-pulse"></div>
+            <div className={`w-4 h-4 rounded-full animate-pulse ${
+              isLight ? 'bg-green-600' : 'bg-green-400'
+            }`}></div>
           </div>
-          <h2 className="text-2xl font-bold text-white mb-4">Authentication Required</h2>
-          <p className="text-emerald-300 mb-6">
+          <h2 className={`text-2xl font-bold mb-4 ${
+            isLight ? 'text-slate-800' : 'text-white'
+          }`}>Authentication Required</h2>
+          <p className={`mb-6 ${
+            isLight ? 'text-slate-600' : 'text-emerald-300'
+          }`}>
             You need to log in to access this page. Please sign in to continue.
           </p>
           <button
             onClick={() => router.push('/')}
-            className="bg-emerald-600 text-white px-6 py-3 rounded-2xl hover:bg-emerald-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
+            className={`px-6 py-3 rounded-2xl transition-all duration-200 font-medium shadow-lg hover:shadow-xl ${
+              isLight 
+                ? 'bg-green-600 text-white hover:bg-green-700' 
+                : 'bg-emerald-600 text-white hover:bg-emerald-700'
+            }`}
           >
             Sign-In
           </button>
-          <p className="text-sm text-emerald-400 mt-4">Redirecting in a moment...</p>
+          <p className={`text-sm mt-4 ${
+            isLight ? 'text-green-600' : 'text-emerald-400'
+          }`}>Redirecting in a moment...</p>
         </div>
       </div>
     );
