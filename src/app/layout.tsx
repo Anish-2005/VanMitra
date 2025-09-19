@@ -26,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-  <html lang="en">
+  <html lang="en" data-theme="dark">
       <head>
         {/* Script runs before hydration to set theme attr */}
         <Script id="theme-init" strategy="beforeInteractive">

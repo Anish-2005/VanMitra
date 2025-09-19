@@ -439,7 +439,24 @@ const Navbar: React.FC = () => {
                     </div>
                   </motion.button>
                 ))}
+
+                {/* Mobile Theme Toggle */}
+                {/* Mobile Theme Toggle */}
+                <motion.div
+                  className={`mt-6 p-4 rounded-2xl shadow-inner border flex flex-col items-center gap-3 ${isLight
+                      ? "bg-white/60 border-green-200"
+                      : "bg-white/5 border-white/10"
+                    }`}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1 }}
+                >
+                  
+                  <ThemeToggle />
+                </motion.div>
+
               </motion.nav>
+              
 
               {/* User Section */}
               <motion.div
@@ -517,10 +534,7 @@ const Navbar: React.FC = () => {
                     </MagneticButton>
                   </div>
                 )}
-                {/* Mobile Theme Toggle */}
-                <div className="mt-4">
-                  <ThemeToggle />
-                </div>
+                
               </motion.div>
             </motion.aside>
           </motion.div>
