@@ -142,47 +142,10 @@ const Navbar: React.FC = () => {
         >
           <motion.div
             className={`relative h-14 w-14 rounded-2xl flex items-center justify-center shadow-2xl overflow-hidden ${isLight ? 'border border-green-200' : 'border border-white/8'}`}
-            style={{ background: isLight ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg,var(--primary-500),var(--primary-600))' }}
             whileHover={{ scale: 1.05, rotate: 5 }}
             transition={{ type: "spring", stiffness: 300 }}
           >
-            {/* Animated background */}
-            <motion.div
-              className="absolute inset-0"
-              style={isLight ? { background: 'linear-gradient(45deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.2))' } : { background: 'linear-gradient(45deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.2))' }}
-              animate={
-                isLight ? {
-                  background: [
-                    "linear-gradient(45deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.2))",
-                    "linear-gradient(135deg, rgba(5, 150, 105, 0.2), rgba(16, 185, 129, 0.2))",
-                    "linear-gradient(225deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.2))",
-                    "linear-gradient(315deg, rgba(5, 150, 105, 0.2), rgba(16, 185, 129, 0.2))"
-                  ]
-                } : {
-                  background: [
-                    "linear-gradient(45deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.2))",
-                    "linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(34, 197, 94, 0.2))",
-                    "linear-gradient(225deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.2))",
-                    "linear-gradient(315deg, rgba(16, 185, 129, 0.2), rgba(34, 197, 94, 0.2))"
-                  ]
-                }
-              }
-              transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-            />
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            >
-              <Leaf className="relative z-10" size={28} style={{ color: 'white' }} />
-            </motion.div>
-            {/* Sparkle effect */}
-            <motion.div
-              className="absolute top-1 right-1"
-              animate={{ scale: [0, 1, 0], rotate: [0, 180, 360] }}
-              transition={{ duration: 3, repeat: Infinity, delay: 1 }}
-            >
-              <Sparkles className="text-yellow-300" size={8} />
-            </motion.div>
+            <img src="/vanmitra.png" alt="VanMitra" className="h-12 w-12 object-contain" />
           </motion.div>
           <div>
             <motion.h1
@@ -580,7 +543,7 @@ const Navbar: React.FC = () => {
                     className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-600 mb-4"
                     whileHover={{ scale: 1.05, rotate: 5 }}
                   >
-                    <Leaf className="text-white" size={32} />
+                    <img src="/vanmitra.png" alt="VanMitra" className="h-10 w-10 object-contain" />
                   </motion.div>
                   <h3 className={`text-2xl font-bold mb-2 ${isLight ? 'text-green-900' : 'text-white'}`}>Welcome Back</h3>
                   <p className={isLight ? 'text-green-700' : 'text-green-300'}>Sign in to access VanMitra</p>

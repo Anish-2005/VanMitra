@@ -38,7 +38,7 @@ const Footer: React.FC = () => {
             whileHover={{ rotate: 360 }}
             transition={{ duration: 0.6 }}
           >
-            <Leaf className="text-white" size={18} />
+            <img src="/vanmitra.png" alt="VanMitra" className="h-8 w-8 object-contain" />
           </motion.div>
           <div>
             <div className={`text-base sm:text-lg font-semibold ${

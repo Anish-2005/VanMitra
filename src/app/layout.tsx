@@ -29,6 +29,7 @@ export default function RootLayout({
   <html lang="en" data-theme="dark">
       <head>
         {/* Script runs before hydration to set theme attr */}
+        <link rel="icon" href="/vanmitra.png" />
         <Script id="theme-init" strategy="beforeInteractive">
           {`
             (function() {
