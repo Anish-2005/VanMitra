@@ -1,11 +1,12 @@
 // src/components/LayerManager.tsx
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layers, Eye, EyeOff, Trash2, Settings, MapPin } from 'lucide-react';
 import { GISLayer, GISMarker } from './WebGIS';
 import GlassCard from './ui/GlassCard';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTheme } from './ThemeProvider';
 
 interface LayerManagerProps {
   layers: GISLayer[];
@@ -39,6 +40,11 @@ export default function LayerManager({
     return initial;
   });
 
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  const isLight = mounted && theme === 'light';
+
   // sync staged when layers prop changes (e.g., external updates)
   React.useEffect(() => {
     const next: Record<string, boolean> = {};
@@ -68,7 +74,7 @@ export default function LayerManager({
       <div
         className="flex items-center justify-between p-3 cursor-pointer"
         onClick={() => setIsExpanded(!isExpanded)}
-        style={{ background: 'rgba(0,0,0,0.12)', borderRadius: '0.5rem' }}
+        style={{ borderRadius: '0.5rem', background: isLight ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.12)'}}
       >
         <div className="flex items-center gap-2">
           <Layers size={16} />
@@ -100,7 +106,7 @@ export default function LayerManager({
             </h4>
             <div className="space-y-2">
               {layers.map(layer => (
-                <div key={layer.id} className="rounded-2xl p-3 transition-all duration-200" style={{ border: '1px solid rgba(16,185,129,0.12)', background: 'rgba(16,185,129,0.04)'}}>
+                <div key={layer.id} className="rounded-2xl p-3 transition-all duration-200" style={{ border: isLight ? '1px solid rgba(63,162,91,0.08)' : '1px solid rgba(16,185,129,0.12)', background: isLight ? 'rgba(255,255,255,0.6)' : 'rgba(16,185,129,0.04)'}}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <button
@@ -108,7 +114,7 @@ export default function LayerManager({
                           // toggle staged visibility locally
                           setStagedVisibility(prev => ({ ...prev, [layer.id]: !prev[layer.id] }));
                         }}
-                        className="text-green-400 hover:text-green-300"
+                        className={isLight ? 'text-green-600 hover:text-green-500' : 'text-green-400 hover:text-green-300'}
                       >
                         {stagedVisibility[layer.id] ? <Eye size={14} /> : <EyeOff size={14} />}
                         </button>
@@ -120,7 +126,7 @@ export default function LayerManager({
                       <button
                         onClick={() => setEditingLayer(editingLayer === layer.id ? null : layer.id)}
                         title="Settings"
-                        style={{ color: 'var(--primary-400)'}}
+                        style={{ color: 'var(--primary)'}}
                       >
                         <Settings size={14} />
                       </button>
@@ -134,7 +140,7 @@ export default function LayerManager({
                   </div>
 
                   {editingLayer === layer.id && (
-                    <div className="space-y-2 mt-2 pt-2 border-t border-emerald-700/50">
+                    <div className="space-y-2 mt-2 pt-2" style={{ borderTop: isLight ? '1px solid rgba(63,162,91,0.08)' : '1px solid rgba(16,185,129,0.12)'}}>
                       <div>
                         <label className="block text-sm" style={{ color: 'var(--primary-300)'}}>Name</label>
                         <input
@@ -142,7 +148,7 @@ export default function LayerManager({
                           value={layer.name}
                           onChange={(e) => onLayerUpdate(layer.id, { name: e.target.value })}
                           className="mt-1 w-full rounded-md p-2"
-                          style={{ border: '1px solid rgba(16,185,129,0.12)', background: 'rgba(0,0,0,0.06)', color: 'var(--foreground)'}}
+                          style={{ border: isLight ? '1px solid rgba(15,23,21,0.06)' : '1px solid rgba(16,185,129,0.12)', background: isLight ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.06)', color: 'var(--foreground)'}}
                         />
                       </div>
 
@@ -154,7 +160,7 @@ export default function LayerManager({
                             value={layer.style.fillColor || '#3b82f6'}
                             onChange={(e) => handleStyleChange(layer.id, 'fillColor', e.target.value)}
                             className="mt-1 w-full h-8 border border-green-400/30 rounded"
-                            style={{ border: '1px solid rgba(16,185,129,0.12)', background: 'rgba(0,0,0,0.06)'}}
+                            style={{ border: isLight ? '1px solid rgba(15,23,21,0.06)' : '1px solid rgba(16,185,129,0.12)', background: isLight ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.06)'}}
                           />
                         </div>
                         <div>
@@ -164,7 +170,7 @@ export default function LayerManager({
                             value={layer.style.strokeColor || '#ffffff'}
                             onChange={(e) => handleStyleChange(layer.id, 'strokeColor', e.target.value)}
                             className="mt-1 w-full h-8 border border-green-400/30 rounded"
-                            style={{ border: '1px solid rgba(16,185,129,0.12)', background: 'rgba(0,0,0,0.06)'}}
+                            style={{ border: isLight ? '1px solid rgba(15,23,21,0.06)' : '1px solid rgba(16,185,129,0.12)', background: isLight ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.06)'}}
                           />
                         </div>
                       </div>
@@ -180,7 +186,7 @@ export default function LayerManager({
                             value={layer.style.strokeWidth || 2}
                             onChange={(e) => handleStyleChange(layer.id, 'strokeWidth', parseFloat(e.target.value))}
                             className="mt-1 w-full rounded-md p-2"
-                            style={{ border: '1px solid rgba(16,185,129,0.12)', background: 'rgba(0,0,0,0.06)', color: 'var(--foreground)'}}
+                            style={{ border: isLight ? '1px solid rgba(15,23,21,0.06)' : '1px solid rgba(16,185,129,0.12)', background: isLight ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.06)', color: 'var(--foreground)'}}
                           />
                         </div>
                         <div>
@@ -193,7 +199,7 @@ export default function LayerManager({
                             value={layer.style.opacity || 0.8}
                             onChange={(e) => handleStyleChange(layer.id, 'opacity', parseFloat(e.target.value))}
                             className="mt-1 w-full rounded-md p-2"
-                            style={{ border: '1px solid rgba(16,185,129,0.12)', background: 'rgba(0,0,0,0.06)', color: 'var(--foreground)'}}
+                            style={{ border: isLight ? '1px solid rgba(15,23,21,0.06)' : '1px solid rgba(16,185,129,0.12)', background: isLight ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.06)', color: 'var(--foreground)'}}
                           />
                         </div>
                       </div>
@@ -206,7 +212,7 @@ export default function LayerManager({
             <div className="mt-3 flex items-center gap-2">
               <button
                 className="px-4 py-2 rounded-md shadow-md"
-                style={{ background: 'var(--primary-600)', color: 'var(--card-foreground)'}}
+                style={{ background: 'var(--primary)', color: 'var(--card-foreground)'}}
                 onClick={() => {
                   // compute diffs and call onLayerToggle for each layer that changed
                   layers.forEach(l => {
@@ -220,7 +226,7 @@ export default function LayerManager({
               >Apply</button>
               <button
                 className="px-4 py-2 rounded-md"
-                style={{ border: '1px solid rgba(16,185,129,0.12)', color: 'var(--primary-300)'}}
+                style={{ border: isLight ? '1px solid rgba(15,23,21,0.06)' : '1px solid rgba(16,185,129,0.12)', color: 'var(--primary)'}}
                 onClick={() => {
                   // reset staged visibility to current props
                   const reset: Record<string, boolean> = {};
@@ -234,32 +240,32 @@ export default function LayerManager({
           {/* Markers Section */}
           {markers.length > 0 && (
             <div>
-              <h4 className="text-sm font-medium text-white mb-2 flex items-center gap-2">
+              <h4 className="text-sm font-medium mb-2 flex items-center gap-2" style={{ color: 'var(--foreground)'}}>
                 <MapPin size={14} />
                 Map Markers ({markers.length})
               </h4>
               <div className="space-y-2">
                 {markers.map((marker, idx) => (
-                  <div key={`${marker.id ?? 'marker'}-${idx}`} className="border border-emerald-700/50 rounded-2xl p-3 bg-emerald-800/30 hover:bg-emerald-800/50 transition-all duration-200">
+                  <div key={`${marker.id ?? 'marker'}-${idx}`} className="border rounded-2xl p-3 transition-all duration-200" style={{ borderColor: isLight ? 'rgba(15,23,21,0.06)' : 'rgba(16,185,129,0.12)', background: isLight ? 'rgba(255,255,255,0.6)' : 'rgba(8,64,48,0.18)'}}>
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <div
-                          className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
-                          style={{ backgroundColor: marker.color || '#16a34a' }}
+                          className="w-4 h-4 rounded-full border-2 shadow-sm"
+                          style={{ backgroundColor: marker.color || '#16a34a', borderColor: isLight ? 'rgba(15,23,21,0.08)' : '#fff' }}
                         ></div>
-                        <span className="text-sm font-medium text-white">{marker.label || marker.id}</span>
+                        <span className="text-sm font-medium" style={{ color: 'var(--foreground)'}}>{marker.label || marker.id}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => onMarkerGoto && onMarkerGoto(marker.lng, marker.lat)}
-                          className="text-green-400 hover:text-green-300"
+                          className={isLight ? 'text-green-600 hover:text-green-500' : 'text-green-400 hover:text-green-300'}
                           title="Go to marker"
                         >
                           <MapPin size={14} />
                         </button>
                         <button
                           onClick={() => setEditingMarker(editingMarker === marker.id ? null : marker.id)}
-                          className="text-green-400 hover:text-green-300"
+                          className={isLight ? 'text-green-600 hover:text-green-500' : 'text-green-400 hover:text-green-300'}
                         >
                           <Settings size={14} />
                         </button>
@@ -267,47 +273,51 @@ export default function LayerManager({
                     </div>
 
                     {editingMarker === marker.id && (
-                      <div className="space-y-2 mt-2 pt-2 border-t border-emerald-700/50">
+                      <div className="space-y-2 mt-2 pt-2" style={{ borderTop: isLight ? '1px solid rgba(15,23,21,0.06)' : '1px solid rgba(16,185,129,0.12)'}}>
                         <div>
-                          <label className="block text-sm text-green-300">Label</label>
+                          <label className="block text-sm" style={{ color: 'var(--primary)'}}>Label</label>
                           <input
                             type="text"
                             value={marker.label || ''}
                             onChange={(e) => handleMarkerChange(marker.id, 'label', e.target.value)}
-                            className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                            className="mt-1 w-full rounded-md border p-2"
                             placeholder="Marker label"
+                            style={{ borderColor: isLight ? 'rgba(15,23,21,0.06)' : 'rgba(16,185,129,0.12)', background: isLight ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.06)', color: 'var(--foreground)'}}
                           />
                         </div>
 
                         <div>
-                          <label className="block text-sm text-green-300">Marker Color</label>
+                          <label className="block text-sm" style={{ color: 'var(--primary)'}}>Marker Color</label>
                           <input
                             type="color"
                             value={marker.color || '#16a34a'}
                             onChange={(e) => handleMarkerChange(marker.id, 'color', e.target.value)}
-                            className="mt-1 w-full h-8 border border-green-400/30 rounded bg-slate-800/50"
+                            className="mt-1 w-full h-8 rounded"
+                            style={{ border: isLight ? '1px solid rgba(15,23,21,0.06)' : '1px solid rgba(16,185,129,0.12)', background: isLight ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.06)'}}
                           />
                         </div>
 
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <label className="block text-sm text-green-300">Longitude</label>
+                            <label className="block text-sm" style={{ color: 'var(--primary)'}}>Longitude</label>
                             <input
                               type="number"
                               step="0.000001"
                               value={marker.lng}
                               onChange={(e) => handleMarkerChange(marker.id, 'lng', e.target.value)}
-                              className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                              className="mt-1 w-full rounded-md p-2"
+                              style={{ border: isLight ? '1px solid rgba(15,23,21,0.06)' : '1px solid rgba(16,185,129,0.12)', background: isLight ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.06)', color: 'var(--foreground)'}}
                             />
                           </div>
                           <div>
-                            <label className="block text-sm text-green-300">Latitude</label>
+                            <label className="block text-sm" style={{ color: 'var(--primary)'}}>Latitude</label>
                             <input
                               type="number"
                               step="0.000001"
                               value={marker.lat}
                               onChange={(e) => handleMarkerChange(marker.id, 'lat', e.target.value)}
-                              className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                              className="mt-1 w-full rounded-md p-2"
+                              style={{ border: isLight ? '1px solid rgba(15,23,21,0.06)' : '1px solid rgba(16,185,129,0.12)', background: isLight ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.06)', color: 'var(--foreground)'}}
                             />
                           </div>
                         </div>

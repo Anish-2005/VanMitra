@@ -3,6 +3,7 @@
 export const dynamic = 'force-dynamic'
 
 import { useState, useRef, useEffect } from "react"
+import { useTheme } from "@/components/ThemeProvider"
 import * as turf from "@turf/turf"
 import { STATES, DEFAULT_STATE } from "../../lib/regions"
 import { motion, AnimatePresence } from "framer-motion"
@@ -31,6 +32,11 @@ const FloatingOrbs = dynamicImport(() => import('@/components/ui/FloatingOrbs'),
 const DecorativeElements = dynamicImport(() => import('@/components/ui/DecorativeElements'), { ssr: false })
 
 export default function AtlasPage() {
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  const isLight = mounted && theme === 'light';
+
   const [layers, setLayers] = useState<GISLayer[]>([
     {
       id: "claims",
@@ -1753,25 +1759,25 @@ export default function AtlasPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-emerald-900 text-white relative overflow-hidden">
+      <div className={
+        `min-h-screen relative overflow-hidden ${isLight ?
+          'bg-gradient-to-br from-emerald-50 via-green-100 to-teal-100 text-slate-900' :
+          'bg-gradient-to-br from-slate-900 via-green-900 to-emerald-900 text-white'}`
+      }>
         <ThreeBackground />
         <DecorativeElements />
         <FloatingOrbs />
 
         {/* Mesh Gradient Overlay */}
-        <div className="fixed inset-0 bg-gradient-to-br from-green-900/20 via-transparent to-emerald-900/20 pointer-events-none z-1" />
+        <div className={isLight ? "fixed inset-0 bg-gradient-to-br from-white/40 via-transparent to-emerald-100/20 pointer-events-none z-1" : "fixed inset-0 bg-gradient-to-br from-green-900/20 via-transparent to-emerald-900/20 pointer-events-none z-1"} />
 
         {/* Animated Grid */}
-        <div className="fixed inset-0 opacity-10 pointer-events-none z-1">
+        <div className={isLight ? "fixed inset-0 opacity-10 pointer-events-none z-1" : "fixed inset-0 opacity-10 pointer-events-none z-1"}>
           <div className="absolute inset-0" style={{
-            backgroundImage: `
-            linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px)
-          `,
+            backgroundImage: isLight ? `linear-gradient(rgba(16, 185, 129, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 185, 129, 0.05) 1px, transparent 1px)` : `linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px)`,
             backgroundSize: '50px 50px'
           }} />
         </div>
-
 
         <Navbar />
 
@@ -1779,10 +1785,10 @@ export default function AtlasPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <section className="lg:col-span-8">
               <motion.div initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
-                <GlassCard className="p-0 overflow-hidden">
+                <GlassCard className={`p-0 overflow-hidden ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
                   <div className="w-full h-[560px] relative rounded-2xl">
-                    {/* subtle dark green tint overlay */}
-                    <div className="absolute inset-0 bg-green-900/10 rounded-2xl pointer-events-none" />
+                    {/* subtle tint overlay */}
+                    <div className={`absolute inset-0 rounded-2xl pointer-events-none ${isLight ? 'bg-emerald-100/20' : 'bg-green-900/10'}`} />
 
                     <div className="relative z-10 h-full">
                       <WebGIS
@@ -1813,47 +1819,47 @@ export default function AtlasPage() {
 
               </motion.div>
               <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <GlassCard className="mt-4 p-4 pb-6 ">
+                <GlassCard className={`mt-4 p-4 pb-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
                   <div className="flex items-center gap-2 mb-3">
-                    <Ruler size={16} />
-                    <h4 className="font-semibold text-white">Measurement Tools</h4>
+                    <Ruler size={16} className={isLight ? 'text-emerald-600' : 'text-emerald-400'} />
+                    <h4 className={`font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>Measurement Tools</h4>
                   </div>
                   <div className="space-y-3">
                     {!isMeasuring ? (
                       <button
                         onClick={() => webGISRef.current?.startMeasurement?.()}
-                        className="w-full bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors"
+                        className={`w-full px-4 py-2 rounded-md transition duration-200 ${isLight ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'}`}
                       >
                         Start Measurement
                       </button>
                     ) : (
-                      <div className="text-sm text-gray-300 bg-yellow-500/20 p-3 rounded-md border border-yellow-400/30">
+                      <div className={`text-sm p-3 rounded-md border ${isLight ? 'bg-yellow-100 text-yellow-800 border-yellow-300' : 'bg-yellow-500/20 text-yellow-200 border-yellow-400/30'}`}>
                         Click two points on the map to measure distance
                       </div>
                     )}
                     {measurementDistance && (
-                      <div className="text-sm bg-green-500/20 p-3 rounded-md border border-green-400/30">
+                      <div className={`text-sm p-3 rounded-md border ${isLight ? 'bg-green-100 text-green-800 border-green-300' : 'bg-green-500/20 text-green-200 border-green-400/30'}`}>
                         <strong>Distance:</strong> {measurementDistance.toFixed(2)} km
                       </div>
                     )}
                     <button
                       onClick={() => webGISRef.current?.clearMeasurement?.()}
-                      className="w-full bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition-colors"
+                      className={`w-full px-4 py-2 rounded-md transition duration-200 ${isLight ? 'bg-gray-500 hover:bg-gray-600 text-white' : 'bg-gray-500 hover:bg-gray-600 text-white'}`}
                     >
                       Clear Measurement
                     </button>
                   </div>
                 </GlassCard>
 
-                <GlassCard className="mt-4 p-4 pb-6">
+                <GlassCard className={`mt-4 p-4 pb-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
                   <div className="flex items-center gap-2 mb-3">
-                    <Download size={16} />
-                    <h4 className="font-semibold text-white">Export Tools</h4>
+                    <Download size={16} className={isLight ? 'text-emerald-600' : 'text-emerald-400'} />
+                    <h4 className={`font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>Export Tools</h4>
                   </div>
                   <div className="space-y-3">
                     <button
                       onClick={handleExportGeoJSON}
-                      className="w-full bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors"
+                      className={`w-full px-4 py-2 rounded-md transition duration-200 ${isLight ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-emerald-600 hover:bg-emerald-500 text-white'}`}
                     >
                       Export GeoJSON
                     </button>
@@ -1862,7 +1868,7 @@ export default function AtlasPage() {
                         console.log("Export button clicked")
                         handleExportMap()
                       }}
-                      className="w-full border border-green-200 text-green-300 px-4 py-2 rounded-md hover:bg-green-500/20 transition-colors"
+                      className={`w-full px-4 py-2 rounded-md transition duration-200 ${isLight ? 'border border-emerald-300 text-emerald-700 hover:bg-emerald-50' : 'border border-emerald-600/50 text-emerald-300 hover:bg-emerald-500/20'}`}
                     >
                       Export Map Image
                     </button>
@@ -1885,17 +1891,17 @@ export default function AtlasPage() {
                     } catch (e) { }
                   }}
                 />
-                <GlassCard className="mb-4 overflow-hidden">
+                <GlassCard className={`mb-4 overflow-hidden ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
                   <div
-                    className="flex items-center justify-between p-3 bg-slate-800/50 cursor-pointer"
+                    className={`flex items-center justify-between p-3 cursor-pointer ${isLight ? 'bg-emerald-100 hover:bg-emerald-200' : 'bg-slate-800/50'}`}
                     onClick={() => setAddClaimOpen((prev) => !prev)}
                   >
                     <div className="flex items-center gap-2">
-                      <Plus size={16} />
-                      <span className="font-medium text-white">Add Claim</span>
-                      <span className="text-sm text-green-300">(manual entry)</span>
+                      <Plus size={16} className={isLight ? 'text-emerald-700' : 'text-emerald-400'} />
+                      <span className={`font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>Add Claim</span>
+                      <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>(manual entry)</span>
                     </div>
-                    <div className={`transform transition-transform ${addClaimOpen ? "rotate-180" : ""}`}>▼</div>
+                    <div className={`transform transition-transform ${addClaimOpen ? "rotate-180" : ""} ${isLight ? 'text-slate-700' : 'text-white'}`}>▼</div>
                   </div>
 
                   <AnimatePresence>
@@ -1914,7 +1920,7 @@ export default function AtlasPage() {
                         <div className="p-4 space-y-3">
                           <div className="grid grid-cols-1 gap-3">
                             <div>
-                              <label className="block text-sm text-green-300">State</label>
+                              <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>State</label>
                               <select
                                 value={newClaim.state_name}
                                 onChange={(e) => {
@@ -1924,7 +1930,9 @@ export default function AtlasPage() {
                                   setPendingDistrictFilter("")
                                   setPendingVillageFilter("")
                                 }}
-                                className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                                className={`mt-1 w-full rounded-md border p-2 ${isLight
+                                  ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
+                                  : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
                               >
                                 <option value="">Select State</option>
                                 {(stateOptions.length ? stateOptions : STATES.map((s) => s.name)).map((s) => (
@@ -1936,7 +1944,7 @@ export default function AtlasPage() {
                             </div>
 
                             <div>
-                              <label className="block text-sm text-green-300">District</label>
+                              <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>District</label>
                               <input
                                 type="text"
                                 value={newClaim.district_name}
@@ -1946,25 +1954,31 @@ export default function AtlasPage() {
                                   // Reset village when district changes
                                   setPendingVillageFilter("")
                                 }}
-                                className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                                className={`mt-1 w-full rounded-md border p-2 ${isLight
+                                  ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
+                                  : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
                                 placeholder="Enter district name"
                               />
                             </div>
 
                             <div>
-                              <label className="block text-sm text-green-300">Village</label>
+                              <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>Village</label>
                               <div className="flex gap-2">
                                 <input
                                   type="text"
                                   value={newClaim.village_name}
                                   onChange={(e) => setNewClaim((s) => ({ ...s, village_name: e.target.value }))}
-                                  className="mt-1 flex-1 rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                                  className={`mt-1 flex-1 rounded-md border p-2 ${isLight
+                                    ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
+                                    : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
                                   placeholder="Enter village name"
                                 />
                                 <button
                                   onClick={goToVillageArea}
                                   disabled={!newClaim.village_name || !newClaim.state_name}
-                                  className="mt-1 bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className={`mt-1 px-3 py-2 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isLight
+                                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                    : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
                                   type="button"
                                 >
                                   Go to Area
@@ -1973,11 +1987,13 @@ export default function AtlasPage() {
                             </div>
 
                             <div>
-                              <label className="block text-sm text-green-300">Claim type</label>
+                              <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>Claim type</label>
                               <select
                                 value={newClaim.claim_type}
                                 onChange={(e) => setNewClaim((s) => ({ ...s, claim_type: e.target.value }))}
-                                className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                                className={`mt-1 w-full rounded-md border p-2 ${isLight
+                                  ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
+                                  : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
                               >
                                 <option value="">Select Claim Type</option>
                                 {claimTypeOptions.length ? (
@@ -1997,7 +2013,7 @@ export default function AtlasPage() {
                             </div>
 
                             <div>
-                              <label className="block text-sm text-green-300">Claimed area (ha)</label>
+                              <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>Claimed area (ha)</label>
                               <input
                                 type="number"
                                 value={newClaim.claimed_area}
@@ -2025,7 +2041,9 @@ export default function AtlasPage() {
                                     setMarkerPlaced(false)
                                   }
                                 }}
-                                className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                                className={`mt-1 w-full rounded-md border p-2 ${isLight
+                                  ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
+                                  : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
                                 placeholder="Enter area in hectares"
                               />
 
@@ -2033,9 +2051,9 @@ export default function AtlasPage() {
 
                             {lastClickedCoords && addClaimOpen && (
                               <div>
-                                <label className="block text-sm text-green-300">Last Clicked Coordinates</label>
-                                <div className="mt-1 p-3 bg-slate-700/50 border border-slate-600 rounded-md">
-                                  <div className="text-sm text-green-100 font-mono">
+                                <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>Last Clicked Coordinates</label>
+                                <div className={`mt-1 p-3 rounded-md ${isLight ? 'bg-slate-100 border border-slate-300' : 'bg-slate-700/50 border border-slate-600'}`}>
+                                  <div className={`text-sm font-mono ${isLight ? 'text-slate-800' : 'text-green-100'}`}>
                                     <div><strong>Longitude:</strong> {lastClickedCoords[0].toFixed(6)}</div>
                                     <div><strong>Latitude:</strong> {lastClickedCoords[1].toFixed(6)}</div>
                                   </div>
@@ -2045,13 +2063,13 @@ export default function AtlasPage() {
 
                             {markerPlaced && claimAreaCenter && (
                               <div>
-                                <label className="block text-sm text-green-300">Claim Center Coordinates</label>
-                                <div className="mt-1 p-3 bg-blue-500/20 border border-blue-400/30 rounded-md">
-                                  <div className="text-sm text-blue-100 font-mono">
+                                <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>Claim Center Coordinates</label>
+                                <div className={`mt-1 p-3 rounded-md ${isLight ? 'bg-blue-100 border border-blue-300' : 'bg-blue-500/20 border border-blue-400/30'}`}>
+                                  <div className={`text-sm font-mono ${isLight ? 'text-blue-800' : 'text-blue-100'}`}>
                                     <div><strong>Longitude:</strong> {claimAreaCenter[0].toFixed(6)}</div>
                                     <div><strong>Latitude:</strong> {claimAreaCenter[1].toFixed(6)}</div>
                                   </div>
-                                  <div className="text-xs text-blue-300 mt-1">
+                                  <div className={`text-xs mt-1 ${isLight ? 'text-blue-600' : 'text-blue-300'}`}>
                                     Drag the red marker on the map to change these coordinates
                                   </div>
                                 </div>
@@ -2059,29 +2077,33 @@ export default function AtlasPage() {
                             )}
 
                             <div>
-                              <label className="block text-sm text-green-300">Claimant name</label>
+                              <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>Claimant name</label>
                               <input
                                 value={newClaim.claimant_name}
                                 onChange={(e) => setNewClaim((s) => ({ ...s, claimant_name: e.target.value }))}
-                                className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                                className={`mt-1 w-full rounded-md border p-2 ${isLight
+                                  ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
+                                  : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
                                 placeholder="Enter claimant name"
                               />
                             </div>
 
                             <div>
-                              <label className="block text-sm text-green-300">Community name</label>
+                              <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>Community name</label>
                               <input
                                 value={newClaim.community_name}
                                 onChange={(e) => setNewClaim((s) => ({ ...s, community_name: e.target.value }))}
-                                className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                                className={`mt-1 w-full rounded-md border p-2 ${isLight
+                                  ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
+                                  : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
                                 placeholder="Enter community name"
                               />
                             </div>
                           </div>
 
                           {addClaimOpen && (
-                            <div className="bg-yellow-500/20 border border-yellow-400/30 rounded-md p-3">
-                              <p className="text-sm text-yellow-200">
+                            <div className={`rounded-md p-3 ${isLight ? 'bg-yellow-100 border border-yellow-300' : 'bg-yellow-500/20 border border-yellow-400/30'}`}>
+                              <p className={`text-sm ${isLight ? 'text-yellow-800' : 'text-yellow-200'}`}>
                                 {!markerPlaced
                                   ? "Click on the map to select a location for your claim."
                                   : !areaEntered
@@ -2096,7 +2118,9 @@ export default function AtlasPage() {
                             <button
                               disabled={submittingClaim || !newClaim.state_name || !newClaim.district_name || !newClaim.village_name || !newClaim.claim_type || !newClaim.claimed_area}
                               onClick={submitNewClaim}
-                              className="bg-green-700 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              className={`px-4 py-2 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isLight
+                                ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}
                             >
                               {submittingClaim ? 'Submitting...' : 'Submit Claim'}
                             </button>
@@ -2118,7 +2142,9 @@ export default function AtlasPage() {
                                   return filtered
                                 })
                               }}
-                              className="border border-green-400/30 text-green-300 px-4 py-2 rounded-md hover:bg-green-500/20 transition-colors"
+                              className={`px-4 py-2 rounded-md transition-colors ${isLight
+                                ? 'border border-slate-300 text-slate-700 hover:bg-slate-100'
+                                : 'border border-green-400/30 text-green-300 hover:bg-green-500/20'}`}
                             >
                               Cancel
                             </button>
@@ -2128,16 +2154,16 @@ export default function AtlasPage() {
                     )}
                   </AnimatePresence>
                 </GlassCard>
-                <GlassCard className="my-4 overflow-hidden">
+                <GlassCard className={`my-4 overflow-hidden ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
                   <div
-                    className="flex items-center justify-between p-3 bg-slate-800/50 cursor-pointer"
+                    className={`flex items-center justify-between p-3 cursor-pointer ${isLight ? 'bg-emerald-100 hover:bg-emerald-200' : 'bg-slate-800/50'}`}
                     onClick={() => setSearchByUidExpanded((s) => !s)}
                   >
                     <div>
-                      <h4 className="text-sm font-semibold text-white mb-0">Search by Village UID</h4>
-                      <p className="text-xs text-green-300">Lookup claims by village identifier</p>
+                      <h4 className={`text-sm font-semibold ${isLight ? 'text-slate-900' : 'text-white'} mb-0`}>Search by Village UID</h4>
+                      <p className={`text-xs ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>Lookup claims by village identifier</p>
                     </div>
-                    <div className={`transform transition-transform ${searchByUidExpanded ? "rotate-180" : ""}`}>▼</div>
+                    <div className={`transform transition-transform ${searchByUidExpanded ? "rotate-180" : ""} ${isLight ? 'text-slate-700' : 'text-white'}`}>▼</div>
                   </div>
                   <AnimatePresence>
                     {searchByUidExpanded && (
@@ -2153,48 +2179,45 @@ export default function AtlasPage() {
                         className="overflow-hidden"
                       >
                         <div className="p-4 grid grid-cols-1 gap-2">
-                          <input value={(searchVillageUid ?? '') as any} onChange={(e) => setSearchVillageUid(e.target.value)} placeholder="Village UID (integer)" className="w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm" />
-                          <input value={searchStatus ?? ''} onChange={(e) => setSearchStatus(e.target.value)} placeholder="Status (optional)" className="w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm" />
-                          <input value={searchClaimType ?? ''} onChange={(e) => setSearchClaimType(e.target.value)} placeholder="Claim type (optional)" className="w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm" />
+                          <input value={(searchVillageUid ?? '') as any} onChange={(e) => setSearchVillageUid(e.target.value)} placeholder="Village UID (integer)" className={`w-full rounded-md border p-2 ${isLight
+                            ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
+                            : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`} />
+                          <input value={searchStatus ?? ''} onChange={(e) => setSearchStatus(e.target.value)} placeholder="Status (optional)" className={`w-full rounded-md border p-2 ${isLight
+                            ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
+                            : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`} />
+                          <input value={searchClaimType ?? ''} onChange={(e) => setSearchClaimType(e.target.value)} placeholder="Claim type (optional)" className={`w-full rounded-md border p-2 ${isLight
+                            ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
+                            : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`} />
                           <div className="flex items-center gap-2">
-                            <button disabled={searchLoading} onClick={() => runSearchByVillageUid()} className={`px-3 py-1 rounded-md ${searchLoading ? 'bg-gray-300 text-gray-700 cursor-not-allowed' : 'bg-green-700 text-white'}`}>
+                            <button disabled={searchLoading} onClick={() => runSearchByVillageUid()} className={`px-3 py-1 rounded-md ${searchLoading
+                              ? (isLight ? 'bg-gray-300 text-gray-700 cursor-not-allowed' : 'bg-gray-300 text-gray-700 cursor-not-allowed')
+                              : (isLight ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white')}`}>
                               {searchLoading ? 'Searching...' : 'Search'}
                             </button>
-                            <button onClick={() => { setSearchVillageUid(''); setSearchStatus('all'); setSearchClaimType(''); setSearchResultsLayer(null); setVillagePanelOpen(false); setSearchLoading(false); }} className="border border-green-400/30 px-3 py-1 rounded-md text-green-300 hover:bg-green-500/20">Clear</button>
+                            <button onClick={() => { setSearchVillageUid(''); setSearchStatus('all'); setSearchClaimType(''); setSearchResultsLayer(null); setVillagePanelOpen(false); setSearchLoading(false); }} className={`px-3 py-1 rounded-md ${isLight
+                              ? 'border border-slate-300 text-slate-700 hover:bg-slate-100'
+                              : 'border border-green-400/30 text-green-300 hover:bg-green-500/20'}`}>Clear</button>
                           </div>
                         </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </GlassCard>
-                <LayerManager
-                  layers={[...layers, ...boundaryLayers]}
-                  markers={markers}
-                  onLayerToggle={handleLayerToggle}
-                  onLayerRemove={handleLayerRemove}
-                  onLayerUpdate={handleLayerUpdate}
-                  onMarkerUpdate={handleMarkerUpdate}
-                  onMarkerGoto={(lng, lat) => {
-                    try {
-                      webGISRef.current?.flyTo?.(lng, lat, 12)
-                    } catch (e) { }
-                  }}
-                  initiallyCollapsed={true}
-                />
+
 
               </div>
 
-              <GlassCard className="overflow-hidden mb-6">
+              <GlassCard className={`overflow-hidden mb-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
                 <div
-                  className="flex items-center justify-between p-3 bg-slate-800/50 cursor-pointer"
+                  className={`flex items-center justify-between p-3 cursor-pointer ${isLight ? 'bg-emerald-100 hover:bg-emerald-200' : 'bg-slate-800/50'}`}
                   onClick={() => setFiltersExpanded((prev) => !prev)}
                 >
                   <div className="flex items-center gap-2">
-                    <Layers size={16} />
-                    <span className="font-medium text-white">Filters</span>
-                    <span className="text-sm text-green-300">(controls)</span>
+                    <Layers size={16} className={isLight ? 'text-emerald-700' : 'text-emerald-400'} />
+                    <span className={`font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>Filters</span>
+                    <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>(controls)</span>
                   </div>
-                  <div className={`transform transition-transform ${filtersExpanded ? "rotate-180" : ""}`}>▼</div>
+                  <div className={`transform transition-transform ${filtersExpanded ? "rotate-180" : ""} ${isLight ? 'text-slate-700' : 'text-white'}`}>▼</div>
                 </div>
 
                 <AnimatePresence>
@@ -2212,11 +2235,13 @@ export default function AtlasPage() {
                     >
                       <div className="p-4 space-y-3">
                         <div>
-                          <label className="block text-sm text-green-300">State</label>
+                          <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>State</label>
                           <select
                             value={pendingStateFilter}
                             onChange={(e) => handleStateChange(e.target.value)}
-                            className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                            className={`mt-1 w-full rounded-md border p-2 ${isLight
+                              ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
+                              : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
                           >
                             <option value="all">All</option>
                             {(stateOptions.length ? stateOptions : STATES.map((s) => s.name)).map((s) => (
@@ -2228,11 +2253,13 @@ export default function AtlasPage() {
                         </div>
 
                         <div>
-                          <label className="block text-sm text-green-300">District</label>
+                          <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>District</label>
                           <select
                             value={pendingDistrictFilter}
                             onChange={(e) => handleDistrictChange(e.target.value)}
-                            className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                            className={`mt-1 w-full rounded-md border p-2 ${isLight
+                              ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
+                              : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
                           >
                             <option value="all">All</option>
                             {pendingStateFilter !== "all"
@@ -2253,11 +2280,13 @@ export default function AtlasPage() {
                         </div>
 
                         <div>
-                          <label className="block text-sm text-green-300">Status</label>
+                          <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>Status</label>
                           <select
                             value={pendingStatusFilter}
                             onChange={(e) => setPendingStatusFilter(e.target.value)}
-                            className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                            className={`mt-1 w-full rounded-md border p-2 ${isLight
+                              ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
+                              : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
                           >
                             <option value="all">All</option>
                             {statusOptions.length ? (
@@ -2277,11 +2306,13 @@ export default function AtlasPage() {
                         </div>
 
                         <div>
-                          <label className="block text-sm text-green-300">Village</label>
+                          <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>Village</label>
                           <select
                             value={pendingVillageFilter}
                             onChange={(e) => setPendingVillageFilter(e.target.value)}
-                            className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                            className={`mt-1 w-full rounded-md border p-2 ${isLight
+                              ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
+                              : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
                           >
                             <option value="all">All</option>
                             {pendingDistrictFilter && pendingDistrictFilter !== "all"
@@ -2314,11 +2345,13 @@ export default function AtlasPage() {
                         </div>
 
                         <div>
-                          <label className="block text-sm text-green-300">Claim type</label>
+                          <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>Claim type</label>
                           <select
                             value={pendingClaimTypeFilter ?? ""}
                             onChange={(e) => setPendingClaimTypeFilter(e.target.value || null)}
-                            className="mt-1 w-full rounded-md border border-green-400/30 p-2 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm"
+                            className={`mt-1 w-full rounded-md border p-2 ${isLight
+                              ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
+                              : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
                           >
                             <option value="">any</option>
                             {claimTypeOptions.length ? (
@@ -2337,7 +2370,9 @@ export default function AtlasPage() {
                           <button
                             onClick={handleApplyFilters}
                             disabled={isApplyingFilters}
-                            className="w-full inline-flex items-center justify-center gap-2 bg-green-700 text-white px-4 py-2 rounded-md shadow-md hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className={`w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isLight
+                              ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                              : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}
                           >
                             {isApplyingFilters ? (
                               <>
@@ -2354,13 +2389,26 @@ export default function AtlasPage() {
                   )}
                 </AnimatePresence>
               </GlassCard>
-
-              <GlassCard className="overflow-hidden mb-6">
-                <div className="flex items-center justify-between p-3 bg-slate-800/50">
+              <LayerManager
+                layers={[...layers, ...boundaryLayers]}
+                markers={markers}
+                onLayerToggle={handleLayerToggle}
+                onLayerRemove={handleLayerRemove}
+                onLayerUpdate={handleLayerUpdate}
+                onMarkerUpdate={handleMarkerUpdate}
+                onMarkerGoto={(lng, lat) => {
+                  try {
+                    webGISRef.current?.flyTo?.(lng, lat, 12)
+                  } catch (e) { }
+                }}
+                initiallyCollapsed={true}
+              />
+              <GlassCard className={`overflow-hidden mb-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
+                <div className={`flex items-center justify-between p-3 ${isLight ? 'bg-emerald-100' : 'bg-slate-800/50'}`}>
                   <div className="flex items-center gap-2">
-                    <Layers size={16} />
-                    <span className="font-medium text-white">Boundary Layers</span>
-                    <span className="text-sm text-green-300">(Madhya Pradesh)</span>
+                    <Layers size={16} className={isLight ? 'text-emerald-700' : 'text-emerald-400'} />
+                    <span className={`font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>Boundary Layers</span>
+                    <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>(Madhya Pradesh)</span>
                   </div>
                 </div>
 
@@ -2368,14 +2416,14 @@ export default function AtlasPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-red-500 bg-transparent"></div>
-                      <span className="text-sm font-medium text-white">State Boundary</span>
+                      <span className={`text-sm font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>State Boundary</span>
                     </div>
                     <label className="inline-flex items-center">
                       <input
                         type="checkbox"
                         checked={pendingShowStateBoundary}
                         onChange={(e) => setPendingShowStateBoundary(e.target.checked)}
-                        className="rounded border-green-400/30 bg-slate-800/50"
+                        className={`rounded ${isLight ? 'border-slate-300 bg-white' : 'border-green-400/30 bg-slate-800/50'}`}
                       />
                     </label>
                   </div>
@@ -2383,14 +2431,14 @@ export default function AtlasPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-blue-500 bg-transparent"></div>
-                      <span className="text-sm font-medium text-white">District Boundaries</span>
+                      <span className={`text-sm font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>District Boundaries</span>
                     </div>
                     <label className="inline-flex items-center">
                       <input
                         type="checkbox"
                         checked={pendingShowDistrictBoundary}
                         onChange={(e) => setPendingShowDistrictBoundary(e.target.checked)}
-                        className="rounded border-green-400/30 bg-slate-800/50"
+                        className={`rounded ${isLight ? 'border-slate-300 bg-white' : 'border-green-400/30 bg-slate-800/50'}`}
                       />
                     </label>
                   </div>
@@ -2398,19 +2446,19 @@ export default function AtlasPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-green-500 bg-transparent"></div>
-                      <span className="text-sm font-medium text-white">Tehsil Boundaries</span>
+                      <span className={`text-sm font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>Tehsil Boundaries</span>
                     </div>
                     <label className="inline-flex items-center">
                       <input
                         type="checkbox"
                         checked={pendingShowTehsilBoundary}
                         onChange={(e) => setPendingShowTehsilBoundary(e.target.checked)}
-                        className="rounded border-green-400/30 bg-slate-800/50"
+                        className={`rounded ${isLight ? 'border-slate-300 bg-white' : 'border-green-400/30 bg-slate-800/50'}`}
                       />
                     </label>
                   </div>
                 </div>
-                <div className="p-3 border-t border-emerald-700/50 bg-emerald-800/30 flex items-center gap-2 rounded-b-2xl">
+                <div className={`p-3 border-t rounded-b-2xl ${isLight ? 'border-slate-200 bg-slate-100' : 'border-emerald-700/50 bg-emerald-800/30'} flex items-center gap-2`}>
                   <button
                     onClick={() => {
                       // Commit pending selections
@@ -2427,7 +2475,9 @@ export default function AtlasPage() {
                       } catch (e) { }
                       setMapZoom(7.5)
                     }}
-                    className="bg-green-700 text-white px-3 py-1 rounded-md text-sm hover:bg-green-600 transition-colors"
+                    className={`px-3 py-1 rounded-md text-sm transition-colors ${isLight
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}
                   >
                     Apply
                   </button>
@@ -2438,15 +2488,17 @@ export default function AtlasPage() {
                       setPendingShowDistrictBoundary(showDistrictBoundary)
                       setPendingShowTehsilBoundary(showTehsilBoundary)
                     }}
-                    className="border border-green-400/30 text-green-300 px-3 py-1 rounded-md text-sm hover:bg-green-500/20 transition-colors"
+                    className={`px-3 py-1 rounded-md text-sm transition-colors ${isLight
+                      ? 'border border-slate-300 text-slate-700 hover:bg-slate-200'
+                      : 'border border-green-400/30 text-green-300 hover:bg-green-500/20'}`}
                   >
                     Cancel
                   </button>
                 </div>
               </GlassCard>
 
-              <GlassCard className="mt-4 p-4">
-                <h5 className="text-sm font-medium text-white mb-3">Legend</h5>
+              <GlassCard className={`mt-4 p-4 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
+                <h5 className={`text-sm font-medium ${isLight ? 'text-slate-900' : 'text-white'} mb-3`}>Legend</h5>
                 <div className="space-y-3">
                   {claimTypeOptions.length ? (
                     claimTypeOptions.map((ct) => {
@@ -2470,28 +2522,28 @@ export default function AtlasPage() {
                                   border: "1px solid rgba(255,255,255,0.1)",
                                 }}
                               />
-                              <span className="text-sm text-white">{ct} Areas</span>
+                              <span className={`text-sm ${isLight ? 'text-slate-900' : 'text-white'}`}>{ct} Areas</span>
                             </div>
                             <label className="inline-flex items-center gap-2">
                               <input
                                 type="checkbox"
                                 checked={visible}
                                 onChange={() => handleLayerToggle(layerId)}
-                                className="rounded border-green-400/30 bg-slate-800/50"
+                                className={`rounded ${isLight ? 'border-slate-300 bg-white' : 'border-green-400/30 bg-slate-800/50'}`}
                               />
-                              <span className="text-sm text-green-300">{visible ? "Visible" : "Hidden"}</span>
+                              <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>{visible ? "Visible" : "Hidden"}</span>
                             </label>
                           </div>
                         </div>
                       )
                     })
                   ) : (
-                    <div className="text-xs text-green-400">No claim types available</div>
+                    <div className={`text-xs ${isLight ? 'text-emerald-600' : 'text-green-400'}`}>No claim types available</div>
                   )}
 
                   <div className="pt-2 border-t border-emerald-700/50">
-                    <div className="text-xs text-green-400">
-                      <div className="font-medium mb-1 text-white">Note:</div>
+                    <div className={`text-xs ${isLight ? 'text-emerald-600' : 'text-green-400'}`}>
+                      <div className={`font-medium mb-1 ${isLight ? 'text-slate-900' : 'text-white'}`}>Note:</div>
                       <div>Symbols for claim centroids have been removed for a cleaner overview.</div>
                       <div>Use the area layers and zoom controls to inspect claims.</div>
                     </div>
@@ -2532,8 +2584,8 @@ export default function AtlasPage() {
                 <div className="space-y-4">
                   <div className="flex items-start justify-between">
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">{selectedFeature.properties?._label ?? "Boundary"}</h3>
-                      <p className="text-sm text-gray-500">{String(selectedFeature.properties?.level || selectedFeature.layer || "").replace(/-/g, " ")}</p>
+                      <h3 className={`text-lg font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>{selectedFeature.properties?._label ?? "Boundary"}</h3>
+                      <p className={`text-sm ${isLight ? 'text-slate-600' : 'text-gray-500'}`}>{String(selectedFeature.properties?.level || selectedFeature.layer || "").replace(/-/g, " ")}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
@@ -2549,7 +2601,9 @@ export default function AtlasPage() {
                             // ignore
                           }
                         }}
-                        className="inline-flex items-center gap-2 text-sm px-4 py-2 bg-emerald-800/30 border border-emerald-600/50 text-emerald-100 rounded-xl hover:bg-emerald-700/40 transition-colors duration-200"
+                        className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-xl transition-colors duration-200 ${isLight
+                          ? 'bg-emerald-100 border border-emerald-300 text-emerald-800 hover:bg-emerald-200'
+                          : 'bg-emerald-800/30 border border-emerald-600/50 text-emerald-100 hover:bg-emerald-700/40'}`}
                       >
                         <ZoomIn size={16} />
                         <span>Zoom</span>
@@ -2564,7 +2618,9 @@ export default function AtlasPage() {
                             pushToast('Copy failed', 'error')
                           }
                         }}
-                        className="inline-flex items-center gap-2 text-sm px-4 py-2 bg-emerald-800/30 border border-emerald-600/50 text-emerald-100 rounded-xl hover:bg-emerald-700/40 transition-colors duration-200"
+                        className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-xl transition-colors duration-200 ${isLight
+                          ? 'bg-emerald-100 border border-emerald-300 text-emerald-800 hover:bg-emerald-200'
+                          : 'bg-emerald-800/30 border border-emerald-600/50 text-emerald-100 hover:bg-emerald-700/40'}`}
                       >
                         <Copy size={16} />
                         <span>Copy</span>
@@ -2578,7 +2634,9 @@ export default function AtlasPage() {
                             pushToast('Export failed', 'error')
                           }
                         }}
-                        className="inline-flex items-center gap-2 text-sm px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition-colors duration-200 shadow-lg hover:shadow-xl"
+                        className={`inline-flex items-center gap-2 text-sm px-4 py-2 rounded-xl transition-colors duration-200 ${isLight
+                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                          : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}
                       >
                         <FileDown size={16} />
                         <span>Export</span>
@@ -2587,31 +2645,37 @@ export default function AtlasPage() {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                    <div className="p-4 bg-emerald-800/30 rounded-2xl border border-emerald-700/30">
-                      <div className="text-xs text-emerald-300/70 font-medium">Area</div>
-                      <div className="mt-2 text-xl font-bold text-white">
+                    <div className={`p-4 rounded-2xl border ${isLight
+                      ? 'bg-emerald-50 border-emerald-200'
+                      : 'bg-emerald-800/30 border-emerald-700/30'}`}>
+                      <div className={`text-xs font-medium ${isLight ? 'text-emerald-700' : 'text-emerald-300/70'}`}>Area</div>
+                      <div className={`mt-2 text-xl font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
                         {formatArea(selectedFeature.properties?._area_ha ?? selectedFeature.properties?.Shape_Area ? Number(selectedFeature.properties?._area_ha ?? (selectedFeature.properties?.Shape_Area / 10000)) : null)}
                       </div>
                     </div>
-                    <div className="p-4 bg-emerald-800/30 rounded-2xl border border-emerald-700/30">
-                      <div className="text-xs text-emerald-300/70 font-medium">Claims inside</div>
-                      <div className="mt-2 text-xl font-bold text-white">
-                        {selectedFeature.properties?._counting ? <span className="text-sm text-emerald-400/70">Counting...</span> : (selectedFeature.properties?.claims_count?.toString() ?? '—')}
+                    <div className={`p-4 rounded-2xl border ${isLight
+                      ? 'bg-emerald-50 border-emerald-200'
+                      : 'bg-emerald-800/30 border-emerald-700/30'}`}>
+                      <div className={`text-xs font-medium ${isLight ? 'text-emerald-700' : 'text-emerald-300/70'}`}>Claims inside</div>
+                      <div className={`mt-2 text-xl font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                        {selectedFeature.properties?._counting ? <span className={`text-sm ${isLight ? 'text-emerald-600' : 'text-emerald-400/70'}`}>Counting...</span> : (selectedFeature.properties?.claims_count?.toString() ?? '—')}
                       </div>
                     </div>
-                    <div className="p-4 bg-emerald-800/30 rounded-2xl border border-emerald-700/30">
-                      <div className="text-xs text-emerald-300/70 font-medium">Level</div>
-                      <div className="mt-2 text-lg font-semibold text-emerald-100">{friendlyLevel(selectedFeature.properties?.level ?? selectedFeature.layer)}</div>
+                    <div className={`p-4 rounded-2xl border ${isLight
+                      ? 'bg-emerald-50 border-emerald-200'
+                      : 'bg-emerald-800/30 border-emerald-700/30'}`}>
+                      <div className={`text-xs font-medium ${isLight ? 'text-emerald-700' : 'text-emerald-300/70'}`}>Level</div>
+                      <div className={`mt-2 text-lg font-semibold ${isLight ? 'text-emerald-800' : 'text-emerald-100'}`}>{friendlyLevel(selectedFeature.properties?.level ?? selectedFeature.layer)}</div>
                     </div>
                   </div>
 
                   <div className="pt-4 border-t border-emerald-700/30">
-                    <h4 className="text-lg font-semibold text-white mb-4">Properties</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-emerald-100 max-h-48 overflow-auto">
+                    <h4 className={`text-lg font-semibold ${isLight ? 'text-slate-900' : 'text-white'} mb-4`}>Properties</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm max-h-48 overflow-auto">
                       {selectedFeature.properties && Object.entries(selectedFeature.properties).slice(0, 50).map(([k, v]) => (
-                        <div key={k} className="flex justify-between gap-3 border-b border-emerald-700/20 py-2">
-                          <div className="text-emerald-300/70 font-medium">{humanizeKey(k)}</div>
-                          <div className="font-semibold break-words text-right text-white">{k === '_area_ha' || k === 'Shape_Area' ? formatArea(v) : String(v)}</div>
+                        <div key={k} className={`flex justify-between gap-3 border-b py-2 ${isLight ? 'border-slate-200' : 'border-emerald-700/20'}`}>
+                          <div className={`font-medium ${isLight ? 'text-emerald-700' : 'text-emerald-300/70'}`}>{humanizeKey(k)}</div>
+                          <div className={`font-semibold break-words text-right ${isLight ? 'text-slate-900' : 'text-white'}`}>{k === '_area_ha' || k === 'Shape_Area' ? formatArea(v) : String(v)}</div>
                         </div>
                       ))}
                     </div>
@@ -2619,20 +2683,27 @@ export default function AtlasPage() {
                 </div>
               ) : (
                 <>
-                  <div className="rounded-3xl border border-emerald-700/50 bg-emerald-900/95 shadow-lg p-6 space-y-6">
+                  <div className={`rounded-3xl border p-6 space-y-6 ${isLight
+                    ? 'bg-emerald-50 border-emerald-200'
+                    : 'bg-emerald-900/95 border-emerald-700/50'}`}>
                     {/* Status + Claim Type */}
                     <div className="flex items-center justify-between">
                       <div className="flex gap-3">
                         <span
-                          className={`px-4 py-2 rounded-full text-xs font-semibold tracking-wide border ${
-                            String(selectedFeature.properties?.status).toLowerCase() === "approved"
-                              ? "bg-emerald-700/30 text-emerald-100 border-emerald-600/50"
-                              : "bg-amber-700/30 text-amber-100 border-amber-600/50"
-                          }`}
+                          className={`px-4 py-2 rounded-full text-xs font-semibold tracking-wide border ${String(selectedFeature.properties?.status).toLowerCase() === "approved"
+                              ? (isLight
+                                ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                                : "bg-emerald-700/30 text-emerald-100 border-emerald-600/50")
+                              : (isLight
+                                ? "bg-amber-100 text-amber-800 border-amber-300"
+                                : "bg-amber-700/30 text-amber-100 border-amber-600/50")
+                            }`}
                         >
                           {String(selectedFeature.properties?.status ?? "").toUpperCase()}
                         </span>
-                        <span className="px-4 py-2 rounded-full text-xs font-semibold tracking-wide bg-slate-700/50 text-slate-200 border border-slate-600/50">
+                        <span className={`px-4 py-2 rounded-full text-xs font-semibold tracking-wide border ${isLight
+                          ? 'bg-slate-100 text-slate-700 border-slate-300'
+                          : 'bg-slate-700/50 text-slate-200 border-slate-600/50'}`}>
                           {String(selectedFeature.properties?.claim_type ?? "").toUpperCase()}
                         </span>
                       </div>
@@ -2641,41 +2712,47 @@ export default function AtlasPage() {
                     {/* Details Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div className="space-y-1">
-                        <p className="text-xs text-emerald-300/70 font-medium">Land area</p>
-                        <p className="text-lg font-bold text-white">
+                        <p className={`text-xs font-medium ${isLight ? 'text-emerald-700' : 'text-emerald-300/70'}`}>Land area</p>
+                        <p className={`text-lg font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
                           {selectedFeature.properties?.land_area ?? "—"} ha
                         </p>
                       </div>
 
                       <div className="space-y-1">
-                        <p className="text-xs text-emerald-300/70 font-medium">State</p>
+                        <p className={`text-xs font-medium ${isLight ? 'text-emerald-700' : 'text-emerald-300/70'}`}>State</p>
                         <button
                           onClick={() => onStateClick(selectedFeature.properties?.state)}
-                          className="text-lg font-bold text-emerald-200 hover:text-emerald-100 transition-colors duration-200 hover:underline"
+                          className={`text-lg font-bold hover:underline transition-colors duration-200 ${isLight
+                            ? 'text-emerald-700 hover:text-emerald-800'
+                            : 'text-emerald-200 hover:text-emerald-100'}`}
                         >
                           {selectedFeature.properties?.state ?? "—"}
                         </button>
                       </div>
 
                       <div className="space-y-1">
-                        <p className="text-xs text-emerald-300/70 font-medium">District</p>
+                        <p className={`text-xs font-medium ${isLight ? 'text-emerald-700' : 'text-emerald-300/70'}`}>District</p>
                         <button
                           onClick={() =>
                             onDistrictClick(selectedFeature.properties?.district)
                           }
-                          className="text-lg font-bold text-emerald-200 hover:text-emerald-100 transition-colors duration-200 hover:underline"
+                          className={`text-lg font-bold hover:underline transition-colors duration-200 ${isLight
+                            ? 'text-emerald-700 hover:text-emerald-800'
+                            : 'text-emerald-200 hover:text-emerald-100'}`}
                         >
                           {selectedFeature.properties?.district ?? "—"}
                         </button>
                       </div>
 
                       <div className="space-y-1">
-                        <p className="text-xs text-emerald-300/70 font-medium">Village</p>
+                        <p className={`text-xs font-medium ${isLight ? 'text-emerald-700' : 'text-emerald-300/70'}`}>Village</p>
                         <button
                           onClick={() =>
                             onVillageClick(selectedFeature.properties?.village)
                           }
-                          className="text-lg font-bold text-emerald-200 hover:text-emerald-100 transition-colors duration-200 hover:underline"
+                          className={`text-lg font-bold hover:underline transition-colors duration-200 ${isLight
+                            ? 'text-emerald-700 hover:text-emerald-800'
+                            : 'text-emerald-200 hover:text-emerald-100'}`}
                         >
                           {selectedFeature.properties?.village ?? "—"}
                         </button>
@@ -2691,7 +2768,9 @@ export default function AtlasPage() {
                             `/atlas/${encodeURIComponent(selectedFeature.properties?.claim_id ?? selectedFeature.properties?.id ?? "")}`,
                           )
                         }}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-medium transition-colors duration-200 shadow-lg hover:shadow-xl"
+                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors duration-200 ${isLight
+                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                          : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}
                       >
                         Open detail
                       </button>
@@ -2699,7 +2778,9 @@ export default function AtlasPage() {
                         onClick={() => {
                           /* show edit modal */
                         }}
-                        className="inline-flex items-center gap-2 px-4 py-2 border border-emerald-600/50 bg-emerald-800/30 hover:bg-emerald-700/40 text-emerald-100 rounded-xl text-sm font-medium transition-colors duration-200"
+                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors duration-200 ${isLight
+                          ? 'border border-emerald-300 bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                          : 'border border-emerald-600/50 bg-emerald-800/30 text-emerald-100 hover:bg-emerald-700/40'}`}
                       >
                         Edit
                       </button>
@@ -2707,7 +2788,9 @@ export default function AtlasPage() {
                         onClick={() => {
                           /* report action */
                         }}
-                        className="inline-flex items-center gap-2 px-4 py-2 border border-emerald-600/50 bg-emerald-800/30 hover:bg-emerald-700/40 text-emerald-100 rounded-xl text-sm font-medium transition-colors duration-200"
+                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors duration-200 ${isLight
+                          ? 'border border-emerald-300 bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                          : 'border border-emerald-600/50 bg-emerald-800/30 text-emerald-100 hover:bg-emerald-700/40'}`}
                       >
                         Report
                       </button>
@@ -2715,7 +2798,9 @@ export default function AtlasPage() {
                         onClick={() => {
                           /* verify action */
                         }}
-                        className="inline-flex items-center gap-2 px-4 py-2 border border-emerald-600/50 bg-emerald-800/30 hover:bg-emerald-700/40 text-emerald-100 rounded-xl text-sm font-medium transition-colors duration-200"
+                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors duration-200 ${isLight
+                          ? 'border border-emerald-300 bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                          : 'border border-emerald-600/50 bg-emerald-800/30 text-emerald-100 hover:bg-emerald-700/40'}`}
                       >
                         Verify
                       </button>
@@ -2735,3 +2820,4 @@ export default function AtlasPage() {
     </ProtectedRoute>
   )
 }
+
