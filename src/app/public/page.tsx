@@ -19,7 +19,9 @@ const DecorativeElements = dynamic(() => import('@/components/ui/DecorativeEleme
 
 export default function PublicPage() {
   const { theme } = useTheme();
-  const isLight = theme === 'light';
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  const isLight = mounted && theme === 'light';
   const [boundarySelection, setBoundarySelection] = useState<"none"|"state"|"district"|"tehsil">("none");
   const layersBoundaries = (() => {
     switch (boundarySelection) {

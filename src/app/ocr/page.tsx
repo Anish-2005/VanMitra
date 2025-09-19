@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { Upload, FileImage, Loader2, CheckCircle, XCircle, ArrowLeft, Leaf, MapPin, FileText, Eye, Info, Sparkles } from 'lucide-react'
@@ -9,12 +9,17 @@ import GlassCard from "@/components/ui/GlassCard"
 import MagneticButton from "@/components/ui/MagneticButton"
 import Navbar from '@/components/ui/Navbar'
 import Footer from '@/components/ui/Footer'
+import { useTheme } from '@/components/ThemeProvider'
 // Client-only components to prevent hydration mismatches
 const ThreeBackground = dynamic(() => import('@/components/ui/ThreeBackground'), { ssr: false })
 const FloatingOrbs = dynamic(() => import('@/components/ui/FloatingOrbs'), { ssr: false })
 const DecorativeElements = dynamic(() => import('@/components/ui/DecorativeElements'), { ssr: false })
 
 export default function OCRPage() {
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  const isLight = mounted && theme === 'light';
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
@@ -88,28 +93,37 @@ export default function OCRPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-emerald-900 text-white relative overflow-hidden">
+    <div className={`min-h-screen relative overflow-hidden ${
+      isLight 
+        ? 'bg-gradient-to-br from-white via-emerald-50 to-green-50 text-slate-900' 
+        : 'bg-gradient-to-br from-slate-900 via-green-900 to-emerald-900 text-white'
+    }`}>
       <ThreeBackground />
       <DecorativeElements />
       <FloatingOrbs />
 
       {/* Mesh Gradient Overlay */}
-      <div className="fixed inset-0 bg-gradient-to-br from-green-900/20 via-transparent to-emerald-900/20 pointer-events-none z-1" />
+      <div className={isLight 
+        ? "fixed inset-0 bg-gradient-to-br from-white/40 via-transparent to-emerald-100/20 pointer-events-none z-1" 
+        : "fixed inset-0 bg-gradient-to-br from-green-900/20 via-transparent to-emerald-900/20 pointer-events-none z-1"
+      } />
 
       {/* Animated Grid */}
-      <div className="fixed inset-0 opacity-10 pointer-events-none z-1">
+      <div className={isLight 
+        ? "fixed inset-0 opacity-10 pointer-events-none z-1" 
+        : "fixed inset-0 opacity-10 pointer-events-none z-1"
+      }>
         <div className="absolute inset-0" style={{
-          backgroundImage: `
-            linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px)
-          `,
+          backgroundImage: isLight 
+            ? `linear-gradient(rgba(16, 185, 129, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 185, 129, 0.05) 1px, transparent 1px)`
+            : `linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px)`,
           backgroundSize: '50px 50px'
         }} />
       </div>
 
       <Navbar />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 py-16">
+      <div className={`relative z-10 max-w-7xl mx-auto px-6 py-16 ${isLight ? 'text-slate-900' : 'text-white'}`}>
         {/* Header */}
         <motion.div
           className="text-center mb-16"
@@ -118,18 +132,25 @@ export default function OCRPage() {
           transition={{ duration: 0.8, delay: 0.4 }}
         >
           <motion.div
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 mb-6"
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 ${
+              isLight 
+                ? 'bg-green-100 border border-green-200 text-green-800' 
+                : 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 text-green-300'
+            }`}
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.6 }}
           >
-            <Sparkles size={16} className="text-green-400" />
-            <span className="text-green-300 font-medium">AI-Powered OCR Processing</span>
+            <Sparkles size={16} className={isLight ? 'text-green-600' : 'text-green-400'} />
+            <span className="font-medium">AI-Powered OCR Processing</span>
           </motion.div>
 
-          <h1 className="text-5xl font-bold text-white mb-6">
+          <h1 className="text-5xl font-bold mb-6">
             <motion.span
-              className="bg-gradient-to-r from-white via-green-300 to-emerald-300 bg-clip-text text-transparent"
+              className={isLight 
+                ? 'text-green-700' 
+                : 'bg-gradient-to-r from-white via-green-300 to-emerald-300 bg-clip-text text-transparent'
+              }
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.8, duration: 0.8 }}
@@ -138,7 +159,10 @@ export default function OCRPage() {
             </motion.span>
             <br />
             <motion.span
-              className="bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent"
+              className={isLight 
+                ? 'text-emerald-700' 
+                : 'bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent'
+              }
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.0, duration: 0.8 }}
@@ -147,7 +171,7 @@ export default function OCRPage() {
             </motion.span>
           </h1>
           <motion.p
-            className="text-xl text-green-100 max-w-2xl mx-auto"
+            className={`text-xl max-w-2xl mx-auto ${isLight ? 'text-slate-700' : 'text-green-100'}`}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.2, duration: 0.8 }}
@@ -170,11 +194,11 @@ export default function OCRPage() {
           >
             <GlassCard className="p-8">
               <div className="mb-6">
-                <h2 className="text-2xl font-semibold text-white mb-2 flex items-center gap-3">
-                  <Upload className="text-green-400" />
+                <h2 className={`text-2xl font-semibold mb-2 flex items-center gap-3 ${isLight ? 'text-slate-800' : 'text-white'}`}>
+                  <Upload className={isLight ? 'text-green-600' : 'text-green-400'} />
                   Upload Image
                 </h2>
-                <p className="text-green-300">Select an image file to process with OCR</p>
+                <p className={isLight ? 'text-green-700' : 'text-green-300'}>Select an image file to process with OCR</p>
               </div>
 
               {/* File Upload Area */}
@@ -185,7 +209,11 @@ export default function OCRPage() {
               >
                 <label
                   htmlFor="file-upload"
-                  className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-emerald-700/50 rounded-2xl cursor-pointer hover:border-emerald-400 hover:bg-emerald-900/20 transition-all duration-300 backdrop-blur-sm"
+                  className={`flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-300 backdrop-blur-sm ${
+                    isLight
+                      ? 'border-green-300 bg-green-50 hover:border-green-400 hover:bg-green-100'
+                      : 'border-emerald-700/50 hover:border-emerald-400 hover:bg-emerald-900/20'
+                  }`}
                 >
                   <motion.div
                     className="flex flex-col items-center justify-center pt-5 pb-6"
@@ -209,12 +237,12 @@ export default function OCRPage() {
                           whileHover={{ scale: 1.1, rotate: 5 }}
                           transition={{ type: "spring", stiffness: 300 }}
                         >
-                          <Upload className="w-16 h-16 text-green-400 mb-4" />
+                          <Upload className={`w-16 h-16 mb-4 ${isLight ? 'text-green-600' : 'text-green-400'}`} />
                         </motion.div>
-                        <p className="mb-2 text-lg text-green-300 font-medium">
+                        <p className={`mb-2 text-lg font-medium ${isLight ? 'text-green-700' : 'text-green-300'}`}>
                           <span className="font-semibold">Click to upload</span> or drag and drop
                         </p>
-                        <p className="text-sm text-green-400">PNG, JPG, JPEG up to 10MB</p>
+                        <p className={`text-sm ${isLight ? 'text-green-600' : 'text-green-400'}`}>PNG, JPG, JPEG up to 10MB</p>
                       </>
                     )}
                   </motion.div>
@@ -231,16 +259,20 @@ export default function OCRPage() {
               {/* File Info */}
               {selectedFile && (
                 <motion.div
-                  className="mb-6 p-4 rounded-xl bg-emerald-900/20 border border-emerald-700/50 backdrop-blur-sm"
+                  className={`mb-6 p-4 rounded-xl backdrop-blur-sm border ${
+                    isLight
+                      ? 'bg-green-50 border-green-200'
+                      : 'bg-emerald-900/20 border-emerald-700/50'
+                  }`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5 }}
                 >
                   <div className="flex items-center gap-3">
-                    <FileImage className="w-8 h-8 text-green-400" />
+                    <FileImage className={`w-8 h-8 ${isLight ? 'text-green-600' : 'text-green-400'}`} />
                     <div className="flex-1">
-                      <p className="font-medium text-white">{selectedFile.name}</p>
-                      <p className="text-sm text-green-300">
+                      <p className={`font-medium ${isLight ? 'text-slate-800' : 'text-white'}`}>{selectedFile.name}</p>
+                      <p className={`text-sm ${isLight ? 'text-green-700' : 'text-green-300'}`}>
                         {(selectedFile.size / 1024 / 1024).toFixed(2)} MB • {selectedFile.type}
                       </p>
                     </div>
@@ -275,7 +307,11 @@ export default function OCRPage() {
                 {(selectedFile || result || error) && (
                   <motion.button
                     onClick={resetForm}
-                    className="px-6 py-3 border border-emerald-700/50 text-green-300 rounded-xl hover:bg-emerald-900/20 transition-all duration-300 backdrop-blur-sm"
+                    className={`px-6 py-3 rounded-xl transition-all duration-300 backdrop-blur-sm ${
+                      isLight
+                        ? 'border border-green-300 text-green-700 hover:bg-green-100'
+                        : 'border border-emerald-700/50 text-green-300 hover:bg-emerald-900/20'
+                    }`}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
@@ -287,13 +323,17 @@ export default function OCRPage() {
               {/* Error Message */}
               {error && (
                 <motion.div
-                  className="mt-4 p-4 bg-red-900/20 border border-red-700/50 rounded-xl backdrop-blur-sm flex items-center gap-3"
+                  className={`mt-4 p-4 rounded-xl backdrop-blur-sm flex items-center gap-3 ${
+                    isLight
+                      ? 'bg-red-100 border border-red-300'
+                      : 'bg-red-900/20 border border-red-700/50'
+                  }`}
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <XCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-                  <p className="text-red-300">{error}</p>
+                  <XCircle className={`w-5 h-5 flex-shrink-0 ${isLight ? 'text-red-600' : 'text-red-400'}`} />
+                  <p className={isLight ? 'text-red-700' : 'text-red-300'}>{error}</p>
                 </motion.div>
               )}
             </GlassCard>
@@ -305,13 +345,13 @@ export default function OCRPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
-            <GlassCard className="p-8 pb-28 ">
+            <GlassCard className="p-8 pb-28">
               <div className="mb-12">
-                <h2 className="text-2xl font-semibold text-white mb-2 flex items-center gap-3">
-                  <FileText className="text-green-400" />
+                <h2 className={`text-2xl font-semibold mb-2 flex items-center gap-3 ${isLight ? 'text-slate-800' : 'text-white'}`}>
+                  <FileText className={isLight ? 'text-green-600' : 'text-green-400'} />
                   OCR Results
                 </h2>
-                <p className="text-green-300">Extracted text and processed data</p>
+                <p className={isLight ? 'text-green-700' : 'text-green-300'}>Extracted text and processed data</p>
               </div>
 
               {isProcessing && (
@@ -326,10 +366,10 @@ export default function OCRPage() {
                       animate={{ rotate: 360 }}
                       transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
                     >
-                      <Loader2 className="w-16 h-16 text-green-400 mx-auto mb-4" />
+                      <Loader2 className={`w-16 h-16 mx-auto mb-4 ${isLight ? 'text-green-600' : 'text-green-400'}`} />
                     </motion.div>
-                    <p className="text-xl font-semibold text-white mb-2">Processing image...</p>
-                    <p className="text-green-300">This may take a few moments</p>
+                    <p className={`text-xl font-semibold mb-2 ${isLight ? 'text-slate-800' : 'text-white'}`}>Processing image...</p>
+                    <p className={isLight ? 'text-green-700' : 'text-green-300'}>This may take a few moments</p>
                   </div>
                 </motion.div>
               )}
@@ -346,19 +386,23 @@ export default function OCRPage() {
                       animate={{ scale: 1 }}
                       transition={{ type: "spring", stiffness: 300, delay: 0.2 }}
                     >
-                      <CheckCircle className="w-8 h-8 text-green-400" />
+                      <CheckCircle className={`w-8 h-8 ${isLight ? 'text-green-600' : 'text-green-400'}`} />
                     </motion.div>
-                    <span className="text-2xl font-bold text-white">Processing Complete!</span>
+                    <span className={`text-2xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>Processing Complete!</span>
                   </div>
 
                   {/* Success Message */}
                   <motion.div
-                    className="bg-emerald-900/20 border border-emerald-700/50 rounded-xl p-4 mb-6 backdrop-blur-sm"
+                    className={`rounded-xl p-4 mb-6 backdrop-blur-sm border ${
+                      isLight
+                        ? 'bg-green-50 border-green-200'
+                        : 'bg-emerald-900/20 border-emerald-700/50'
+                    }`}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
                   >
-                    <p className="text-green-300 font-medium">{JSON.parse(result).message}</p>
+                    <p className={`font-medium ${isLight ? 'text-green-700' : 'text-green-300'}`}>{JSON.parse(result).message}</p>
                   </motion.div>
 
                   {/* Claim Details */}
@@ -375,26 +419,26 @@ export default function OCRPage() {
                       transition={{ delay: 0.5 }}
                     >
                       <GlassCard className="p-6">
-                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                          <MapPin className="w-5 h-5 text-green-400" />
+                        <h3 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${isLight ? 'text-slate-800' : 'text-white'}`}>
+                          <MapPin className={`w-5 h-5 ${isLight ? 'text-green-600' : 'text-green-400'}`} />
                           Location Details
                         </h3>
                         <div className="space-y-3">
                           <div className="flex justify-between">
-                            <span className="text-green-300">Village:</span>
-                            <span className="font-medium text-white">{JSON.parse(result).village_name}</span>
+                            <span className={isLight ? 'text-green-700' : 'text-green-300'}>Village:</span>
+                            <span className={`font-medium ${isLight ? 'text-slate-800' : 'text-white'}`}>{JSON.parse(result).village_name}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-green-300">District:</span>
-                            <span className="font-medium text-white">{JSON.parse(result).district_name}</span>
+                            <span className={isLight ? 'text-green-700' : 'text-green-300'}>District:</span>
+                            <span className={`font-medium ${isLight ? 'text-slate-800' : 'text-white'}`}>{JSON.parse(result).district_name}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-green-300">State:</span>
-                            <span className="font-medium text-white">{JSON.parse(result).state_name}</span>
+                            <span className={isLight ? 'text-green-700' : 'text-green-300'}>State:</span>
+                            <span className={`font-medium ${isLight ? 'text-slate-800' : 'text-white'}`}>{JSON.parse(result).state_name}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-green-300">Coordinates:</span>
-                            <span className="font-medium text-white text-sm">
+                            <span className={isLight ? 'text-green-700' : 'text-green-300'}>Coordinates:</span>
+                            <span className={`font-medium text-sm ${isLight ? 'text-slate-800' : 'text-white'}`}>
                               {JSON.parse(result).latitude.toFixed(6)}, {JSON.parse(result).longitude.toFixed(6)}
                             </span>
                           </div>
@@ -409,30 +453,30 @@ export default function OCRPage() {
                       transition={{ delay: 0.6 }}
                     >
                       <GlassCard className="p-6">
-                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                          <FileText className="w-5 h-5 text-green-400" />
+                        <h3 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${isLight ? 'text-slate-800' : 'text-white'}`}>
+                          <FileText className={`w-5 h-5 ${isLight ? 'text-green-600' : 'text-green-400'}`} />
                           Claim Details
                         </h3>
                         <div className="space-y-3">
                           <div className="flex justify-between">
-                            <span className="text-green-300">Claim ID:</span>
-                            <span className="font-medium text-white">#{JSON.parse(result).claim_id}</span>
+                            <span className={isLight ? 'text-green-700' : 'text-green-300'}>Claim ID:</span>
+                            <span className={`font-medium ${isLight ? 'text-slate-800' : 'text-white'}`}>#{JSON.parse(result).claim_id}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-green-300">Claim Type:</span>
-                            <span className="font-medium text-white">{JSON.parse(result).claim_type}</span>
+                            <span className={isLight ? 'text-green-700' : 'text-green-300'}>Claim Type:</span>
+                            <span className={`font-medium ${isLight ? 'text-slate-800' : 'text-white'}`}>{JSON.parse(result).claim_type}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-green-300">Claimant:</span>
-                            <span className="font-medium text-white">{JSON.parse(result).claimant_name}</span>
+                            <span className={isLight ? 'text-green-700' : 'text-green-300'}>Claimant:</span>
+                            <span className={`font-medium ${isLight ? 'text-slate-800' : 'text-white'}`}>{JSON.parse(result).claimant_name}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-green-300">Community:</span>
-                            <span className="font-medium text-white">{JSON.parse(result).community_name}</span>
+                            <span className={isLight ? 'text-green-700' : 'text-green-300'}>Community:</span>
+                            <span className={`font-medium ${isLight ? 'text-slate-800' : 'text-white'}`}>{JSON.parse(result).community_name}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-green-300">Area:</span>
-                            <span className="font-medium text-white">{JSON.parse(result).claimed_area} ha</span>
+                            <span className={isLight ? 'text-green-700' : 'text-green-300'}>Area:</span>
+                            <span className={`font-medium ${isLight ? 'text-slate-800' : 'text-white'}`}>{JSON.parse(result).claimed_area} ha</span>
                           </div>
                         </div>
                       </GlassCard>
@@ -447,21 +491,25 @@ export default function OCRPage() {
                     transition={{ delay: 0.7 }}
                   >
                     <GlassCard className="p-6">
-                      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                        <Eye className="w-5 h-5 text-green-400" />
+                      <h3 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${isLight ? 'text-slate-800' : 'text-white'}`}>
+                        <Eye className={`w-5 h-5 ${isLight ? 'text-green-600' : 'text-green-400'}`} />
                         Extracted Information
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {Object.entries(JSON.parse(result).extracted_data).map(([key, value], index) => (
                           <motion.div
                             key={key}
-                            className="bg-emerald-900/20 rounded-lg p-4 border border-emerald-700/30 backdrop-blur-sm"
+                            className={`rounded-lg p-4 border backdrop-blur-sm ${
+                              isLight
+                                ? 'bg-green-50 border-green-200'
+                                : 'bg-emerald-900/20 border-emerald-700/30'
+                            }`}
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: 0.8 + index * 0.1 }}
                           >
-                            <div className="text-sm text-green-300 mb-1">{key}</div>
-                            <div className="font-medium text-white">{String(value)}</div>
+                            <div className={`text-sm mb-1 ${isLight ? 'text-green-700' : 'text-green-300'}`}>{key}</div>
+                            <div className={`font-medium ${isLight ? 'text-slate-800' : 'text-white'}`}>{String(value)}</div>
                           </motion.div>
                         ))}
                       </div>
@@ -470,16 +518,20 @@ export default function OCRPage() {
 
                   {/* Additional Info */}
                   <motion.div
-                    className="bg-blue-900/20 border border-blue-700/50 rounded-xl p-4 backdrop-blur-sm"
+                    className={`rounded-xl p-4 backdrop-blur-sm border ${
+                      isLight
+                        ? 'bg-blue-50 border-blue-200'
+                        : 'bg-blue-900/20 border-blue-700/50'
+                    }`}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.9 }}
                   >
                     <div className="flex items-start gap-3">
-                      <Info className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                      <Info className={`w-5 h-5 flex-shrink-0 mt-0.5 ${isLight ? 'text-blue-600' : 'text-blue-400'}`} />
                       <div>
-                        <p className="text-blue-300 font-medium mb-1">Claim Successfully Created</p>
-                        <p className="text-blue-200 text-sm">
+                        <p className={`font-medium mb-1 ${isLight ? 'text-blue-700' : 'text-blue-300'}`}>Claim Successfully Created</p>
+                        <p className={`text-sm ${isLight ? 'text-blue-600' : 'text-blue-200'}`}>
                           The OCR data has been processed and a claim has been automatically created in the database with ID #{JSON.parse(result).claim_id}.
                           You can view and manage this claim in the dashboard.
                         </p>
@@ -500,10 +552,10 @@ export default function OCRPage() {
                     whileHover={{ scale: 1.1, rotate: 5 }}
                     transition={{ type: "spring", stiffness: 300 }}
                   >
-                    <FileImage className="w-20 h-20 text-green-400 mb-4" />
+                    <FileImage className={`w-20 h-20 mb-4 ${isLight ? 'text-green-600' : 'text-green-400'}`} />
                   </motion.div>
-                  <h3 className="text-xl font-medium text-white mb-2">No Results Yet</h3>
-                  <p className="text-green-300">Upload an image and click "Process Image" to see OCR results</p>
+                  <h3 className={`text-xl font-medium mb-2 ${isLight ? 'text-slate-800' : 'text-white'}`}>No Results Yet</h3>
+                  <p className={isLight ? 'text-green-700' : 'text-green-300'}>Upload an image and click "Process Image" to see OCR results</p>
                 </motion.div>
               )}
             </GlassCard>
@@ -513,14 +565,14 @@ export default function OCRPage() {
 
       {/* Instructions */}
       <motion.div
-        className="relative z-10 max-w-7xl mx-auto px-6 pb-16"
+        className={`relative z-10 max-w-7xl mx-auto px-6 pb-16 ${isLight ? 'text-slate-900' : 'text-white'}`}
         initial={{ opacity: 0, y: 50 }}
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
         viewport={{ once: true }}
       >
         <GlassCard className="p-8">
-          <h2 className="text-3xl font-bold text-white mb-8 text-center">How It Works</h2>
+          <h2 className={`text-3xl font-bold mb-8 text-center ${isLight ? 'text-slate-800' : 'text-white'}`}>How It Works</h2>
           <motion.div
             className="grid grid-cols-1 md:grid-cols-3 gap-8"
             initial={{ opacity: 0 }}
@@ -558,14 +610,18 @@ export default function OCRPage() {
                 whileHover={{ scale: 1.05 }}
               >
                 <motion.div
-                  className={`w-16 h-16 bg-gradient-to-r from-${step.color}-500 to-${step.color}-600 rounded-2xl flex items-center justify-center mx-auto mb-6`}
+                  className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 ${
+                    isLight
+                      ? `bg-gradient-to-r from-${step.color}-500 to-${step.color}-600`
+                      : `bg-gradient-to-r from-${step.color}-500 to-${step.color}-600`
+                  }`}
                   whileHover={{ rotate: 5, scale: 1.1 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
                   <step.icon className="w-8 h-8 text-white" />
                 </motion.div>
-                <h3 className="text-xl font-semibold text-white mb-3">{step.title}</h3>
-                <p className="text-green-300">{step.description}</p>
+                <h3 className={`text-xl font-semibold mb-3 ${isLight ? 'text-slate-800' : 'text-white'}`}>{step.title}</h3>
+                <p className={isLight ? 'text-green-700' : 'text-green-300'}>{step.description}</p>
               </motion.div>
             ))}
           </motion.div>
