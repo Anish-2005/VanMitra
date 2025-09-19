@@ -17,8 +17,13 @@ import FloatingOrbs from "@/components/ui/FloatingOrbs";
 import DecorativeElements from "@/components/ui/DecorativeElements";
 import GlassCard from "@/components/ui/GlassCard";
 import MagneticButton from "@/components/ui/MagneticButton";
+import { useTheme } from "@/components/ThemeProvider";
 
 export default function Privacy() {
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  const isLight = mounted && theme === 'light';
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [email, setEmail] = useState("");
@@ -70,21 +75,30 @@ export default function Privacy() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-emerald-900 text-white relative overflow-hidden">
+    <div className={`min-h-screen relative overflow-hidden ${
+      isLight 
+        ? 'bg-gradient-to-br from-white via-emerald-50 to-green-50 text-slate-900' 
+        : 'bg-gradient-to-br from-slate-900 via-green-900 to-emerald-900 text-white'
+    }`}>
       <ThreeBackground />
       <DecorativeElements />
       <FloatingOrbs />
 
       {/* Mesh Gradient Overlay */}
-      <div className="fixed inset-0 bg-gradient-to-br from-green-900/20 via-transparent to-emerald-900/20 pointer-events-none z-1" />
+      <div className={isLight 
+        ? "fixed inset-0 bg-gradient-to-br from-white/40 via-transparent to-emerald-100/20 pointer-events-none z-1" 
+        : "fixed inset-0 bg-gradient-to-br from-green-900/20 via-transparent to-emerald-900/20 pointer-events-none z-1"
+      } />
 
       {/* Animated Grid */}
-      <div className="fixed inset-0 opacity-10 pointer-events-none z-1">
+      <div className={isLight 
+        ? "fixed inset-0 opacity-10 pointer-events-none z-1" 
+        : "fixed inset-0 opacity-10 pointer-events-none z-1"
+      }>
         <div className="absolute inset-0" style={{
-          backgroundImage: `
-            linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px)
-          `,
+          backgroundImage: isLight 
+            ? `linear-gradient(rgba(16, 185, 129, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 185, 129, 0.05) 1px, transparent 1px)`
+            : `linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px)`,
           backgroundSize: '50px 50px'
         }} />
       </div>
@@ -102,23 +116,25 @@ export default function Privacy() {
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              className={isLight ? "absolute inset-0 bg-white/60 backdrop-blur-sm" : "absolute inset-0 bg-black/60 backdrop-blur-sm"}
               onClick={() => setLoginOpen(false)}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             />
             <motion.div
-              className="relative bg-gradient-to-br from-slate-800 to-green-800 rounded-3xl shadow-2xl p-8 w-full max-w-md mx-4 border border-white/20 backdrop-blur-xl"
+              className={`relative rounded-3xl shadow-2xl p-8 w-full max-w-md mx-4 backdrop-blur-xl ${
+                isLight ? 'bg-white border border-slate-200' : 'bg-gradient-to-br from-slate-800 to-green-800 border border-white/20'
+              }`}
               initial={{ scale: 0.8, opacity: 0, y: 50 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.8, opacity: 0, y: 50 }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
             >
-              <h3 className="text-2xl font-bold text-white mb-6 text-center">Welcome Back</h3>
+              <h3 className={`text-2xl font-bold mb-6 text-center ${isLight ? 'text-slate-900' : 'text-white'}`}>Welcome Back</h3>
               {error && (
                 <motion.p
-                  className="text-red-400 mb-4 text-center"
+                  className="text-red-500 mb-4 text-center"
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
@@ -132,7 +148,11 @@ export default function Privacy() {
                   placeholder="Email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-green-300 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                  className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 ${
+                    isLight 
+                      ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500' 
+                      : 'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'
+                  }`}
                   whileFocus={{ scale: 1.02 }}
                 />
                 <motion.input
@@ -140,7 +160,11 @@ export default function Privacy() {
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-green-300 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                  className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 ${
+                    isLight 
+                      ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500' 
+                      : 'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'
+                  }`}
                   whileFocus={{ scale: 1.02 }}
                 />
                 <MagneticButton onClick={handleLogin} className="w-full">
@@ -153,7 +177,7 @@ export default function Privacy() {
       </AnimatePresence>
 
       {/* Main Content */}
-      <main className="relative z-10 max-w-4xl mx-auto px-6 py-16">
+      <main className={`relative z-10 max-w-4xl mx-auto px-6 py-16 ${isLight ? 'text-slate-900' : 'text-white'}`}>
         <motion.div
           className="text-center mb-16"
           initial={{ y: 50, opacity: 0 }}
@@ -161,18 +185,25 @@ export default function Privacy() {
           transition={{ duration: 0.8 }}
         >
           <motion.div
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 mb-6"
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 ${
+              isLight 
+                ? 'bg-green-100 border border-green-200 text-green-800' 
+                : 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 text-green-300'
+            }`}
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 200, damping: 15 }}
           >
-            <ShieldCheck size={16} className="text-green-400" />
-            <span className="text-green-300 font-medium">Privacy Policy</span>
+            <ShieldCheck size={16} className={isLight ? 'text-green-600' : 'text-green-400'} />
+            <span className="font-medium">Privacy Policy</span>
           </motion.div>
 
           <h1 className="text-4xl lg:text-5xl font-extrabold leading-tight mb-6">
             <motion.span
-              className="bg-gradient-to-r from-white via-green-300 to-emerald-300 bg-clip-text text-transparent"
+              className={isLight 
+                ? 'text-green-700' 
+                : 'bg-gradient-to-r from-white via-green-300 to-emerald-300 bg-clip-text text-transparent'
+              }
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.8 }}
@@ -196,9 +227,9 @@ export default function Privacy() {
                 <div className="p-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500">
                   <Eye size={24} className="text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-white">Introduction</h2>
+                <h2 className={`text-2xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>Introduction</h2>
               </div>
-              <div className="text-green-100 leading-relaxed space-y-4">
+              <div className={`leading-relaxed space-y-4 ${isLight ? 'text-slate-700' : 'text-green-100'}`}>
                 <p>
                   At VanMitra, we are committed to protecting your privacy and ensuring the security of your personal information.
                   This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our
@@ -219,10 +250,10 @@ export default function Privacy() {
                 <div className="p-3 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500">
                   <Database size={24} className="text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-white">Information We Collect</h2>
+                <h2 className={`text-2xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>Information We Collect</h2>
               </div>
-              <div className="text-green-100 leading-relaxed space-y-4">
-                <h3 className="text-lg font-semibold text-green-300 mb-3">Personal Information</h3>
+              <div className={`leading-relaxed space-y-4 ${isLight ? 'text-slate-700' : 'text-green-100'}`}>
+                <h3 className={`text-lg font-semibold mb-3 ${isLight ? 'text-green-700' : 'text-green-300'}`}>Personal Information</h3>
                 <ul className="list-disc list-inside space-y-2 ml-4">
                   <li>Name and contact information</li>
                   <li>Email address and phone number</li>
@@ -230,7 +261,7 @@ export default function Privacy() {
                   <li>Geographic location data (for service delivery)</li>
                 </ul>
 
-                <h3 className="text-lg font-semibold text-green-300 mb-3 mt-6">Usage Data</h3>
+                <h3 className={`text-lg font-semibold mb-3 mt-6 ${isLight ? 'text-green-700' : 'text-green-300'}`}>Usage Data</h3>
                 <ul className="list-disc list-inside space-y-2 ml-4">
                   <li>Platform usage patterns and preferences</li>
                   <li>Device information and browser type</li>
@@ -248,9 +279,9 @@ export default function Privacy() {
                 <div className="p-3 rounded-xl bg-gradient-to-r from-purple-500 to-violet-500">
                   <Target size={24} className="text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-white">How We Use Your Information</h2>
+                <h2 className={`text-2xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>How We Use Your Information</h2>
               </div>
-              <div className="text-green-100 leading-relaxed space-y-4">
+              <div className={`leading-relaxed space-y-4 ${isLight ? 'text-slate-700' : 'text-green-100'}`}>
                 <p>We use the collected information for the following purposes:</p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
                   <li><strong>Service Delivery:</strong> To provide and maintain our forest rights mapping platform</li>
@@ -271,9 +302,9 @@ export default function Privacy() {
                 <div className="p-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500">
                   <Lock size={24} className="text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-white">Data Security</h2>
+                <h2 className={`text-2xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>Data Security</h2>
               </div>
-              <div className="text-green-100 leading-relaxed space-y-4">
+              <div className={`leading-relaxed space-y-4 ${isLight ? 'text-slate-700' : 'text-green-100'}`}>
                 <p>
                   We implement appropriate technical and organizational security measures to protect your personal information
                   against unauthorized access, alteration, disclosure, or destruction. These measures include:
@@ -296,9 +327,9 @@ export default function Privacy() {
                 <div className="p-3 rounded-xl bg-gradient-to-r from-red-500 to-pink-500">
                   <Users size={24} className="text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-white">Data Sharing and Disclosure</h2>
+                <h2 className={`text-2xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>Data Sharing and Disclosure</h2>
               </div>
-              <div className="text-green-100 leading-relaxed space-y-4">
+              <div className={`leading-relaxed space-y-4 ${isLight ? 'text-slate-700' : 'text-green-100'}`}>
                 <p>We do not sell, trade, or otherwise transfer your personal information to third parties except in the following circumstances:</p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
                   <li><strong>Legal Requirements:</strong> When required by law or to protect our rights</li>
@@ -317,9 +348,9 @@ export default function Privacy() {
                 <div className="p-3 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500">
                   <Shield size={24} className="text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-white">Your Rights</h2>
+                <h2 className={`text-2xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>Your Rights</h2>
               </div>
-              <div className="text-green-100 leading-relaxed space-y-4">
+              <div className={`leading-relaxed space-y-4 ${isLight ? 'text-slate-700' : 'text-green-100'}`}>
                 <p>You have the following rights regarding your personal information:</p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
                   <li><strong>Access:</strong> Request access to your personal data</li>
@@ -335,18 +366,22 @@ export default function Privacy() {
 
           {/* Contact Us */}
           <motion.div variants={itemVariants}>
-            <GlassCard className="p-8 bg-gradient-to-r from-green-600/20 to-emerald-600/20 border-green-400/30">
+            <GlassCard className={`p-8 ${
+              isLight 
+                ? 'bg-gradient-to-r from-green-100 to-emerald-100 border-green-300/60' 
+                : 'bg-gradient-to-r from-green-600/20 to-emerald-600/20 border-green-400/30'
+            }`}>
               <div className="text-center">
-                <h2 className="text-2xl font-bold text-white mb-4">Contact Us</h2>
-                <p className="text-green-100 mb-6">
+                <h2 className={`text-2xl font-bold mb-4 ${isLight ? 'text-slate-800' : 'text-white'}`}>Contact Us</h2>
+                <p className={`mb-6 ${isLight ? 'text-slate-700' : 'text-green-100'}`}>
                   If you have any questions about this Privacy Policy or our data practices,
                   please contact us at:
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <MagneticButton variant="secondary">
+                  <MagneticButton variant={isLight ? "outline" : "secondary"}>
                     privacy@vanmitra.org
                   </MagneticButton>
-                  <MagneticButton variant="secondary">
+                  <MagneticButton variant={isLight ? "outline" : "secondary"}>
                     Visit Contact Page
                   </MagneticButton>
                 </div>

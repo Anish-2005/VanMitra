@@ -17,8 +17,11 @@ import FloatingOrbs from "@/components/ui/FloatingOrbs";
 import DecorativeElements from "@/components/ui/DecorativeElements";
 import GlassCard from "@/components/ui/GlassCard";
 import MagneticButton from "@/components/ui/MagneticButton";
+import { useTheme } from "@/components/ThemeProvider";
 
 export default function Terms() {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [email, setEmail] = useState("");
@@ -70,21 +73,30 @@ export default function Terms() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-emerald-900 text-white relative overflow-hidden">
+    <div className={`min-h-screen relative overflow-hidden ${
+      isLight 
+        ? 'bg-gradient-to-br from-white via-emerald-50 to-green-50 text-slate-900' 
+        : 'bg-gradient-to-br from-slate-900 via-green-900 to-emerald-900 text-white'
+    }`}>
       <ThreeBackground />
       <DecorativeElements />
       <FloatingOrbs />
 
       {/* Mesh Gradient Overlay */}
-      <div className="fixed inset-0 bg-gradient-to-br from-green-900/20 via-transparent to-emerald-900/20 pointer-events-none z-1" />
+      <div className={isLight 
+        ? "fixed inset-0 bg-gradient-to-br from-white/40 via-transparent to-emerald-100/20 pointer-events-none z-1" 
+        : "fixed inset-0 bg-gradient-to-br from-green-900/20 via-transparent to-emerald-900/20 pointer-events-none z-1"
+      } />
 
       {/* Animated Grid */}
-      <div className="fixed inset-0 opacity-10 pointer-events-none z-1">
+      <div className={isLight 
+        ? "fixed inset-0 opacity-10 pointer-events-none z-1" 
+        : "fixed inset-0 opacity-10 pointer-events-none z-1"
+      }>
         <div className="absolute inset-0" style={{
-          backgroundImage: `
-            linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px)
-          `,
+          backgroundImage: isLight 
+            ? `linear-gradient(rgba(16, 185, 129, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 185, 129, 0.05) 1px, transparent 1px)`
+            : `linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px)`,
           backgroundSize: '50px 50px'
         }} />
       </div>
@@ -102,23 +114,25 @@ export default function Terms() {
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              className={isLight ? "absolute inset-0 bg-white/60 backdrop-blur-sm" : "absolute inset-0 bg-black/60 backdrop-blur-sm"}
               onClick={() => setLoginOpen(false)}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             />
             <motion.div
-              className="relative bg-gradient-to-br from-slate-800 to-green-800 rounded-3xl shadow-2xl p-8 w-full max-w-md mx-4 border border-white/20 backdrop-blur-xl"
+              className={`relative rounded-3xl shadow-2xl p-8 w-full max-w-md mx-4 backdrop-blur-xl ${
+                isLight ? 'bg-white border border-slate-200' : 'bg-gradient-to-br from-slate-800 to-green-800 border border-white/20'
+              }`}
               initial={{ scale: 0.8, opacity: 0, y: 50 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.8, opacity: 0, y: 50 }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
             >
-              <h3 className="text-2xl font-bold text-white mb-6 text-center">Welcome Back</h3>
+              <h3 className={`text-2xl font-bold mb-6 text-center ${isLight ? 'text-slate-900' : 'text-white'}`}>Welcome Back</h3>
               {error && (
                 <motion.p
-                  className="text-red-400 mb-4 text-center"
+                  className="text-red-500 mb-4 text-center"
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
@@ -132,7 +146,11 @@ export default function Terms() {
                   placeholder="Email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-green-300 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                  className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 ${
+                    isLight 
+                      ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500' 
+                      : 'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'
+                  }`}
                   whileFocus={{ scale: 1.02 }}
                 />
                 <motion.input
@@ -140,7 +158,11 @@ export default function Terms() {
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-green-300 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                  className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 ${
+                    isLight 
+                      ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500' 
+                      : 'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'
+                  }`}
                   whileFocus={{ scale: 1.02 }}
                 />
                 <MagneticButton onClick={handleLogin} className="w-full">
@@ -153,7 +175,7 @@ export default function Terms() {
       </AnimatePresence>
 
       {/* Main Content */}
-      <main className="relative z-10 max-w-4xl mx-auto px-6 py-16">
+      <main className={`relative z-10 max-w-4xl mx-auto px-6 py-16 ${isLight ? 'text-slate-900' : 'text-white'}`}>
         <motion.div
           className="text-center mb-16"
           initial={{ y: 50, opacity: 0 }}
@@ -161,18 +183,25 @@ export default function Terms() {
           transition={{ duration: 0.8 }}
         >
           <motion.div
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 mb-6"
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 ${
+              isLight 
+                ? 'bg-green-100 border border-green-200 text-green-800' 
+                : 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 text-green-300'
+            }`}
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 200, damping: 15 }}
           >
-            <FileCheck size={16} className="text-green-400" />
-            <span className="text-green-300 font-medium">Terms of Service</span>
+            <FileCheck size={16} className={isLight ? 'text-green-600' : 'text-green-400'} />
+            <span className="font-medium">Terms of Service</span>
           </motion.div>
 
           <h1 className="text-4xl lg:text-5xl font-extrabold leading-tight mb-6">
             <motion.span
-              className="bg-gradient-to-r from-white via-green-300 to-emerald-300 bg-clip-text text-transparent"
+              className={isLight 
+                ? 'text-green-700' 
+                : 'bg-gradient-to-r from-white via-green-300 to-emerald-300 bg-clip-text text-transparent'
+              }
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.8 }}
@@ -191,12 +220,16 @@ export default function Terms() {
         >
           {/* Last Updated */}
           <motion.div variants={itemVariants}>
-            <GlassCard className="p-6 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-blue-400/20">
+            <GlassCard className={`p-6 ${
+              isLight 
+                ? 'bg-gradient-to-r from-blue-100 to-cyan-100 border-blue-200/60' 
+                : 'bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-blue-400/20'
+            }`}>
               <div className="flex items-center gap-3 mb-4">
-                <Clock size={20} className="text-blue-400" />
-                <span className="text-blue-300 font-medium">Last Updated: September 17, 2025</span>
+                <Clock size={20} className={isLight ? 'text-blue-600' : 'text-blue-400'} />
+                <span className={isLight ? 'text-blue-700 font-medium' : 'text-blue-300 font-medium'}>Last Updated: September 17, 2025</span>
               </div>
-              <p className="text-green-100">
+              <p className={isLight ? 'text-slate-700' : 'text-green-100'}>
                 These terms and conditions outline the rules and regulations for the use of VanMitra's Forest Rights & Asset Mapping Platform.
               </p>
             </GlassCard>
@@ -209,9 +242,9 @@ export default function Terms() {
                 <div className="p-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500">
                   <Check size={24} className="text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-white">Acceptance of Terms</h2>
+                <h2 className={`text-2xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>Acceptance of Terms</h2>
               </div>
-              <div className="text-green-100 leading-relaxed space-y-4">
+              <div className={`leading-relaxed space-y-4 ${isLight ? 'text-slate-700' : 'text-green-100'}`}>
                 <p>
                   By accessing and using VanMitra, you accept and agree to be bound by the terms and provision of this agreement.
                   If you do not agree to abide by the above, please do not use this service.
@@ -231,9 +264,9 @@ export default function Terms() {
                 <div className="p-3 rounded-xl bg-gradient-to-r from-purple-500 to-violet-500">
                   <Scale size={24} className="text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-white">Use License</h2>
+                <h2 className={`text-2xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>Use License</h2>
               </div>
-              <div className="text-green-100 leading-relaxed space-y-4">
+              <div className={`leading-relaxed space-y-4 ${isLight ? 'text-slate-700' : 'text-green-100'}`}>
                 <p>
                   Permission is granted to temporarily use VanMitra for personal, non-commercial transitory viewing only.
                   This is the grant of a license, not a transfer of title, and under this license you may not:
@@ -255,9 +288,9 @@ export default function Terms() {
                 <div className="p-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500">
                   <Users size={24} className="text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-white">User Responsibilities</h2>
+                <h2 className={`text-2xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>User Responsibilities</h2>
               </div>
-              <div className="text-green-100 leading-relaxed space-y-4">
+              <div className={`leading-relaxed space-y-4 ${isLight ? 'text-slate-700' : 'text-green-100'}`}>
                 <p>As a user of VanMitra, you agree to:</p>
                 <ul className="list-disc list-inside space-y-2 ml-4">
                   <li>Provide accurate and complete information when creating an account</li>
@@ -278,9 +311,9 @@ export default function Terms() {
                 <div className="p-3 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500">
                   <Shield size={24} className="text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-white">Data Usage and Privacy</h2>
+                <h2 className={`text-2xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>Data Usage and Privacy</h2>
               </div>
-              <div className="text-green-100 leading-relaxed space-y-4">
+              <div className={`leading-relaxed space-y-4 ${isLight ? 'text-slate-700' : 'text-green-100'}`}>
                 <p>
                   Your privacy is important to us. Please review our Privacy Policy, which also governs your use of the platform,
                   to understand our practices regarding the collection and use of your personal information.
@@ -301,9 +334,9 @@ export default function Terms() {
                 <div className="p-3 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-500">
                   <Server size={24} className="text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-white">Service Availability</h2>
+                <h2 className={`text-2xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>Service Availability</h2>
               </div>
-              <div className="text-green-100 leading-relaxed space-y-4">
+              <div className={`leading-relaxed space-y-4 ${isLight ? 'text-slate-700' : 'text-green-100'}`}>
                 <p>
                   While we strive to provide continuous access to VanMitra, we do not guarantee that the service will
                   be uninterrupted or error-free. We reserve the right to modify, suspend, or discontinue the service
@@ -324,9 +357,9 @@ export default function Terms() {
                 <div className="p-3 rounded-xl bg-gradient-to-r from-red-500 to-pink-500">
                   <FileText size={24} className="text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-white">Intellectual Property</h2>
+                <h2 className={`text-2xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>Intellectual Property</h2>
               </div>
-              <div className="text-green-100 leading-relaxed space-y-4">
+              <div className={`leading-relaxed space-y-4 ${isLight ? 'text-slate-700' : 'text-green-100'}`}>
                 <p>
                   The platform and its original content, features, and functionality are and will remain the exclusive
                   property of VanMitra and its licensors. The service is protected by copyright, trademark, and other laws.
@@ -346,9 +379,9 @@ export default function Terms() {
                 <div className="p-3 rounded-xl bg-gradient-to-r from-orange-500 to-red-500">
                   <AlertTriangle size={24} className="text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-white">Termination</h2>
+                <h2 className={`text-2xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>Termination</h2>
               </div>
-              <div className="text-green-100 leading-relaxed space-y-4">
+              <div className={`leading-relaxed space-y-4 ${isLight ? 'text-slate-700' : 'text-green-100'}`}>
                 <p>
                   We may terminate or suspend your account and bar access to the service immediately, without prior notice
                   or liability, under our sole discretion, for any reason whatsoever and without limitation, including
@@ -368,9 +401,9 @@ export default function Terms() {
                 <div className="p-3 rounded-xl bg-gradient-to-r from-emerald-500 to-green-500">
                   <Scale size={24} className="text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-white">Governing Law</h2>
+                <h2 className={`text-2xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>Governing Law</h2>
               </div>
-              <div className="text-green-100 leading-relaxed space-y-4">
+              <div className={`leading-relaxed space-y-4 ${isLight ? 'text-slate-700' : 'text-green-100'}`}>
                 <p>
                   These Terms shall be interpreted and governed by the laws of India, without regard to its conflict
                   of law provisions. Our failure to enforce any right or provision of these Terms will not be considered
@@ -386,17 +419,21 @@ export default function Terms() {
 
           {/* Contact Information */}
           <motion.div variants={itemVariants}>
-            <GlassCard className="p-8 bg-gradient-to-r from-green-600/20 to-emerald-600/20 border-green-400/30">
+            <GlassCard className={`p-8 ${
+              isLight 
+                ? 'bg-gradient-to-r from-green-100 to-emerald-100 border-green-300/60' 
+                : 'bg-gradient-to-r from-green-600/20 to-emerald-600/20 border-green-400/30'
+            }`}>
               <div className="text-center">
-                <h2 className="text-2xl font-bold text-white mb-4">Questions About These Terms?</h2>
-                <p className="text-green-100 mb-6">
+                <h2 className={`text-2xl font-bold mb-4 ${isLight ? 'text-slate-800' : 'text-white'}`}>Questions About These Terms?</h2>
+                <p className={`mb-6 ${isLight ? 'text-slate-700' : 'text-green-100'}`}>
                   If you have any questions about these Terms of Service, please contact us:
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <MagneticButton variant="secondary">
+                  <MagneticButton variant={isLight ? "outline" : "secondary"}>
                     legal@vanmitra.org
                   </MagneticButton>
-                  <MagneticButton variant="secondary">
+                  <MagneticButton variant={isLight ? "outline" : "secondary"}>
                     Visit Contact Page
                   </MagneticButton>
                 </div>

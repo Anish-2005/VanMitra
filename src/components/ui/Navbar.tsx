@@ -16,7 +16,9 @@ const Navbar: React.FC = () => {
   const router = useRouter();
   const { user, loading } = useAuth();
   const { theme } = useTheme();
-  const isLight = theme === 'light';
+  const [mounted, setMounted] = useState(false);
+  React.useEffect(() => setMounted(true), []);
+  const isLight = mounted && theme === 'light';
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [email, setEmail] = useState("");
@@ -320,7 +322,11 @@ const Navbar: React.FC = () => {
             {/* Backdrop */}
             <motion.div
               className="absolute inset-0 backdrop-blur-sm"
-              style={isLight ? { background: 'rgba(255,255,255,0.7)' } : { background: 'rgba(0,0,0,0.6)' }}
+              style={isLight 
+  ? { background: 'linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(240,253,244,0.6))' } 
+  : { background: 'linear-gradient(to bottom, rgba(15,23,42,0.8), rgba(6,78,59,0.6))' }
+}
+
               onClick={onMobileMenuToggle}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
