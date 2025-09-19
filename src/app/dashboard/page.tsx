@@ -1,11 +1,10 @@
 "use client";
 
 import React, { useMemo, useState, useEffect, useRef } from "react";
+import { useTheme } from "@/components/ThemeProvider";
 import { STATES, DEFAULT_STATE, DEFAULT_DISTRICT } from '../../lib/regions';
-import { BarChart, Menu, Shield, X } from "lucide-react"; // icons
+import { BarChart, Menu, Shield, X } from "lucide-react";
 import { motion, AnimatePresence, HTMLMotionProps } from "framer-motion";
-// Framer-motion's JSX generics sometimes conflict with the project's TS setup.
-// Create lightweight aliases cast to any so we can use className/onClick without type errors.
 const MDiv: React.FC<HTMLMotionProps<"div">> = motion.div;
 const MBackdrop: React.FC<HTMLMotionProps<"div">> = motion.div;
 const MAside: React.FC<HTMLMotionProps<"aside">> = motion.aside;
@@ -45,6 +44,11 @@ function Sparkline({ data, width = 160, height = 40 }: { data: number[]; width?:
 }
 
 export default function Dashboard() {
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  const isLight = mounted && theme === 'light';
+
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,16 +69,13 @@ export default function Dashboard() {
   const [stateFilter, setStateFilter] = useState<string>(DEFAULT_STATE);
   const [districtFilter, setDistrictFilter] = useState<string>(DEFAULT_DISTRICT);
   const [villageQuery, setVillageQuery] = useState<string>("");
-  // UI: collapse filters & layer manager by default
   const [filtersCollapsed, setFiltersCollapsed] = useState<boolean>(true);
 
-  // Fetch all dashboard data
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true);
 
-        // Fetch all data in parallel
         const [kpisRes, recommendationsRes, fraRes, assetsRes, boundariesRes] = await Promise.allSettled([
           fetch("/api/dashboard/kpis"),
           fetch("/api/dashboard/recommendations"),
@@ -156,7 +157,6 @@ export default function Dashboard() {
     }
   ]);
 
-  // Default sample markers placed around the DEFAULT_STATE center (Madhya Pradesh) rather than Sundarbans
   const defaultCenter = STATES.find(s => s.name === DEFAULT_STATE)?.center ?? [78.9629, 22.9734];
   const [markers, setMarkers] = useState<GISMarker[]>([
     { id: 'marker-1', lng: defaultCenter[0] - 0.5, lat: defaultCenter[1] - 0.4, label: 'A', color: '#dc2626', popup: '<b>High Priority Village</b><br>Population: 1,200<br>FRA Claims: 45' },
@@ -191,16 +191,12 @@ export default function Dashboard() {
   const handleExportMap = async () => {
     console.log('Starting map export...');
     try {
-      // Try the WebGIS export first
       if (webGISRef.current) {
         await webGISRef.current.exportMap();
         return;
       }
-
-      // Fallback: Simple screenshot approach
       alert('Map export initiated. Please use your browser\'s screenshot feature (Ctrl+Shift+S) to capture the map.');
     } catch (error) {
-      // Safe error logging to avoid call stack issues
       try {
         console.error('Export failed:', error instanceof Error ? error.message : String(error));
       } catch (logError) {
@@ -250,16 +246,27 @@ export default function Dashboard() {
 
   const [loginOpen, setLoginOpen] = useState(false);
 
-  function seeded(i: number, arg1: number) {
-    throw new Error("Function not implemented.");
-  }
-
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-green-900 to-emerald-900 text-white relative overflow-hidden">
+      <div className={
+        `min-h-screen relative overflow-hidden ${isLight ?
+          'bg-gradient-to-br from-emerald-50 via-green-100 to-teal-100 text-slate-900' :
+          'bg-gradient-to-br from-slate-900 via-green-900 to-emerald-900 text-white'}`
+      }>
         <ThreeBackground />
         <DecorativeElements />
         <FloatingOrbs />
+
+        {/* Mesh Gradient Overlay */}
+        <div className={isLight ? "fixed inset-0 bg-gradient-to-br from-white/40 via-transparent to-emerald-100/20 pointer-events-none z-1" : "fixed inset-0 bg-gradient-to-br from-green-900/20 via-transparent to-emerald-900/20 pointer-events-none z-1"} />
+
+        {/* Animated Grid */}
+        <div className={isLight ? "fixed inset-0 opacity-10 pointer-events-none z-1" : "fixed inset-0 opacity-10 pointer-events-none z-1"}>
+          <div className="absolute inset-0" style={{
+            backgroundImage: isLight ? `linear-gradient(rgba(16, 185, 129, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 185, 129, 0.05) 1px, transparent 1px)` : `linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px)`,
+            backgroundSize: '50px 50px'
+          }} />
+        </div>
 
         <Navbar />
 
@@ -268,8 +275,8 @@ export default function Dashboard() {
           {isLoading && (
             <div className="flex items-center justify-center py-20">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-400 mx-auto mb-4"></div>
-                <p className="text-emerald-200">Loading dashboard data...</p>
+                <div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${isLight ? 'border-emerald-600' : 'border-emerald-400'} mx-auto mb-4`}></div>
+                <p className={isLight ? 'text-emerald-700' : 'text-emerald-200'}>Loading dashboard data...</p>
               </div>
             </div>
           )}
@@ -279,15 +286,15 @@ export default function Dashboard() {
               {/* Welcome Section */}
               <div className="mb-8">
                 <motion.div initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
-                  <GlassCard className="p-6">
+                  <GlassCard className={`p-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
                     <div className="flex items-center justify-between">
                       <div>
-                        <h2 className="text-2xl font-bold text-white">Welcome back, {user?.displayName || 'User'}!</h2>
-                        <p className="text-emerald-200 mt-1">Here is what is happening with FRA claims and village development today.</p>
+                        <h2 className={`text-2xl font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>Welcome back, {user?.displayName || 'User'}!</h2>
+                        <p className={`mt-1 ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Here is what is happening with FRA claims and village development today.</p>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm text-emerald-200">Last updated</div>
-                        <div className="text-lg font-semibold text-white">{new Date().toLocaleDateString()}</div>
+                        <div className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Last updated</div>
+                        <div className={`text-lg font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>{new Date().toLocaleDateString()}</div>
                       </div>
                     </div>
                   </GlassCard>
@@ -305,30 +312,29 @@ export default function Dashboard() {
                     {kpis.map((kpi, index) => (
                       <GlassCard
                         key={index}
-                        className="p-6 hover:shadow-lg transition-shadow"
+                        className={`p-6 hover:shadow-lg transition-shadow ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}
                       >
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm font-medium text-emerald-200">{kpi.label}</p>
-                            <p className="text-2xl font-bold text-white mt-1">{kpi.value}</p>
+                            <p className={`text-sm font-medium ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>{kpi.label}</p>
+                            <p className={`text-2xl font-bold mt-1 ${isLight ? 'text-slate-900' : 'text-white'}`}>{kpi.value}</p>
                             <div className="flex items-center mt-2">
-                              <TrendingUp className="h-4 w-4 text-emerald-300 mr-1" />
-                              <span className="text-sm text-emerald-200">{kpi.trend}</span>
+                              <TrendingUp className={`h-4 w-4 mr-1 ${isLight ? 'text-emerald-600' : 'text-emerald-300'}`} />
+                              <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>{kpi.trend}</span>
                             </div>
                           </div>
 
-                          {/* Glassy icon container instead of solid pastel */}
                           <div
                             className={`h-12 w-12 rounded-xl flex items-center justify-center 
-                          bg-white/5 border border-white/10 backdrop-blur-sm`}
+                          ${isLight ? 'bg-emerald-100 border border-emerald-200' : 'bg-white/5 border border-white/10'} backdrop-blur-sm`}
                           >
                             <kpi.icon
                               className={`h-6 w-6 
-                  ${kpi.color === 'emerald' ? 'text-emerald-400' :
-                                  kpi.color === 'blue' ? 'text-blue-400' :
-                                    kpi.color === 'purple' ? 'text-purple-400' :
-                                      kpi.color === 'orange' ? 'text-orange-400' :
-                                        'text-gray-400'
+                  ${kpi.color === 'emerald' ? (isLight ? 'text-emerald-600' : 'text-emerald-400') :
+                                  kpi.color === 'blue' ? (isLight ? 'text-blue-600' : 'text-blue-400') :
+                                    kpi.color === 'purple' ? (isLight ? 'text-purple-600' : 'text-purple-400') :
+                                      kpi.color === 'orange' ? (isLight ? 'text-orange-600' : 'text-orange-400') :
+                                        isLight ? 'text-gray-600' : 'text-gray-400'
                                 }`}
                             />
                           </div>
@@ -343,130 +349,128 @@ export default function Dashboard() {
                 </motion.div>
               </div>
 
-
               {/* Quick Actions & Recent Activity */}
               <div className="mb-8">
                 <motion.div initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, delay: 0.15 }}>
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Quick Actions */}
-                    <GlassCard className="p-6">
-                      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <GlassCard className={`p-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
+                      <h3 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
                         <Activity className="h-5 w-5" />
                         Quick Actions
                       </h3>
 
                       <div className="space-y-3">
-                        <button className="w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left bg-white/5 border border-white/10 hover:bg-white/10">
-                          <FileText className="h-5 w-5 text-emerald-400" />
+                        <button className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left ${isLight ? 'bg-emerald-50 border border-emerald-200 hover:bg-emerald-100' : 'bg-white/5 border border-white/10 hover:bg-white/10'}`}>
+                          <FileText className={`h-5 w-5 ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`} />
                           <div>
-                            <div className="font-medium text-white">New FRA Claim</div>
-                            <div className="text-sm text-emerald-200">Process a new forest rights claim</div>
+                            <div className={`font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>New FRA Claim</div>
+                            <div className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Process a new forest rights claim</div>
                           </div>
                         </button>
 
-                        <button className="w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left bg-white/5 border border-white/10 hover:bg-white/10">
-                          <MapPin className="h-5 w-5 text-blue-400" />
+                        <button className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left ${isLight ? 'bg-emerald-50 border border-emerald-200 hover:bg-emerald-100' : 'bg-white/5 border border-white/10 hover:bg-white/10'}`}>
+                          <MapPin className={`h-5 w-5 ${isLight ? 'text-blue-600' : 'text-blue-400'}`} />
                           <div>
-                            <div className="font-medium text-white">Map Analysis</div>
-                            <div className="text-sm text-emerald-200">Analyze village boundaries</div>
+                            <div className={`font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>Map Analysis</div>
+                            <div className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Analyze village boundaries</div>
                           </div>
                         </button>
 
-                        <button className="w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left bg-white/5 border border-white/10 hover:bg-white/10">
-                          <Download className="h-5 w-5 text-purple-400" />
+                        <button className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left ${isLight ? 'bg-emerald-50 border border-emerald-200 hover:bg-emerald-100' : 'bg-white/5 border border-white/10 hover:bg-white/10'}`}>
+                          <Download className={`h-5 w-5 ${isLight ? 'text-purple-600' : 'text-purple-400'}`} />
                           <div>
-                            <div className="font-medium text-white">Export Report</div>
-                            <div className="text-sm text-emerald-200">Generate comprehensive report</div>
+                            <div className={`font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>Export Report</div>
+                            <div className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Generate comprehensive report</div>
                           </div>
                         </button>
 
-                        <button className="w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left bg-white/5 border border-white/10 hover:bg-white/10">
-                          <Users className="h-5 w-5 text-orange-400" />
+                        <button className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left ${isLight ? 'bg-emerald-50 border border-emerald-200 hover:bg-emerald-100' : 'bg-white/5 border border-white/10 hover:bg-white/10'}`}>
+                          <Users className={`h-5 w-5 ${isLight ? 'text-orange-600' : 'text-orange-400'}`} />
                           <div>
-                            <div className="font-medium text-white">Team Assignment</div>
-                            <div className="text-sm text-emerald-200">Assign tasks to field officers</div>
+                            <div className={`font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>Team Assignment</div>
+                            <div className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Assign tasks to field officers</div>
                           </div>
                         </button>
                       </div>
                     </GlassCard>
 
-
                     {/* Recent Activity */}
-                    <GlassCard className="p-6">
-                      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <GlassCard className={`p-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
+                      <h3 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
                         <Calendar className="h-5 w-5" />
                         Recent Activity
                       </h3>
                       <div className="space-y-4">
                         <div className="flex items-start gap-3">
-                          <div className="h-2 w-2 bg-green-500 rounded-full mt-2"></div>
+                          <div className={`h-2 w-2 rounded-full mt-2 ${isLight ? 'bg-green-600' : 'bg-green-500'}`}></div>
                           <div className="flex-1">
-                            <p className="text-sm font-medium text-white">New claim processed</p>
-                            <p className="text-xs text-emerald-200">Village: Chandrapur • 2 hours ago</p>
+                            <p className={`text-sm font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>New claim processed</p>
+                            <p className={`text-xs ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Village: Chandrapur • 2 hours ago</p>
                           </div>
                         </div>
                         <div className="flex items-start gap-3">
-                          <div className="h-2 w-2 bg-blue-500 rounded-full mt-2"></div>
+                          <div className={`h-2 w-2 rounded-full mt-2 ${isLight ? 'bg-blue-600' : 'bg-blue-500'}`}></div>
                           <div className="flex-1">
-                            <p className="text-sm font-medium text-white">Boundary survey completed</p>
-                            <p className="text-xs text-emerald-200">District: Raipur • 4 hours ago</p>
+                            <p className={`text-sm font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>Boundary survey completed</p>
+                            <p className={`text-xs ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>District: Raipur • 4 hours ago</p>
                           </div>
                         </div>
                         <div className="flex items-start gap-3">
-                          <div className="h-2 w-2 bg-purple-500 rounded-full mt-2"></div>
+                          <div className={`h-2 w-2 rounded-full mt-2 ${isLight ? 'bg-purple-600' : 'bg-purple-500'}`}></div>
                           <div className="flex-1">
-                            <p className="text-sm font-medium text-white">Report generated</p>
-                            <p className="text-xs text-emerald-200">Monthly summary • 1 day ago</p>
+                            <p className={`text-sm font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>Report generated</p>
+                            <p className={`text-xs ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Monthly summary • 1 day ago</p>
                           </div>
                         </div>
                         <div className="flex items-start gap-3">
-                          <div className="h-2 w-2 bg-orange-500 rounded-full mt-2"></div>
+                          <div className={`h-2 w-2 rounded-full mt-2 ${isLight ? 'bg-orange-600' : 'bg-orange-500'}`}></div>
                           <div className="flex-1">
-                            <p className="text-sm font-medium text-white">Officer assigned</p>
-                            <p className="text-xs text-emerald-200">Team Alpha • 2 days ago</p>
+                            <p className={`text-sm font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>Officer assigned</p>
+                            <p className={`text-xs ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Team Alpha • 2 days ago</p>
                           </div>
                         </div>
                       </div>
                     </GlassCard>
 
                     {/* System Status */}
-                    <GlassCard className="p-6">
-                      <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <GlassCard className={`p-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
+                      <h3 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
                         <Server className="h-5 w-5" />
                         System Status
                       </h3>
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-emerald-200">API Services</span>
+                          <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>API Services</span>
                           <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                            <span className="text-xs text-emerald-200">Online</span>
+                            <div className={`h-2 w-2 rounded-full ${isLight ? 'bg-green-600' : 'bg-green-500'}`}></div>
+                            <span className={`text-xs ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Online</span>
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-emerald-200">Database</span>
+                          <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Database</span>
                           <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                            <span className="text-xs text-emerald-200">Healthy</span>
+                            <div className={`h-2 w-2 rounded-full ${isLight ? 'bg-green-600' : 'bg-green-500'}`}></div>
+                            <span className={`text-xs ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Healthy</span>
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-emerald-200">OCR Engine</span>
+                          <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>OCR Engine</span>
                           <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                            <span className="text-xs text-emerald-200">Active</span>
+                            <div className={`h-2 w-2 rounded-full ${isLight ? 'bg-green-600' : 'bg-green-500'}`}></div>
+                            <span className={`text-xs ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Active</span>
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-emerald-200">Map Services</span>
+                          <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Map Services</span>
                           <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 bg-yellow-500 rounded-full"></div>
-                            <span className="text-xs text-yellow-600">Maintenance</span>
+                            <div className={`h-2 w-2 rounded-full ${isLight ? 'bg-yellow-500' : 'bg-yellow-500'}`}></div>
+                            <span className={`text-xs ${isLight ? 'text-yellow-700' : 'text-yellow-600'}`}>Maintenance</span>
                           </div>
                         </div>
                       </div>
-                      <div className="mt-4 pt-4 border-t border-white/10">
-                        <div className="text-xs text-emerald-200">
+                      <div className={`mt-4 pt-4 border-t ${isLight ? 'border-emerald-200' : 'border-white/10'}`}>
+                        <div className={`text-xs ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>
                           Last maintenance: 2 hours ago
                         </div>
                       </div>
@@ -479,68 +483,68 @@ export default function Dashboard() {
               <div className="mb-8">
                 <motion.div initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, delay: 0.2 }}>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <GlassCard className="p-6">
-                      <h3 className="text-lg font-semibold text-white mb-4">Claims Processing Trend</h3>
+                    <GlassCard className={`p-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
+                      <h3 className={`text-lg font-semibold mb-4 ${isLight ? 'text-slate-900' : 'text-white'}`}>Claims Processing Trend</h3>
                       <div className="h-64 flex items-end justify-between gap-2">
                         {timeSeries.slice(-12).map((value: number, index: number) => (
                           <div key={index} className="flex flex-col items-center flex-1">
                             <div
-                              className="bg-emerald-500 rounded-t w-full transition-all hover:bg-emerald-600"
+                              className={`rounded-t w-full transition-all hover:opacity-80 ${isLight ? 'bg-emerald-500' : 'bg-emerald-500'}`}
                               style={{ height: `${(value / Math.max(...timeSeries)) * 200}px` }}
                             ></div>
-                            <span className="text-xs text-emerald-200 mt-2">{index + 1}</span>
+                            <span className={`text-xs mt-2 ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>{index + 1}</span>
                           </div>
                         ))}
                       </div>
-                      <div className="mt-4 flex justify-between text-sm text-emerald-200">
+                      <div className={`mt-4 flex justify-between text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>
                         <span>Monthly claims processed</span>
                         <span className="font-medium">+{Math.round((timeSeries[timeSeries.length - 1] - timeSeries[timeSeries.length - 2]) / timeSeries[timeSeries.length - 2] * 100)}% this month</span>
                       </div>
                     </GlassCard>
 
-                    <GlassCard className="p-6">
-                      <h3 className="text-lg font-semibold text-white mb-4">Priority Distribution</h3>
+                    <GlassCard className={`p-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
+                      <h3 className={`text-lg font-semibold mb-4 ${isLight ? 'text-slate-900' : 'text-white'}`}>Priority Distribution</h3>
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div className="h-4 w-4 bg-red-500 rounded"></div>
-                            <span className="text-sm text-emerald-200">High Priority</span>
+                            <div className={`h-4 w-4 rounded ${isLight ? 'bg-red-500' : 'bg-red-500'}`}></div>
+                            <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>High Priority</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <div className="w-24 h-2 bg-white/10 rounded">
-                              <div className="h-2 bg-red-500 rounded" style={{ width: '35%' }}></div>
+                            <div className={`w-24 h-2 rounded ${isLight ? 'bg-emerald-200' : 'bg-white/10'}`}>
+                              <div className={`h-2 rounded ${isLight ? 'bg-red-500' : 'bg-red-500'}`} style={{ width: '35%' }}></div>
                             </div>
-                            <span className="text-sm font-medium text-white">35%</span>
+                            <span className={`text-sm font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>35%</span>
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div className="h-4 w-4 bg-yellow-500 rounded"></div>
-                            <span className="text-sm text-emerald-200">Medium Priority</span>
+                            <div className={`h-4 w-4 rounded ${isLight ? 'bg-yellow-500' : 'bg-yellow-500'}`}></div>
+                            <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Medium Priority</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <div className="w-24 h-2 bg-white/10 rounded">
-                              <div className="h-2 bg-yellow-500 rounded" style={{ width: '45%' }}></div>
+                            <div className={`w-24 h-2 rounded ${isLight ? 'bg-emerald-200' : 'bg-white/10'}`}>
+                              <div className={`h-2 rounded ${isLight ? 'bg-yellow-500' : 'bg-yellow-500'}`} style={{ width: '45%' }}></div>
                             </div>
-                            <span className="text-sm font-medium text-white">45%</span>
+                            <span className={`text-sm font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>45%</span>
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div className="h-4 w-4 bg-green-500 rounded"></div>
-                            <span className="text-sm text-emerald-200">Low Priority</span>
+                            <div className={`h-4 w-4 rounded ${isLight ? 'bg-green-500' : 'bg-green-500'}`}></div>
+                            <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Low Priority</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <div className="w-24 h-2 bg-white/10 rounded">
-                              <div className="h-2 bg-emerald-500 rounded" style={{ width: '20%' }}></div>
+                            <div className={`w-24 h-2 rounded ${isLight ? 'bg-emerald-200' : 'bg-white/10'}`}>
+                              <div className={`h-2 rounded ${isLight ? 'bg-emerald-500' : 'bg-emerald-500'}`} style={{ width: '20%' }}></div>
                             </div>
-                            <span className="text-sm font-medium text-white">20%</span>
+                            <span className={`text-sm font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>20%</span>
                           </div>
                         </div>
                       </div>
-                      <div className="mt-6 pt-4 border-t border-white/10">
-                        <div className="text-sm text-emerald-200">
-                          Total villages monitored: <span className="font-medium text-white">{filtered.length}</span>
+                      <div className={`mt-6 pt-4 border-t ${isLight ? 'border-emerald-200' : 'border-white/10'}`}>
+                        <div className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>
+                          Total villages monitored: <span className={`font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>{filtered.length}</span>
                         </div>
                       </div>
                     </GlassCard>
@@ -551,27 +555,27 @@ export default function Dashboard() {
               {/* Interactive Map Preview */}
               <div className="mb-8">
                 <motion.div initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, delay: 0.25 }}>
-                  <GlassCard className="p-6">
+                  <GlassCard className={`p-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
                     <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-lg font-semibold text-white">Interactive Map Preview</h3>
+                      <h3 className={`text-lg font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>Interactive Map Preview</h3>
 
                       <div className="flex items-center gap-3">
                         <button
                           onClick={() => setFiltersCollapsed(!filtersCollapsed)}
-                          className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm 
-                   bg-white/5 border border-white/10 hover:bg-white/10"
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm 
+                   ${isLight ? 'bg-emerald-100 border border-emerald-200 hover:bg-emerald-200 text-emerald-800' : 'bg-white/5 border border-white/10 hover:bg-white/10 text-white'}`}
                         >
-                          <Filter className="h-4 w-4 text-emerald-400" />
-                          <span className="text-white">Filters</span>
+                          <Filter className={`h-4 w-4 ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`} />
+                          <span>Filters</span>
                         </button>
 
                         <button
                           onClick={handleExportMap}
-                          className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm 
-                   bg-white/5 border border-white/10 hover:bg-white/10"
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm 
+                   ${isLight ? 'bg-emerald-100 border border-emerald-200 hover:bg-emerald-200 text-emerald-800' : 'bg-white/5 border border-white/10 hover:bg-white/10 text-white'}`}
                         >
-                          <Download className="h-4 w-4 text-green-400" />
-                          <span className="text-white">Export</span>
+                          <Download className={`h-4 w-4 ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`} />
+                          <span>Export</span>
                         </button>
                       </div>
                     </div>
@@ -579,51 +583,57 @@ export default function Dashboard() {
                     {/* Filters Panel */}
                     {!filtersCollapsed && (
                       <motion.div
-                        className="mb-6 p-6 rounded-3xl border border-emerald-700/50 bg-gradient-to-r from-emerald-900/20 to-green-900/20 backdrop-blur-xl shadow-2xl"
+                        className={`mb-6 p-6 rounded-3xl ${isLight ? 'bg-emerald-50 border border-emerald-200' : 'border border-emerald-700/50 bg-gradient-to-r from-emerald-900/20 to-green-900/20 backdrop-blur-xl shadow-2xl'}`}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5 }}
                       >
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                           <div>
-                            <label className="block text-sm font-medium text-emerald-200 mb-2">State</label>
+                            <label className={`block text-sm font-medium mb-2 ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>State</label>
                             <motion.select
                               value={stateFilter}
                               onChange={(e) => setStateFilter(e.target.value)}
-                              className="w-full px-4 py-2 rounded-2xl border border-emerald-700/50 bg-gradient-to-r from-emerald-900/20 to-green-900/20 backdrop-blur-sm text-white placeholder-green-300 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 hover:bg-gradient-to-r hover:from-emerald-900/30 hover:to-green-900/30 transition-all duration-300 cursor-pointer"
+                              className={`w-full px-4 py-2 rounded-2xl focus:outline-none focus:ring-2 ${isLight 
+                                ? 'bg-white border border-emerald-300 text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500' 
+                                : 'border border-emerald-700/50 bg-gradient-to-r from-emerald-900/20 to-green-900/20 backdrop-blur-sm text-white placeholder-green-300 focus:ring-emerald-400 focus:border-emerald-400'}`}
                               whileHover={{ scale: 1.02 }}
                               whileFocus={{ scale: 1.02 }}
                               transition={{ type: "spring", stiffness: 300 }}
                             >
                               {STATES.map(state => (
-                                <option key={state.name} value={state.name} className="bg-slate-900 text-white">{state.name}</option>
+                                <option key={state.name} value={state.name} className={isLight ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'}>{state.name}</option>
                               ))}
                             </motion.select>
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-emerald-200 mb-2">District</label>
+                            <label className={`block text-sm font-medium mb-2 ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>District</label>
                             <motion.select
                               value={districtFilter}
                               onChange={(e) => setDistrictFilter(e.target.value)}
-                              className="w-full px-4 py-2 rounded-2xl border border-emerald-700/50 bg-gradient-to-r from-emerald-900/20 to-green-900/20 backdrop-blur-sm text-white placeholder-green-300 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 hover:bg-gradient-to-r hover:from-emerald-900/30 hover:to-green-900/30 transition-all duration-300 cursor-pointer"
+                              className={`w-full px-4 py-2 rounded-2xl focus:outline-none focus:ring-2 ${isLight 
+                                ? 'bg-white border border-emerald-300 text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500' 
+                                : 'border border-emerald-700/50 bg-gradient-to-r from-emerald-900/20 to-green-900/20 backdrop-blur-sm text-white placeholder-green-300 focus:ring-emerald-400 focus:border-emerald-400'}`}
                               whileHover={{ scale: 1.02 }}
                               whileFocus={{ scale: 1.02 }}
                               transition={{ type: "spring", stiffness: 300 }}
                             >
-                              <option value="All" className="bg-slate-900 text-white">All Districts</option>
-                              <option value="Raipur" className="bg-slate-900 text-white">Raipur</option>
-                              <option value="Bilaspur" className="bg-slate-900 text-white">Bilaspur</option>
-                              <option value="Durg" className="bg-slate-900 text-white">Durg</option>
+                              <option value="All" className={isLight ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'}>All Districts</option>
+                              <option value="Raipur" className={isLight ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'}>Raipur</option>
+                              <option value="Bilaspur" className={isLight ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'}>Bilaspur</option>
+                              <option value="Durg" className={isLight ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'}>Durg</option>
                             </motion.select>
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-emerald-200 mb-2">Search Village</label>
+                            <label className={`block text-sm font-medium mb-2 ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Search Village</label>
                             <motion.input
                               type="text"
                               value={villageQuery}
                               onChange={(e) => setVillageQuery(e.target.value)}
                               placeholder="Enter village name..."
-                              className="w-full px-4 py-2 rounded-2xl border border-emerald-700/50 bg-gradient-to-r from-emerald-900/20 to-green-900/20 backdrop-blur-sm text-white placeholder-green-300 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 hover:bg-gradient-to-r hover:from-emerald-900/30 hover:to-green-900/30 transition-all duration-300"
+                              className={`w-full px-4 py-2 rounded-2xl focus:outline-none focus:ring-2 ${isLight 
+                                ? 'bg-white border border-emerald-300 text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500' 
+                                : 'border border-emerald-700/50 bg-gradient-to-r from-emerald-900/20 to-green-900/20 backdrop-blur-sm text-white placeholder-green-300 focus:ring-emerald-400 focus:border-emerald-400'}`}
                               whileFocus={{ scale: 1.02 }}
                               transition={{ type: "spring", stiffness: 300 }}
                             />
@@ -645,19 +655,19 @@ export default function Dashboard() {
                         onMapClick={handleMapClick}
                       />
                       <div className="absolute top-4 left-4">
-                        <GlassCard className="p-2">
-                          <div className="flex items-center gap-2 text-sm text-emerald-700">
+                        <GlassCard className={`p-2 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
+                          <div className={`flex items-center gap-2 text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-600'}`}>
                             <MapPin className="h-4 w-4" />
-                            <span className="text-white">{stateFilter}, {districtFilter}</span>
+                            <span className={isLight ? 'text-slate-900' : 'text-white'}>{stateFilter}, {districtFilter}</span>
                           </div>
                         </GlassCard>
                       </div>
                       <div className="absolute bottom-4 right-4">
-                        <GlassCard className="p-2">
-                          <div className="text-xs text-emerald-600">
-                            <span className="text-white">Zoom: 8x</span>
-                            <span className="mx-2">•</span>
-                            <span className="text-white">Layers: {layers.filter(l => l.visible).length}/{layers.length}</span>
+                        <GlassCard className={`p-2 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
+                          <div className={`text-xs ${isLight ? 'text-emerald-600' : 'text-emerald-600'}`}>
+                            <span className={isLight ? 'text-slate-900' : 'text-white'}>Zoom: 8x</span>
+                            <span className={`mx-2 ${isLight ? 'text-emerald-600' : 'text-emerald-600'}`}>•</span>
+                            <span className={isLight ? 'text-slate-900' : 'text-white'}>Layers: {layers.filter(l => l.visible).length}/{layers.length}</span>
                           </div>
                         </GlassCard>
                       </div>
@@ -671,7 +681,7 @@ export default function Dashboard() {
                             className="h-4 w-4 rounded border-2 border-white shadow-sm"
                             style={{ backgroundColor: layer.style.fillColor }}
                           ></div>
-                          <span className="text-sm text-emerald-200">{layer.name}</span>
+                          <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>{layer.name}</span>
                         </div>
                       ))}
                     </div>
@@ -681,8 +691,7 @@ export default function Dashboard() {
 
               {/* Platform Overview Section */}
               <section className="relative mt-20">
-                {/* Background accent */}
-                <div className="absolute inset-0 bg-gradient-to-b from-emerald-900/20 to-transparent rounded-3xl blur-3xl" />
+                <div className={`absolute inset-0 rounded-3xl blur-3xl ${isLight ? 'bg-emerald-100/20' : 'bg-emerald-900/20'}`} />
 
                 <motion.div
                   initial={{ opacity: 0, y: 30 }}
@@ -692,17 +701,17 @@ export default function Dashboard() {
                 >
                   {/* Section header */}
                   <div className="text-center mb-14">
-                    <span className="px-3 py-1 text-xs font-medium uppercase tracking-wider text-emerald-300 bg-emerald-800/30 rounded-full">
+                    <span className={`px-3 py-1 text-xs font-medium uppercase tracking-wider rounded-full ${isLight ? 'text-emerald-700 bg-emerald-100' : 'text-emerald-300 bg-emerald-800/30'}`}>
                       Features
                     </span>
-                    <h2 className="text-4xl md:text-5xl font-extrabold text-white mt-4">
+                    <h2 className={`text-4xl md:text-5xl font-extrabold mt-4 ${isLight ? 'text-slate-900' : 'text-white'}`}>
                       Explore VanMitra Platform
                     </h2>
-                    <p className="text-emerald-200 mt-3 max-w-2xl mx-auto">
+                    <p className={`mt-3 max-w-2xl mx-auto ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>
                       Discover powerful tools for forest rights management and empower
                       communities with data-driven insights.
                     </p>
-                    <div className="mt-5 h-1 w-28 bg-gradient-to-r from-emerald-400 to-green-600 mx-auto rounded-full shadow-lg" />
+                    <div className={`mt-5 h-1 w-28 mx-auto rounded-full shadow-lg ${isLight ? 'bg-gradient-to-r from-emerald-500 to-green-600' : 'bg-gradient-to-r from-emerald-400 to-green-600'}`} />
                   </div>
 
                   {/* Features Grid */}
@@ -715,8 +724,8 @@ export default function Dashboard() {
                         color: "emerald",
                         href: "/atlas",
                         preview: (
-                          <div className="h-28 flex items-center justify-center bg-emerald-500/5 rounded-lg">
-                            <Globe className="h-10 w-10 text-emerald-400" />
+                          <div className={`h-28 flex items-center justify-center rounded-lg ${isLight ? 'bg-emerald-100' : 'bg-emerald-500/5'}`}>
+                            <Globe className={`h-10 w-10 ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`} />
                           </div>
                         ),
                       },
@@ -727,17 +736,17 @@ export default function Dashboard() {
                         color: "blue",
                         href: "/dss",
                         preview: (
-                          <div className="h-28 flex flex-col justify-center items-center gap-2 bg-blue-500/5 rounded-lg">
+                          <div className={`h-28 flex flex-col justify-center items-center gap-2 rounded-lg ${isLight ? 'bg-blue-100' : 'bg-blue-500/5'}`}>
                             <input
                               type="text"
                               placeholder="Latitude"
-                              className="w-32 px-2 py-1 text-xs rounded bg-blue-950/20 border border-blue-400/30 text-blue-200"
+                              className={`w-32 px-2 py-1 text-xs rounded ${isLight ? 'bg-blue-50 border border-blue-300 text-blue-900' : 'bg-blue-950/20 border border-blue-400/30 text-blue-200'}`}
                               readOnly
                             />
                             <input
                               type="text"
                               placeholder="Longitude"
-                              className="w-32 px-2 py-1 text-xs rounded bg-blue-950/20 border border-blue-400/30 text-blue-200"
+                              className={`w-32 px-2 py-1 text-xs rounded ${isLight ? 'bg-blue-50 border border-blue-300 text-blue-900' : 'bg-blue-950/20 border border-blue-400/30 text-blue-200'}`}
                               readOnly
                             />
                           </div>
@@ -750,9 +759,9 @@ export default function Dashboard() {
                         color: "purple",
                         href: "/ocr",
                         preview: (
-                          <div className="h-28 border-2 border-dashed border-purple-400/40 rounded-lg flex items-center justify-center bg-purple-500/5">
-                            <Upload className="h-8 w-8 text-purple-400" />
-                            <span className="text-xs text-purple-200 ml-2">Drop file</span>
+                          <div className={`h-28 border-2 border-dashed rounded-lg flex items-center justify-center ${isLight ? 'border-purple-400 bg-purple-100' : 'border-purple-400/40 bg-purple-500/5'}`}>
+                            <Upload className={`h-8 w-8 ${isLight ? 'text-purple-600' : 'text-purple-400'}`} />
+                            <span className={`text-xs ml-2 ${isLight ? 'text-purple-700' : 'text-purple-200'}`}>Drop file</span>
                           </div>
                         ),
                       },
@@ -763,9 +772,9 @@ export default function Dashboard() {
                         color: "red",
                         href: "/admin",
                         preview: (
-                          <div className="h-28 flex flex-col justify-center items-center bg-red-500/5 rounded-lg">
-                            <Users className="h-8 w-8 text-red-400 mb-2" />
-                            <span className="text-xs text-red-200">Role: Super Admin</span>
+                          <div className={`h-28 flex flex-col justify-center items-center rounded-lg ${isLight ? 'bg-red-100' : 'bg-red-500/5'}`}>
+                            <Users className={`h-8 w-8 mb-2 ${isLight ? 'text-red-600' : 'text-red-400'}`} />
+                            <span className={`text-xs ${isLight ? 'text-red-700' : 'text-red-200'}`}>Role: Super Admin</span>
                           </div>
                         ),
                       },
@@ -776,18 +785,18 @@ export default function Dashboard() {
                         color: "teal",
                         href: "/public",
                         preview: (
-                          <div className="h-28 grid grid-cols-3 text-center bg-teal-500/5 rounded-lg">
+                          <div className={`h-28 grid grid-cols-3 text-center rounded-lg ${isLight ? 'bg-teal-100' : 'bg-teal-500/5'}`}>
                             <div>
-                              <p className="text-lg font-bold text-teal-300">123</p>
-                              <p className="text-xs text-teal-200">Claims</p>
+                              <p className={`text-lg font-bold ${isLight ? 'text-teal-700' : 'text-teal-300'}`}>123</p>
+                              <p className={`text-xs ${isLight ? 'text-teal-700' : 'text-teal-200'}`}>Claims</p>
                             </div>
                             <div>
-                              <p className="text-lg font-bold text-teal-300">45</p>
-                              <p className="text-xs text-teal-200">Granted</p>
+                              <p className={`text-lg font-bold ${isLight ? 'text-teal-700' : 'text-teal-300'}`}>45</p>
+                              <p className={`text-xs ${isLight ? 'text-teal-700' : 'text-teal-200'}`}>Granted</p>
                             </div>
                             <div>
-                              <p className="text-lg font-bold text-teal-300">67</p>
-                              <p className="text-xs text-teal-200">Villages</p>
+                              <p className={`text-lg font-bold ${isLight ? 'text-teal-700' : 'text-teal-300'}`}>67</p>
+                              <p className={`text-xs ${isLight ? 'text-teal-700' : 'text-teal-200'}`}>Villages</p>
                             </div>
                           </div>
                         ),
@@ -799,10 +808,10 @@ export default function Dashboard() {
                         color: "indigo",
                         href: "/analytics",
                         preview: (
-                          <div className="h-28 flex flex-col gap-2 justify-center px-4 bg-indigo-500/5 rounded-lg">
-                            <div className="h-2 w-3/4 bg-indigo-400/60 rounded"></div>
-                            <div className="h-2 w-1/2 bg-indigo-400/60 rounded"></div>
-                            <div className="h-2 w-5/6 bg-indigo-400/60 rounded"></div>
+                          <div className={`h-28 flex flex-col gap-2 justify-center px-4 rounded-lg ${isLight ? 'bg-indigo-100' : 'bg-indigo-500/5'}`}>
+                            <div className={`h-2 w-3/4 rounded ${isLight ? 'bg-indigo-400' : 'bg-indigo-400/60'}`}></div>
+                            <div className={`h-2 w-1/2 rounded ${isLight ? 'bg-indigo-400' : 'bg-indigo-400/60'}`}></div>
+                            <div className={`h-2 w-5/6 rounded ${isLight ? 'bg-indigo-400' : 'bg-indigo-400/60'}`}></div>
                           </div>
                         ),
                       },
@@ -816,17 +825,17 @@ export default function Dashboard() {
                         whileHover={{ scale: 1.03, rotateX: 2, rotateY: -2 }}
                         className="transform-gpu"
                       >
-                        <GlassCard className="p-6 flex flex-col h-full backdrop-blur-xl border border-white/10 hover:shadow-xl hover:shadow-emerald-500/20 transition-all duration-300">
+                        <GlassCard className={`p-6 flex flex-col h-full backdrop-blur-xl border ${isLight ? 'border-slate-200 hover:shadow-xl hover:shadow-emerald-500/20' : 'border-white/10 hover:shadow-xl hover:shadow-emerald-500/20'} transition-all duration-300`}>
                           {/* Card header */}
                           <div className="flex items-center gap-3 mb-5">
                             <div
-                              className={`h-12 w-12 rounded-full bg-${item.color}-500/20 flex items-center justify-center shadow-inner`}
+                              className={`h-12 w-12 rounded-full flex items-center justify-center shadow-inner ${isLight ? `bg-${item.color}-100` : `bg-${item.color}-500/20`}`}
                             >
-                              <item.icon className={`h-6 w-6 text-${item.color}-400`} />
+                              <item.icon className={`h-6 w-6 ${isLight ? `text-${item.color}-600` : `text-${item.color}-400`}`} />
                             </div>
                             <div>
-                              <h3 className="text-lg font-semibold text-white">{item.title}</h3>
-                              <p className="text-sm text-emerald-200">{item.desc}</p>
+                              <h3 className={`text-lg font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>{item.title}</h3>
+                              <p className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>{item.desc}</p>
                             </div>
                           </div>
 
@@ -836,7 +845,9 @@ export default function Dashboard() {
                           {/* Card CTA */}
                           <Link
                             href={item.href}
-                            className={`mt-6 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-${item.color}-500 to-${item.color}-600 text-white font-medium text-sm hover:shadow-lg hover:shadow-${item.color}-500/40 transition-all`}
+                            className={`mt-6 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all ${isLight 
+                              ? `bg-gradient-to-r from-${item.color}-500 to-${item.color}-600 text-white hover:shadow-lg hover:shadow-${item.color}-500/40` 
+                              : `bg-gradient-to-r from-${item.color}-500 to-${item.color}-600 text-white hover:shadow-lg hover:shadow-${item.color}-500/40`}`}
                           >
                             Open {item.title}
                             <ArrowRight size={14} />
@@ -847,9 +858,6 @@ export default function Dashboard() {
                   </div>
                 </motion.div>
               </section>
-
-
-
             </>
           )}
         </main>
@@ -858,40 +866,40 @@ export default function Dashboard() {
         {/* Detail modal for recommendation */}
         {selected && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <GlassCard className="w-11/12 max-w-2xl p-6">
+            <GlassCard className={`w-11/12 max-w-2xl p-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
               <div className="flex items-start justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-white">{selected.village}</h3>
-                  <div className="text-sm text-emerald-200">Recommended: {selected.scheme}</div>
+                  <h3 className={`text-lg font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>{selected.village}</h3>
+                  <div className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Recommended: {selected.scheme}</div>
                 </div>
                 <div>
                   <button
                     onClick={() => setSelected(null)}
-                    className="text-sm px-3 py-1 bg-white/10 text-white rounded-md"
+                    className={`text-sm px-3 py-1 rounded-md ${isLight ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200' : 'bg-white/10 text-white hover:bg-white/20'}`}
                   >
                     Close
                   </button>
                 </div>
               </div>
 
-              <GlassCard className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <GlassCard className={`mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
                 <div>
-                  <h4 className="text-sm font-medium text-emerald-200">Priority score</h4>
-                  <div className="text-2xl font-bold text-white">
+                  <h4 className={`text-sm font-medium ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Priority score</h4>
+                  <div className={`text-2xl font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
                     {(selected.score * 100).toFixed(0)}%
                   </div>
-                  <div className="mt-3 text-sm text-emerald-200">
+                  <div className={`mt-3 text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>
                     This recommendation is generated by combining rule-based eligibility and
                     AI-derived indicators.
                   </div>
                 </div>
                 <div>
-                  <h4 className="text-sm font-medium text-emerald-200">Actions</h4>
+                  <h4 className={`text-sm font-medium ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Actions</h4>
                   <div className="mt-2 flex flex-col gap-2">
-                    <button className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md">
+                    <button className={`inline-flex items-center gap-2 px-4 py-2 rounded-md ${isLight ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}>
                       Create Plan
                     </button>
-                    <button className="inline-flex items-center gap-2 border border-white/10 px-4 py-2 rounded-md text-white/90">
+                    <button className={`inline-flex items-center gap-2 px-4 py-2 rounded-md ${isLight ? 'border border-emerald-300 text-emerald-800 hover:bg-emerald-50' : 'border border-white/10 text-white/90 hover:bg-white/10'}`}>
                       Assign to Officer
                     </button>
                   </div>
@@ -900,7 +908,6 @@ export default function Dashboard() {
             </GlassCard>
           </div>
         )}
-
       </div>
     </ProtectedRoute>
   );
