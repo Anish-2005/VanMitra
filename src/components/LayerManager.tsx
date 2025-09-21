@@ -97,7 +97,7 @@ export default function LayerManager({
             }}
             className="overflow-hidden max-h-96"
           >
-            <div className="p-4 space-y-3 overflow-y-auto max-h-96" style={{ scrollbarWidth: 'thin' }}>
+            <div className="p-4 space-y-3 overflow-y-auto max-h-96 custom-scroll" style={{ scrollbarWidth: 'thin' }}>
           {/* Layers Section */}
           <div>
             <h4 className="text-sm font-medium mb-2 flex items-center gap-2" style={{ color: 'var(--foreground)'}}>

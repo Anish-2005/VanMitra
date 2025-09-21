@@ -2619,7 +2619,7 @@ export default function AtlasPage() {
 
                   <div className="pt-4 border-t border-emerald-700/30">
                     <h4 className={`text-lg font-semibold ${isLight ? 'text-slate-900' : 'text-white'} mb-4`}>Properties</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm max-h-48 overflow-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm max-h-48 overflow-auto custom-scroll">
                       {selectedFeature.properties && Object.entries(selectedFeature.properties).slice(0, 50).map(([k, v]) => (
                         <div key={k} className={`flex justify-between gap-3 border-b py-2 ${isLight ? 'border-slate-200' : 'border-emerald-700/20'}`}>
                           <div className={`font-medium ${isLight ? 'text-emerald-700' : 'text-emerald-300/70'}`}>{humanizeKey(k)}</div>

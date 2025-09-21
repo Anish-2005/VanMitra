@@ -235,27 +235,49 @@ html { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
 }
 
 /* Custom emerald themed scrollbar */
+/* Theme-aware scrollbar variables and styles */
+:root {
+  --scrollbar-width: 8px;
+  --scrollbar-track: rgba(6, 78, 59, 0.12);
+  --scrollbar-thumb: rgba(16, 185, 129, 0.45);
+  --scrollbar-thumb-hover: rgba(16, 185, 129, 0.7);
+}
+
+/* Dark theme overrides */
+.dark {
+  --scrollbar-track: rgba(255, 255, 255, 0.04);
+  --scrollbar-thumb: rgba(16, 185, 129, 0.34);
+  --scrollbar-thumb-hover: rgba(16, 185, 129, 0.6);
+}
+
+/* Light theme overrides */
+.light {
+  --scrollbar-track: rgba(6, 78, 59, 0.12);
+  --scrollbar-thumb: rgba(16, 185, 129, 0.45);
+  --scrollbar-thumb-hover: rgba(16, 185, 129, 0.7);
+}
+
 .custom-scroll::-webkit-scrollbar {
-  width: 8px;
+  width: var(--scrollbar-width);
 }
 
 .custom-scroll::-webkit-scrollbar-track {
-  background: rgba(6, 78, 59, 0.2); /* emerald-900/20 */
+  background: var(--scrollbar-track);
   border-radius: 8px;
 }
 
 .custom-scroll::-webkit-scrollbar-thumb {
-  background: rgba(16, 185, 129, 0.4); /* emerald-400/40 */
+  background: var(--scrollbar-thumb);
   border-radius: 8px;
-  transition: background 0.3s ease;
+  transition: background 0.2s ease;
 }
 
 .custom-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(16, 185, 129, 0.6); /* emerald-400/60 */
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* Firefox */
 .custom-scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgba(16, 185, 129, 0.5) rgba(6, 78, 59, 0.2);
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }

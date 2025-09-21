@@ -1,8 +1,9 @@
 "use client"
 
-import React from "react"
+import React, { useEffect, useState } from "react"
 import * as turf from '@turf/turf'
 import Link from "next/link"
+import { useTheme } from "./ThemeProvider"
 
 interface Props {
   open: boolean
@@ -13,31 +14,38 @@ interface Props {
 }
 
 export default function VillageClaimsPanel({ open, village, claims, onClose, onGoto }: Props) {
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  const isLight = mounted && theme === 'light';
+
   if (!open) return null
 
   return (
-    <div className="mb-6 bg-emerald-900/95 border border-emerald-700/50 rounded-3xl shadow-2xl p-4 backdrop-blur-sm">
+    <div className={
+      `mb-6 rounded-3xl shadow-2xl p-4 ${isLight ? 'bg-emerald-50 border border-emerald-200' : 'bg-emerald-900/95 border border-emerald-700/50'}
+      `
+    }>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
           <div>
-            <div className="text-sm font-semibold text-white">Claims in {village ?? "selected village"}</div>
-            <div className="text-xs text-emerald-300">Showing {claims.length} claim{claims.length !== 1 ? "s" : ""}</div>
+            <div className={`text-sm font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>Claims in {village ?? "selected village"}</div>
+            <div className={`text-xs ${isLight ? 'text-slate-600' : 'text-emerald-300'}`}>Showing {claims.length} claim{claims.length !== 1 ? "s" : ""}</div>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={onClose} className="p-2 rounded-2xl border border-emerald-600 text-emerald-300 hover:bg-emerald-800/50 transition-all duration-200">
+          <button onClick={onClose} className={`p-2 rounded-2xl border transition-all duration-200 ${isLight ? 'border-emerald-200 text-emerald-700 hover:bg-emerald-100' : 'border-emerald-600 text-emerald-300 hover:bg-emerald-800/50'}`}>
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
       </div>
-
-      <div className="max-h-64 overflow-auto scrollbar-thin scrollbar-thumb-emerald-600 scrollbar-track-emerald-800/30 rounded-2xl">
+      <div className={`max-h-64 overflow-auto custom-scroll rounded-2xl ${isLight ? '' : ''}`}>
         {claims.length === 0 ? (
-          <div className="text-sm text-emerald-400 text-center py-8">
-            <div className="w-12 h-12 bg-emerald-800/50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+          <div className={`text-sm text-center py-8 ${isLight ? 'text-slate-600' : 'text-emerald-400'}`}>
+            <div className={`${isLight ? 'w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-3' : 'w-12 h-12 bg-emerald-800/50 rounded-2xl flex items-center justify-center mx-auto mb-3'}`}>
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
@@ -71,13 +79,13 @@ export default function VillageClaimsPanel({ open, village, claims, onClose, onG
               }
 
               return (
-                <li key={id} className="p-3 rounded-2xl hover:bg-emerald-800/30 transition-all duration-200 border border-emerald-700/30">
+                <li key={id} className={`p-3 rounded-2xl transition-all duration-200 border ${isLight ? 'hover:bg-green-50 border-slate-200' : 'hover:bg-emerald-800/30 border-emerald-700/30'}`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-2 h-2 bg-green-400 rounded-full"></div>
                       <div className="text-sm">
-                        <div className="font-medium text-white">Claim {id}</div>
-                        <div className="text-xs text-emerald-400">{String(props?.claim_type ?? "").toUpperCase()} — {props?.land_area ?? "—"} ha</div>
+                        <div className={`font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>Claim {id}</div>
+                        <div className={`text-xs ${isLight ? 'text-slate-600' : 'text-emerald-400'}`}>{String(props?.claim_type ?? "").toUpperCase()} — {props?.land_area ?? "—"} ha</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -85,7 +93,7 @@ export default function VillageClaimsPanel({ open, village, claims, onClose, onG
                         <>
                           <button
                             onClick={() => onGoto && onGoto(Number(lng), Number(lat))}
-                            className="p-2 rounded-xl border border-emerald-600 text-emerald-300 hover:bg-emerald-800/50 transition-all duration-200"
+                            className={`p-2 rounded-xl border transition-all duration-200 ${isLight ? 'border-emerald-200 text-emerald-700 hover:bg-emerald-100' : 'border-emerald-600 text-emerald-300 hover:bg-emerald-800/50'}`}
                             aria-label={`Fly to claim ${id}`}
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -95,7 +103,7 @@ export default function VillageClaimsPanel({ open, village, claims, onClose, onG
                           </button>
                           <button
                             onClick={() => onGoto && onGoto(Number(lng), Number(lat))}
-                            className="p-2 rounded-xl border border-emerald-600 text-emerald-300 hover:bg-emerald-800/50 transition-all duration-200"
+                            className={`p-2 rounded-xl border transition-all duration-200 ${isLight ? 'border-emerald-200 text-emerald-700 hover:bg-emerald-100' : 'border-emerald-600 text-emerald-300 hover:bg-emerald-800/50'}`}
                             aria-label={`Locate claim ${id} on map`}
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -105,7 +113,7 @@ export default function VillageClaimsPanel({ open, village, claims, onClose, onG
                           </button>
                         </>
                       ) : null}
-                      <Link href={`/atlas/${encodeURIComponent(String(id))}`} className="p-2 rounded-xl border border-emerald-600 text-emerald-300 hover:bg-emerald-800/50 transition-all duration-200">
+                      <Link href={`/atlas/${encodeURIComponent(String(id))}`} className={`p-2 rounded-xl border transition-all duration-200 ${isLight ? 'border-emerald-200 text-emerald-700 hover:bg-emerald-100' : 'border-emerald-600 text-emerald-300 hover:bg-emerald-800/50'}`}>
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
