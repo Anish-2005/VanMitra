@@ -119,6 +119,9 @@ export default function AtlasPage() {
 
   const [villageFilter, setVillageFilter] = useState("all")
 
+  // Job id to guard against stale async counting when clicking many boundaries
+  const countJobRef = useRef(0)
+
   // If no specific state is selected, default to the project's default state (Madhya Pradesh)
   const effectiveState = stateFilter === "all" ? DEFAULT_STATE : stateFilter
   const stateCenter = STATES.find((s) => s.name === effectiveState)?.center ?? [78.9629, 22.9734]
@@ -1072,88 +1075,33 @@ export default function AtlasPage() {
 
       if (isBoundaryWithClaims) {
         ; (async () => {
+          // increment job id for this counting task
+          const job = ++countJobRef.current
           try {
-            // show counting state in modal
-            setSelectedFeature((prev) => (prev ? { ...prev, properties: { ...prev.properties, _counting: true } } : prev))
+            // show counting state in modal and attach job id
+            setSelectedFeature((prev) => (prev ? { ...prev, properties: { ...prev.properties, _counting: true, _countJob: job } } : prev))
 
-            // Fetch claims for the state to limit results (use current stateFilter or default)
-            const st = stateFilter === "all" ? DEFAULT_STATE : stateFilter
-            const q = new URLSearchParams()
-            q.set("state", st)
-            q.set("limit", "10000")
-            const res = await fetch(`/api/claims?${q.toString()}`)
+            // Ask the server to count claims intersecting this boundary geometry
+            const geom = feature.type === 'Feature' ? feature.geometry : feature
+            const res = await fetch('/api/claims/count', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ geometry: geom })
+            })
             if (!res.ok) throw new Error(`HTTP ${res.status}`)
-            const data = await res.json()
-            const rawList: any[] = data && data.type === "FeatureCollection" ? data.features || [] : Array.isArray(data) ? data : []
+            const body = await res.json()
+            const count = Number(body?.count ?? 0)
 
-            // Normalize claim items to GeoJSON Features with geometry where possible
-            const normalized: any[] = []
-            for (const it of rawList) {
-              try {
-                if (!it) continue
-                if (it.type === 'Feature' && it.geometry) {
-                  normalized.push(it)
-                  continue
-                }
-                // if plain object with geometry field
-                if (it.geometry && (it.geometry.type === 'Point' || it.geometry.type === 'Polygon' || it.geometry.type === 'MultiPolygon')) {
-                  normalized.push({ type: 'Feature', properties: it.properties || it, geometry: it.geometry })
-                  continue
-                }
-                // try lat/lng fields
-                const lat = Number(it.lat ?? it.latitude ?? it.LAT ?? it.LATITUDE)
-                const lng = Number(it.lng ?? it.lon ?? it.longitude ?? it.LON ?? it.LONG)
-                if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
-                  normalized.push({ type: 'Feature', properties: it, geometry: { type: 'Point', coordinates: [lng, lat] } })
-                  continue
-                }
-                // try properties wrapper
-                const props = it.properties ?? it
-                const plat = Number(props.lat ?? props.latitude ?? props.LAT)
-                const plong = Number(props.lng ?? props.lon ?? props.longitude ?? props.LON)
-                if (!Number.isNaN(plat) && !Number.isNaN(plong)) {
-                  normalized.push({ type: 'Feature', properties: props, geometry: { type: 'Point', coordinates: [plong, plat] } })
-                }
-              } catch (e) {
-                // ignore malformed items
-              }
+            // Apply results if still latest job
+            if (job === countJobRef.current) {
+              setSelectedFeature((prev) => (prev ? { ...prev, properties: { ...prev.properties, claims_count: count, _counting: false } } : prev))
             }
-
-            // Prepare polygon feature for intersection checks
-            const polyFeature = feature.type === 'Feature' ? feature : { type: 'Feature', properties: {}, geometry: feature }
-
-            let count = 0
-            for (const f of normalized) {
-              try {
-                if (!f || !f.geometry) continue
-                const gtype = (f.geometry.type || '').toLowerCase()
-                if (gtype === 'point' || gtype === 'multipoint') {
-                  const coords = gtype === 'point' ? f.geometry.coordinates : (f.geometry.coordinates && f.geometry.coordinates[0])
-                  if (!coords || coords.length < 2) continue
-                  const pt = turf.point(coords)
-                  if (turf.booleanPointInPolygon(pt, polyFeature)) count++
-                } else if (gtype === 'polygon' || gtype === 'multipolygon') {
-                  const feat = f.type === 'Feature' ? f : { type: 'Feature', properties: f.properties || {}, geometry: f.geometry }
-                  if (turf.booleanIntersects(feat, polyFeature)) count++
-                } else {
-                  // unknown geometry: attempt to use bbox/centroid if present
-                  try {
-                    const feat = f.type === 'Feature' ? f : { type: 'Feature', properties: f.properties || {}, geometry: f.geometry }
-                    if (turf.booleanIntersects(feat, polyFeature)) count++
-                  } catch (e) {
-                    // ignore
-                  }
-                }
-              } catch (e) {
-                // ignore per-feature errors
-              }
-            }
-
-            // update modal properties with claims count and clear counting flag
-            setSelectedFeature((prev) => (prev ? { ...prev, properties: { ...prev.properties, claims_count: count, _counting: false } } : prev))
           } catch (err) {
             console.warn("Failed to count claims for boundary:", err)
-            setSelectedFeature((prev) => (prev ? { ...prev, properties: { ...prev.properties, _counting: false } } : prev))
+            // Only clear counting flag if this job is still the latest
+            if (job === countJobRef.current) {
+              setSelectedFeature((prev) => (prev ? { ...prev, properties: { ...prev.properties, _counting: false } } : prev))
+            }
           }
         })()
       }

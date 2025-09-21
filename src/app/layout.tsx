@@ -26,28 +26,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-  <html lang="en" data-theme="dark">
+  <html lang="en">
       <head>
         {/* Script runs before hydration to set theme attr */}
         <link rel="icon" href="/vanmitra.png" />
-        <Script id="theme-init" strategy="beforeInteractive">
-          {`
-            (function() {
-              try {
-                const t = localStorage.getItem('theme');
-                const isLight =
-                  t === 'light' ||
-                  (!t &&
-                    window.matchMedia &&
-                    window.matchMedia('(prefers-color-scheme: light)').matches);
-                document.documentElement.setAttribute(
-                  'data-theme',
-                  isLight ? 'light' : 'dark'
-                );
-              } catch(e) {}
-            })();
-          `}
-        </Script>
+        
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ClientProviders>{children}</ClientProviders>
