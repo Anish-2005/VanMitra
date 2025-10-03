@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import { useTheme } from "@/components/ThemeProvider";
+import AnimatedCounter from "@/components/ui/AnimatedCounter";
 import { STATES, DEFAULT_STATE, DEFAULT_DISTRICT } from '../../lib/regions';
 import { BarChart, Menu, Shield, X } from "lucide-react";
 import { motion, AnimatePresence, HTMLMotionProps } from "framer-motion";
@@ -228,22 +229,136 @@ export default function Dashboard() {
     URL.revokeObjectURL(url);
   }
 
-  const kpis = useMemo(() => {
-    const claims = dashboardData.kpis?.claims ?? 0;
-    const grants = dashboardData.kpis?.grants ?? 0;
-    const assets = dashboardData.kpis?.assets ?? 0;
-    const priorityVillages = filtered.length || 0;
-    return [
-      { label: "Claims processed", value: claims.toLocaleString(), icon: FileText, trend: "+12%", color: "emerald" },
-      { label: "Grants issued", value: grants.toLocaleString(), icon: Database, trend: "+8%", color: "blue" },
-      { label: "AI assets", value: assets.toLocaleString(), icon: Satellite, trend: "+15%", color: "purple" },
-      { label: "Priority villages", value: priorityVillages.toString(), icon: Target, trend: "+5%", color: "orange" },
-    ];
-  }, [dashboardData.kpis, filtered]);
+  // dynamic claims stats (same pattern as /public page)
+  const [claimsData, setClaimsData] = useState<any | null>(null);
+  const [claimsLoading, setClaimsLoading] = useState(false);
+  const [claimsError, setClaimsError] = useState<string | null>(null);
 
-  const timeSeries = dashboardData.kpis?.timeSeries || [120, 180, 240, 300, 220, 260, 310, 380, 420, 480];
+  useEffect(() => {
+    let mounted = true;
+    const fetchClaims = async () => {
+      setClaimsLoading(true);
+      setClaimsError(null);
+      try {
+        const res = await fetch('/api/claims?status=all');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        if (mounted) setClaimsData(json);
+      } catch (err: any) {
+        if (mounted) setClaimsError(err?.message || 'Failed to load claims');
+      } finally {
+        if (mounted) setClaimsLoading(false);
+      }
+    };
+    fetchClaims();
+    return () => { mounted = false; };
+  }, []);
+
+  const totalClaims = claimsData?.features?.length ?? 0;
+  const grantedCount = claimsData?.features?.filter((f: any) => f?.properties?.status === 'granted').length ?? 0;
+  const uniqueVillages = claimsData?.features ? new Set(claimsData.features.map((f: any) => f?.properties?.village).filter(Boolean)).size : 0;
+
+  // Use API-provided time series if present. Do not fall back to a static sample to avoid constant trends.
+  const timeSeries = dashboardData.kpis?.timeSeries ?? null;
+
+  const kpis = useMemo(() => {
+    // Helper to accept numbers or formatted strings like "1,240"
+    const parseNumber = (v: any) => {
+      if (v == null) return null;
+      if (typeof v === 'number') return v;
+      if (typeof v === 'string') {
+        // strip commas and any non-numeric except dot and minus
+        const cleaned = v.replace(/[^0-9.-]+/g, '');
+        const n = Number(cleaned);
+        return Number.isFinite(n) ? n : null;
+      }
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    };
+
+  const apiKpis = dashboardData.kpis ?? {};
+  // Prefer live counts (claimsData / assetsData / computed filtered) to avoid stale constants
+  const claimsNum = totalClaims ?? parseNumber(apiKpis.claims) ?? 0;
+  const grantsNum = grantedCount ?? parseNumber(apiKpis.grants) ?? 0;
+  const assetsNum = dashboardData.assetsData?.features?.length ?? parseNumber(apiKpis.assets) ?? 0;
+  const priorityNum = filtered.length ?? parseNumber(apiKpis.priorityVillages) ?? 0;
+
+    // compute percent change helper
+    const computePct = (cur: number, prev: number) => {
+      if (prev == null || prev === 0) return null;
+      return Math.round(((cur - prev) / Math.abs(prev)) * 100);
+    };
+
+    const formatTrend = (v: number | string | null | undefined) => {
+      if (v == null) return '\u2014';
+      if (typeof v === 'string') return v;
+      return (v > 0 ? `+${v}%` : `${v}%`);
+    };
+
+    // Prefer explicit API-provided trend values; otherwise derive from available time series
+    let claimsTrend: string | number | null = apiKpis.claimsTrend ?? apiKpis.claims_change_pct ?? null;
+    if (!claimsTrend) {
+      // Only compute trend if a real timeSeries is provided by the API
+      if (timeSeries && timeSeries.length >= 2) {
+        const last = Number(timeSeries[timeSeries.length - 1]) ?? claimsNum;
+        const prev = Number(timeSeries[timeSeries.length - 2]) ?? 0;
+        const pct = computePct(last, prev);
+        claimsTrend = formatTrend(pct);
+      } else {
+        claimsTrend = '\u2014';
+      }
+    }
+
+    let grantsTrend: string | number | null = apiKpis.grantsTrend ?? apiKpis.grants_change_pct ?? null;
+    if (!grantsTrend) {
+      // try to use grants time series if provided by API
+      const gSeries = dashboardData.kpis?.grantsTimeSeries ?? dashboardData.kpis?.grants_series ?? null;
+      if (gSeries && gSeries.length >= 2) {
+        const last = Number(gSeries[gSeries.length - 1]) ?? grantsNum;
+        const prev = Number(gSeries[gSeries.length - 2]) ?? 0;
+        const pct = computePct(last, prev);
+        grantsTrend = formatTrend(pct);
+      } else {
+        grantsTrend = '\u2014';
+      }
+    }
+
+    let assetsTrend: string | number | null = apiKpis.assetsTrend ?? apiKpis.assets_change_pct ?? null;
+    if (!assetsTrend) {
+      const aSeries = dashboardData.kpis?.assetsTimeSeries ?? dashboardData.kpis?.assets_series ?? null;
+      if (aSeries && aSeries.length >= 2) {
+        const last = Number(aSeries[aSeries.length - 1]) ?? assetsNum;
+        const prev = Number(aSeries[aSeries.length - 2]) ?? 0;
+        const pct = computePct(last, prev);
+        assetsTrend = formatTrend(pct);
+      } else {
+        assetsTrend = '\u2014';
+      }
+    }
+
+    let priorityTrend: string | number | null = apiKpis.priorityTrend ?? apiKpis.priority_change_pct ?? null;
+    if (!priorityTrend) {
+      const pSeries = dashboardData.kpis?.priorityTimeSeries ?? dashboardData.kpis?.priority_series ?? null;
+      if (pSeries && pSeries.length >= 2) {
+        const last = Number(pSeries[pSeries.length - 1]) ?? priorityNum;
+        const prev = Number(pSeries[pSeries.length - 2]) ?? 0;
+        const pct = computePct(last, prev);
+        priorityTrend = formatTrend(pct);
+      } else {
+        priorityTrend = '\u2014';
+      }
+    }
+
+    return [
+      { label: "Claims processed", value: claimsNum, icon: FileText, trend: String(claimsTrend), color: "emerald" },
+      { label: "Grants issued", value: grantsNum, icon: Database, trend: String(grantsTrend), color: "blue" },
+      { label: "AI assets", value: assetsNum, icon: Satellite, trend: String(assetsTrend), color: "purple" },
+      { label: "Priority villages", value: priorityNum, icon: Target, trend: String(priorityTrend), color: "orange" },
+    ];
+  }, [dashboardData.kpis, dashboardData.assetsData, filtered, totalClaims, grantedCount, timeSeries]);
 
   const [loginOpen, setLoginOpen] = useState(false);
+
 
   return (
     <ProtectedRoute>
@@ -315,7 +430,9 @@ export default function Dashboard() {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className={`text-sm font-medium ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>{kpi.label}</p>
-                            <p className={`text-2xl font-bold mt-1 ${isLight ? 'text-slate-900' : 'text-white'}`}>{kpi.value}</p>
+                            <p className={`text-2xl font-bold mt-1 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                              <AnimatedCounter value={Number(kpi.value ?? 0)} />
+                            </p>
                             <div className="flex items-center mt-2">
                               <TrendingUp className={`h-4 w-4 mr-1 ${isLight ? 'text-emerald-600' : 'text-emerald-300'}`} />
                               <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>{kpi.trend}</span>
@@ -339,7 +456,13 @@ export default function Dashboard() {
                         </div>
 
                         <div className="mt-4">
-                          <Sparkline data={timeSeries.slice(-7)} />
+                          {timeSeries && timeSeries.length >= 2 ? (
+                            <Sparkline data={timeSeries.slice(-7).map(Number)} />
+                          ) : (
+                            <div className={`h-10 flex items-center ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>
+                              <span className="text-sm">No historical series</span>
+                            </div>
+                          )}
                         </div>
                       </GlassCard>
                     ))}
@@ -462,8 +585,8 @@ export default function Dashboard() {
                         <div className="flex items-center justify-between">
                           <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Map Services</span>
                           <div className="flex items-center gap-2">
-                            <div className={`h-2 w-2 rounded-full ${isLight ? 'bg-yellow-500' : 'bg-yellow-500'}`}></div>
-                            <span className={`text-xs ${isLight ? 'text-yellow-700' : 'text-yellow-600'}`}>Maintenance</span>
+                            <div className={`h-2 w-2 rounded-full ${isLight ? 'bg-green-500' : 'bg-green-500'}`}></div>
+                            <span className={`text-xs ${isLight ? 'text-green-300' : 'text-green-200'}`}>Active</span>
                           </div>
                         </div>
                       </div>
@@ -483,21 +606,35 @@ export default function Dashboard() {
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <GlassCard className={`p-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
                       <h3 className={`text-lg font-semibold mb-4 ${isLight ? 'text-slate-900' : 'text-white'}`}>Claims Processing Trend</h3>
-                      <div className="h-64 flex items-end justify-between gap-2">
-                        {timeSeries.slice(-12).map((value: number, index: number) => (
-                          <div key={index} className="flex flex-col items-center flex-1">
-                            <div
-                              className={`rounded-t w-full transition-all hover:opacity-80 ${isLight ? 'bg-emerald-500' : 'bg-emerald-500'}`}
-                              style={{ height: `${(value / Math.max(...timeSeries)) * 200}px` }}
-                            ></div>
-                            <span className={`text-xs mt-2 ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>{index + 1}</span>
+                      {timeSeries && timeSeries.length >= 2 ? (
+                        <>
+                          <div className="h-64 flex items-end justify-between gap-2">
+                            {timeSeries.slice(-12).map((value: number, index: number) => (
+                              <div key={index} className="flex flex-col items-center flex-1">
+                                <div
+                                  className={`rounded-t w-full transition-all hover:opacity-80 ${isLight ? 'bg-emerald-500' : 'bg-emerald-500'}`}
+                                  style={{ height: `${(Number(value) / Math.max(...timeSeries.map(Number))) * 200}px` }}
+                                ></div>
+                                <span className={`text-xs mt-2 ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>{index + 1}</span>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                      <div className={`mt-4 flex justify-between text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>
-                        <span>Monthly claims processed</span>
-                        <span className="font-medium">+{Math.round((timeSeries[timeSeries.length - 1] - timeSeries[timeSeries.length - 2]) / timeSeries[timeSeries.length - 2] * 100)}% this month</span>
-                      </div>
+                          <div className={`mt-4 flex justify-between text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>
+                            <span>Monthly claims processed</span>
+                            <span className="font-medium">{kpis[0]?.trend ?? '\u2014'} this month</span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="h-64 flex items-center justify-center">
+                          <div className="text-center">
+                            <div className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>No historical series available</div>
+                            <div className={`text-2xl font-bold mt-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                              <AnimatedCounter value={totalClaims} />
+                            </div>
+                            <div className={`text-sm mt-1 ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>{kpis[0]?.trend ?? '\u2014'}</div>
+                          </div>
+                        </div>
+                      )}
                     </GlassCard>
 
                     <GlassCard className={`p-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
@@ -784,18 +921,24 @@ export default function Dashboard() {
                         href: "/public",
                         preview: (
                           <div className={`h-28 grid grid-cols-3 text-center rounded-lg ${isLight ? 'bg-teal-100' : 'bg-teal-500/5'}`}>
-                            <div>
-                              <p className={`text-lg font-bold ${isLight ? 'text-teal-700' : 'text-teal-300'}`}>123</p>
-                              <p className={`text-xs ${isLight ? 'text-teal-700' : 'text-teal-200'}`}>Claims</p>
-                            </div>
-                            <div>
-                              <p className={`text-lg font-bold ${isLight ? 'text-teal-700' : 'text-teal-300'}`}>45</p>
-                              <p className={`text-xs ${isLight ? 'text-teal-700' : 'text-teal-200'}`}>Granted</p>
-                            </div>
-                            <div>
-                              <p className={`text-lg font-bold ${isLight ? 'text-teal-700' : 'text-teal-300'}`}>67</p>
-                              <p className={`text-xs ${isLight ? 'text-teal-700' : 'text-teal-200'}`}>Villages</p>
-                            </div>
+                            {[
+                              { label: 'Claims', value: totalClaims, loading: claimsLoading, error: claimsError },
+                              { label: 'Granted', value: grantedCount, loading: claimsLoading, error: claimsError },
+                              { label: 'Villages', value: uniqueVillages, loading: claimsLoading, error: claimsError }
+                            ].map((s, si) => (
+                              <div key={si}>
+                                <p className={`text-lg font-bold ${isLight ? 'text-teal-700' : 'text-teal-300'}`}>
+                                  {s.loading ? (
+                                    <span className={isLight ? 'text-slate-600' : 'text-teal-300'}>Loading…</span>
+                                  ) : s.error ? (
+                                    <span className={isLight ? 'text-red-600' : 'text-red-400'}>—</span>
+                                  ) : (
+                                    <AnimatedCounter value={s.value} />
+                                  )}
+                                </p>
+                                <p className={`text-xs ${isLight ? 'text-teal-700' : 'text-teal-200'}`}>{s.label}</p>
+                              </div>
+                            ))}
                           </div>
                         ),
                       },
