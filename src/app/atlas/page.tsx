@@ -7,7 +7,7 @@ import { useTheme } from "@/components/ThemeProvider"
 import * as turf from "@turf/turf"
 import { STATES, DEFAULT_STATE } from "../../lib/regions"
 import { motion, AnimatePresence } from "framer-motion"
-import { Layers, Ruler, Download, MapPin, Copy, ZoomIn, FileDown, Plus } from "lucide-react"
+import { Layers, Ruler, Download, MapPin, Copy, ZoomIn, FileDown, Plus, Filter } from "lucide-react"
 import dynamicImport from "next/dynamic"
 import DecorativeBackground from "@/components/ui/DecorativeBackground"
 import Link from "next/link"
@@ -2159,7 +2159,7 @@ export default function AtlasPage() {
                   onClick={() => setFiltersExpanded((prev) => !prev)}
                 >
                   <div className="flex items-center gap-2">
-                    <Layers size={16} className={isLight ? 'text-emerald-700' : 'text-emerald-400'} />
+                    <Filter size={16} className={isLight ? 'text-emerald-700' : 'text-emerald-400'} />
                     <span className={`font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>Filters</span>
                     <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>(controls)</span>
                   </div>
