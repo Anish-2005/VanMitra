@@ -157,6 +157,14 @@ export default function Dashboard() {
     }
   ]);
 
+  {/* Define a mapping for strong button classes */ }
+  const strongBtnClasses: Record<string, string> = {
+    emerald: "bg-emerald-600 text-white shadow-md shadow-emerald-500/50 hover:shadow-lg hover:shadow-emerald-500/70 hover:scale-105",
+    purple: "bg-purple-600 text-white shadow-md shadow-purple-500/50 hover:shadow-lg hover:shadow-purple-500/70 hover:scale-105",
+    teal: "bg-teal-600 text-white shadow-md shadow-teal-500/50 hover:shadow-lg hover:shadow-teal-500/70 hover:scale-105",
+  };
+
+
   const defaultCenter = STATES.find(s => s.name === DEFAULT_STATE)?.center ?? [78.9629, 22.9734];
   const [markers, setMarkers] = useState<GISMarker[]>([
     { id: 'marker-1', lng: defaultCenter[0] - 0.5, lat: defaultCenter[1] - 0.4, label: 'A', color: '#dc2626', popup: '<b>High Priority Village</b><br>Population: 1,200<br>FRA Claims: 45' },
@@ -276,12 +284,12 @@ export default function Dashboard() {
       return Number.isFinite(n) ? n : null;
     };
 
-  const apiKpis = dashboardData.kpis ?? {};
-  // Prefer live counts (claimsData / assetsData / computed filtered) to avoid stale constants
-  const claimsNum = totalClaims ?? parseNumber(apiKpis.claims) ?? 0;
-  const grantsNum = grantedCount ?? parseNumber(apiKpis.grants) ?? 0;
-  const assetsNum = dashboardData.assetsData?.features?.length ?? parseNumber(apiKpis.assets) ?? 0;
-  const priorityNum = filtered.length ?? parseNumber(apiKpis.priorityVillages) ?? 0;
+    const apiKpis = dashboardData.kpis ?? {};
+    // Prefer live counts (claimsData / assetsData / computed filtered) to avoid stale constants
+    const claimsNum = totalClaims ?? parseNumber(apiKpis.claims) ?? 0;
+    const grantsNum = grantedCount ?? parseNumber(apiKpis.grants) ?? 0;
+    const assetsNum = dashboardData.assetsData?.features?.length ?? parseNumber(apiKpis.assets) ?? 0;
+    const priorityNum = filtered.length ?? parseNumber(apiKpis.priorityVillages) ?? 0;
 
     // compute percent change helper
     const computePct = (cur: number, prev: number) => {
@@ -729,8 +737,8 @@ export default function Dashboard() {
                             <motion.select
                               value={stateFilter}
                               onChange={(e) => setStateFilter(e.target.value)}
-                              className={`w-full px-4 py-2 rounded-2xl focus:outline-none focus:ring-2 ${isLight 
-                                ? 'bg-white border border-emerald-300 text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500' 
+                              className={`w-full px-4 py-2 rounded-2xl focus:outline-none focus:ring-2 ${isLight
+                                ? 'bg-white border border-emerald-300 text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
                                 : 'border border-emerald-700/50 bg-gradient-to-r from-emerald-900/20 to-green-900/20 backdrop-blur-sm text-white placeholder-green-300 focus:ring-emerald-400 focus:border-emerald-400'}`}
                               whileHover={{ scale: 1.02 }}
                               whileFocus={{ scale: 1.02 }}
@@ -746,8 +754,8 @@ export default function Dashboard() {
                             <motion.select
                               value={districtFilter}
                               onChange={(e) => setDistrictFilter(e.target.value)}
-                              className={`w-full px-4 py-2 rounded-2xl focus:outline-none focus:ring-2 ${isLight 
-                                ? 'bg-white border border-emerald-300 text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500' 
+                              className={`w-full px-4 py-2 rounded-2xl focus:outline-none focus:ring-2 ${isLight
+                                ? 'bg-white border border-emerald-300 text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
                                 : 'border border-emerald-700/50 bg-gradient-to-r from-emerald-900/20 to-green-900/20 backdrop-blur-sm text-white placeholder-green-300 focus:ring-emerald-400 focus:border-emerald-400'}`}
                               whileHover={{ scale: 1.02 }}
                               whileFocus={{ scale: 1.02 }}
@@ -766,8 +774,8 @@ export default function Dashboard() {
                               value={villageQuery}
                               onChange={(e) => setVillageQuery(e.target.value)}
                               placeholder="Enter village name..."
-                              className={`w-full px-4 py-2 rounded-2xl focus:outline-none focus:ring-2 ${isLight 
-                                ? 'bg-white border border-emerald-300 text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500' 
+                              className={`w-full px-4 py-2 rounded-2xl focus:outline-none focus:ring-2 ${isLight
+                                ? 'bg-white border border-emerald-300 text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
                                 : 'border border-emerald-700/50 bg-gradient-to-r from-emerald-900/20 to-green-900/20 backdrop-blur-sm text-white placeholder-green-300 focus:ring-emerald-400 focus:border-emerald-400'}`}
                               whileFocus={{ scale: 1.02 }}
                               transition={{ type: "spring", stiffness: 300 }}
@@ -858,9 +866,68 @@ export default function Dashboard() {
                         icon: Layers,
                         color: "emerald",
                         href: "/atlas",
+                        strong: true, // highlight
                         preview: (
                           <div className={`h-28 flex items-center justify-center rounded-lg ${isLight ? 'bg-emerald-100' : 'bg-emerald-500/5'}`}>
                             <Globe className={`h-10 w-10 ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`} />
+                          </div>
+                        ),
+                      },
+                       {
+                        title: "Public Portal",
+                        desc: "Community transparency & FRA status",
+                        icon: Globe,
+                        color: "teal",
+                        href: "/public",
+                        strong: true, // highlight
+                        preview: (
+                          <div className={`h-28 grid grid-cols-3 text-center rounded-lg ${isLight ? 'bg-teal-100' : 'bg-teal-500/5'}`}>
+                            {[
+                              { label: 'Claims', value: totalClaims, loading: claimsLoading, error: claimsError },
+                              { label: 'Granted', value: grantedCount, loading: claimsLoading, error: claimsError },
+                              { label: 'Villages', value: uniqueVillages, loading: claimsLoading, error: claimsError }
+                            ].map((s, si) => (
+                              <div key={si}>
+                                <p className={`text-lg font-bold ${isLight ? 'text-teal-700' : 'text-teal-300'}`}>
+                                  {s.loading ? (
+                                    <span className={isLight ? 'text-slate-600' : 'text-teal-300'}>Loading…</span>
+                                  ) : s.error ? (
+                                    <span className={isLight ? 'text-red-600' : 'text-red-400'}>—</span>
+                                  ) : (
+                                    <AnimatedCounter value={s.value} />
+                                  )}
+                                </p>
+                                <p className={`text-xs ${isLight ? 'text-teal-700' : 'text-teal-200'}`}>{s.label}</p>
+                              </div>
+                            ))}
+                          </div>
+                        ),
+                      },
+                     
+                      {
+                        title: "OCR Processing",
+                        desc: "Digitize & extract data from documents",
+                        icon: Upload,
+                        color: "purple",
+                        href: "/ocr",
+                        strong: true, // highlight
+                        preview: (
+                          <div className={`h-28 border-2 border-dashed rounded-lg flex items-center justify-center ${isLight ? 'border-purple-400 bg-purple-100' : 'border-purple-400/40 bg-purple-500/5'}`}>
+                            <Upload className={`h-8 w-8 ${isLight ? 'text-purple-600' : 'text-purple-400'}`} />
+                            <span className={`text-xs ml-2 ${isLight ? 'text-purple-700' : 'text-purple-200'}`}>Drop file</span>
+                          </div>
+                        ),
+                      },
+                      {
+                        title: "Admin Dashboard",
+                        desc: "Manage claims, users & FRA documents",
+                        icon: Shield,
+                        color: "red",
+                        href: "/admin",
+                        preview: (
+                          <div className={`h-28 flex flex-col justify-center items-center rounded-lg ${isLight ? 'bg-red-100' : 'bg-red-500/5'}`}>
+                            <Users className={`h-8 w-8 mb-2 ${isLight ? 'text-red-600' : 'text-red-400'}`} />
+                            <span className={`text-xs ${isLight ? 'text-red-700' : 'text-red-200'}`}>Role: Super Admin</span>
                           </div>
                         ),
                       },
@@ -884,61 +951,6 @@ export default function Dashboard() {
                               className={`w-32 px-2 py-1 text-xs rounded ${isLight ? 'bg-blue-50 border border-blue-300 text-blue-900' : 'bg-blue-950/20 border border-blue-400/30 text-blue-200'}`}
                               readOnly
                             />
-                          </div>
-                        ),
-                      },
-                      {
-                        title: "OCR Processing",
-                        desc: "Digitize & extract data from documents",
-                        icon: Upload,
-                        color: "purple",
-                        href: "/ocr",
-                        preview: (
-                          <div className={`h-28 border-2 border-dashed rounded-lg flex items-center justify-center ${isLight ? 'border-purple-400 bg-purple-100' : 'border-purple-400/40 bg-purple-500/5'}`}>
-                            <Upload className={`h-8 w-8 ${isLight ? 'text-purple-600' : 'text-purple-400'}`} />
-                            <span className={`text-xs ml-2 ${isLight ? 'text-purple-700' : 'text-purple-200'}`}>Drop file</span>
-                          </div>
-                        ),
-                      },
-                      {
-                        title: "Admin Dashboard",
-                        desc: "Manage claims, users & FRA documents",
-                        icon: Shield,
-                        color: "red",
-                        href: "/admin",
-                        preview: (
-                          <div className={`h-28 flex flex-col justify-center items-center rounded-lg ${isLight ? 'bg-red-100' : 'bg-red-500/5'}`}>
-                            <Users className={`h-8 w-8 mb-2 ${isLight ? 'text-red-600' : 'text-red-400'}`} />
-                            <span className={`text-xs ${isLight ? 'text-red-700' : 'text-red-200'}`}>Role: Super Admin</span>
-                          </div>
-                        ),
-                      },
-                      {
-                        title: "Public Portal",
-                        desc: "Community transparency & FRA status",
-                        icon: Globe,
-                        color: "teal",
-                        href: "/public",
-                        preview: (
-                          <div className={`h-28 grid grid-cols-3 text-center rounded-lg ${isLight ? 'bg-teal-100' : 'bg-teal-500/5'}`}>
-                            {[
-                              { label: 'Claims', value: totalClaims, loading: claimsLoading, error: claimsError },
-                              { label: 'Granted', value: grantedCount, loading: claimsLoading, error: claimsError },
-                              { label: 'Villages', value: uniqueVillages, loading: claimsLoading, error: claimsError }
-                            ].map((s, si) => (
-                              <div key={si}>
-                                <p className={`text-lg font-bold ${isLight ? 'text-teal-700' : 'text-teal-300'}`}>
-                                  {s.loading ? (
-                                    <span className={isLight ? 'text-slate-600' : 'text-teal-300'}>Loading…</span>
-                                  ) : s.error ? (
-                                    <span className={isLight ? 'text-red-600' : 'text-red-400'}>—</span>
-                                  ) : (
-                                    <AnimatedCounter value={s.value} />
-                                  )}
-                                </p>
-                                <p className={`text-xs ${isLight ? 'text-teal-700' : 'text-teal-200'}`}>{s.label}</p>
-                              </div>
-                            ))}
                           </div>
                         ),
                       },
@@ -986,17 +998,23 @@ export default function Dashboard() {
                           {/* Card CTA */}
                           <Link
                             href={item.href}
-                            className={`mt-6 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all ${isLight 
-                              ? `bg-gradient-to-r from-${item.color}-500 to-${item.color}-600 text-white hover:shadow-lg hover:shadow-${item.color}-500/40` 
-                              : `bg-gradient-to-r from-${item.color}-500 to-${item.color}-600 text-white hover:shadow-lg hover:shadow-${item.color}-500/40`}`}
+                            className={`mt-6 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all
+    ${item.strong
+                                ? strongBtnClasses[item.color]   // ✅ solid colors now always work
+                                : isLight
+                                  ? `bg-gradient-to-r from-${item.color}-500 to-${item.color}-600 text-white hover:shadow-lg hover:shadow-${item.color}-500/40`
+                                  : `bg-gradient-to-r from-${item.color}-500 to-${item.color}-600 text-white hover:shadow-lg hover:shadow-${item.color}-500/40`
+                              }`}
                           >
                             Open {item.title}
                             <ArrowRight size={14} />
                           </Link>
+
                         </GlassCard>
                       </motion.div>
                     ))}
                   </div>
+
                 </motion.div>
               </section>
             </>
