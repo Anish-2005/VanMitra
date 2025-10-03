@@ -211,8 +211,7 @@ export default function LayerManager({
             {/* Apply / Reset controls for staged visibility */}
             <div className="mt-3 flex items-center gap-2">
               <button
-                className="px-4 py-2 rounded-md shadow-md"
-                style={{ background: 'var(--primary)', color: 'var(--card-foreground)'}}
+                className={`px-4 py-2 rounded-md shadow-md font-medium transition-colors ${isLight ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white'}`}
                 onClick={() => {
                   // compute diffs and call onLayerToggle for each layer that changed
                   layers.forEach(l => {
@@ -225,8 +224,7 @@ export default function LayerManager({
                 }}
               >Apply</button>
               <button
-                className="px-4 py-2 rounded-md"
-                style={{ border: isLight ? '1px solid rgba(15,23,21,0.06)' : '1px solid rgba(16,185,129,0.12)', color: 'var(--primary)'}}
+                className={`px-4 py-2 rounded-md font-medium transition-colors ${isLight ? 'bg-white border border-slate-200 text-slate-800 hover:bg-slate-50' : 'bg-white/5 border border-white/10 text-white hover:bg-white/10'}`}
                 onClick={() => {
                   // reset staged visibility to current props
                   const reset: Record<string, boolean> = {};
