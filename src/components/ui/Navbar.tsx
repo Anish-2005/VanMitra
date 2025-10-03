@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from 'next/link';
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Leaf, Menu, X, Map, FileText, BarChart3, Globe, LayoutDashboard, Sparkles } from "lucide-react";
@@ -147,8 +148,9 @@ const Navbar: React.FC = () => {
           >
             <img src="/vanmitra.png" alt="VanMitra" className="h-12 w-12 object-contain" />
           </motion.div>
-          <div>
-            <motion.h1
+          <Link href="/">
+            <div>
+              <motion.h1
               className="text-2xl font-bold tracking-tight"
               style={{
                 backgroundImage: isLight
@@ -174,7 +176,8 @@ const Navbar: React.FC = () => {
             >
               Forest Rights & Asset Mapping Platform
             </motion.p>
-          </div>
+            </div>
+          </Link>
         </motion.div>
 
         {/* Desktop Navigation */}
