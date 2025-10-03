@@ -12,6 +12,7 @@ import {
   Sprout, Droplets, Trees, Mountain, Sun
 } from "lucide-react";
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import Navbar from "@/components/ui/Navbar";
 import Footer from "@/components/ui/Footer";
 import ThreeBackground from "@/components/ui/ThreeBackground";
@@ -25,6 +26,7 @@ const DecorativeElements = dynamic(() => import('@/components/ui/DecorativeEleme
 
 export default function Home() {
   const { theme } = useTheme();
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
   const isLight = mounted && theme === 'light';
@@ -263,27 +265,35 @@ export default function Home() {
               variants={itemVariants}
             >
               <MagneticButton
+                onClick={() => router.push('/atlas')}
                 className={`group ${isLight
                   ? 'bg-green-600 hover:bg-green-700 text-white border-green-700'
                   : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white border-white/20'
                   }`}
               >
-                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                <div className="flex items-center">
+                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform mr-2" />
                 Explore Atlas
+
+                </div>
               </MagneticButton>
 
               <MagneticButton
+              onClick={() => router.push('/contact')}
                 variant={isLight ? "outline" : "secondary"}
                 className={isLight
                   ? "border-green-600 text-green-700 hover:bg-green-50 hover:border-green-700 hover:text-green-800"
                   : ""
                 }
               >
-                <Globe size={16} className="mr-2" />
-                Request Demo
+                <div className="flex items-center">
+                  <Globe size={16} className="mr-2" />
+                  Request Demo
+                </div>
               </MagneticButton>
 
               <MagneticButton
+               onClick={() => router.push('/dss')}
                 variant={isLight ? "outline" : "secondary"}
                 className={isLight
                   ? "border-green-600 text-green-700 hover:bg-green-50 hover:border-green-700 hover:text-green-800"
