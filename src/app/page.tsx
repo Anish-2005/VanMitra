@@ -272,14 +272,14 @@ export default function Home() {
                   }`}
               >
                 <div className="flex items-center">
-                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform mr-2" />
-                Explore Atlas
+                  <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform mr-2" />
+                  Explore Atlas
 
                 </div>
               </MagneticButton>
 
               <MagneticButton
-              onClick={() => router.push('/contact')}
+                onClick={() => router.push('/contact')}
                 variant={isLight ? "outline" : "secondary"}
                 className={isLight
                   ? "border-green-600 text-green-700 hover:bg-green-50 hover:border-green-700 hover:text-green-800"
@@ -293,15 +293,17 @@ export default function Home() {
               </MagneticButton>
 
               <MagneticButton
-               onClick={() => router.push('/dss')}
+                onClick={() => router.push('/dss')}
                 variant={isLight ? "outline" : "secondary"}
                 className={isLight
                   ? "border-green-600 text-green-700 hover:bg-green-50 hover:border-green-700 hover:text-green-800"
                   : ""
                 }
               >
-                <Zap size={16} className="mr-2" />
-                DSS Features
+                <div className="flex items-center">
+                  <Zap size={16} className="mr-2" />
+                  DSS Features
+                </div>
               </MagneticButton>
             </motion.div>
 
@@ -890,8 +892,10 @@ export default function Home() {
 
                 <div className="flex-shrink-0">
                   <MagneticButton className="text-lg px-8 py-4">
+                    <div className="flex items-center">
                     See Recommendations
                     <ArrowRight size={20} className="ml-2" />
+                    </div>
                   </MagneticButton>
                 </div>
               </div>
