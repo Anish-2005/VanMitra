@@ -230,25 +230,35 @@ export default function DSSPage() {
                 className="flex flex-wrap gap-3 mb-12 pr-1"
                 variants={itemVariants}
               >
+                <Link href="/dss">
                 <MagneticButton 
+                  
                   className={`group ${isLight
                     ? 'bg-green-600 hover:bg-green-700 text-white border-green-700'
                     : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white border-white/20'
                     }`}
                 >
+                  <div className="flex items-center">
                   <ArrowRight size={20} className="mr-2 group-hover:translate-x-1 transition-transform" />
                   Get Recommendations
+                  </div>
                 </MagneticButton>
-                <MagneticButton
-                  variant={isLight ? "outline" : "secondary"}
-                  className={isLight
-                    ? "border-green-600 text-green-700 hover:bg-green-50 hover:border-green-700 hover:text-green-800"
-                    : ""
-                  }
-                >
-                  <MapPin size={16} className="mr-2" />
-                  View Atlas
-                </MagneticButton>
+                </Link>
+                <Link href="/atlas">
+                  <MagneticButton
+                    as="a"
+                    variant={isLight ? "outline" : "secondary"}
+                    className={isLight
+                      ? "border-green-600 text-green-700 hover:bg-green-50 hover:border-green-700 hover:text-green-800"
+                      : ""
+                    }
+                  >
+                     <div className="flex items-center">
+                    <MapPin size={16} className="mr-2" />
+                    View Atlas
+                    </div>
+                  </MagneticButton>
+                </Link>
               </motion.div>
             </motion.section>
 
