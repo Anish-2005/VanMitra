@@ -88,7 +88,7 @@ export default function PublicPage() {
         }} />
       </div>
       
-      <header className="relative z-10 max-w-7xl mx-auto px-6 pt-8 flex items-center justify-between">
+  <header className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <motion.div
           className="flex items-center gap-3"
           initial={{ opacity: 0, x: -50 }}
@@ -113,7 +113,7 @@ export default function PublicPage() {
         </motion.div>
         
         <motion.nav
-          className="flex items-center gap-4"
+          className="flex items-center gap-3 sm:gap-4 mt-3 sm:mt-0"
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
@@ -129,7 +129,7 @@ export default function PublicPage() {
         </motion.nav>
       </header>
 
-      <main className={`relative z-10 max-w-7xl mx-auto px-6 py-16 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+  <main className={`relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16 ${isLight ? 'text-slate-900' : 'text-white'}`}>
         <motion.div
           className={`rounded-3xl overflow-hidden shadow-2xl border p-8 ${
             isLight 
@@ -146,7 +146,7 @@ export default function PublicPage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
           >
-            <h2 className={`text-3xl font-bold mb-2 ${isLight ? 'text-slate-800' : 'text-white'}`}>Public FRA Progress Map</h2>
+            <h2 className={`text-2xl sm:text-3xl font-bold mb-2 ${isLight ? 'text-slate-800' : 'text-white'}`}>Public FRA Progress Map</h2>
             <div className={isLight ? 'text-green-700' : 'text-green-300'}>Public map of FRA progress (aggregated)</div>
           </motion.div>
 
@@ -156,14 +156,14 @@ export default function PublicPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8 }}
           >
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
               <div className={isLight ? 'text-green-700 font-medium' : 'text-green-300 font-medium'}>Interactive Preview</div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
                 <label className={isLight ? 'text-green-700 font-medium' : 'text-green-300 font-medium'}>Boundaries</label>
                 <motion.select
                   value={boundarySelection}
                   onChange={(e) => setBoundarySelection(e.target.value as any)}
-                  className={`rounded-2xl border backdrop-blur-sm px-4 py-2 focus:outline-none focus:ring-2 transition-all duration-300 cursor-pointer appearance-none ${
+                  className={`w-full sm:w-auto rounded-2xl border backdrop-blur-sm px-4 py-2 focus:outline-none focus:ring-2 transition-all duration-300 cursor-pointer appearance-none ${
                     isLight
                       ? 'border-green-300 bg-white text-slate-900 placeholder-green-600 focus:ring-green-500 focus:border-green-500 hover:bg-green-50'
                       : 'border-emerald-700/50 bg-gradient-to-r from-emerald-900/20 to-green-900/20 text-white placeholder-green-300 focus:ring-emerald-400 focus:border-emerald-400 hover:bg-gradient-to-r hover:from-emerald-900/30 hover:to-green-900/30'
@@ -189,7 +189,7 @@ export default function PublicPage() {
               </div>
             </div>
 
-            <div className={`h-[520px] rounded-2xl overflow-hidden border ${
+            <div className={`h-[320px] sm:h-[420px] md:h-[520px] rounded-2xl overflow-hidden border ${
               isLight ? 'border-green-200/60' : 'border-white/20'
             }`}>
               <MapPreview layers={{ boundaries: layersBoundaries }} />
@@ -214,14 +214,14 @@ export default function PublicPage() {
                 transition={{ delay: 1 + i * 0.2 }}
                 whileHover={{ scale: 1.05 }}
               >
-                <GlassCard className="p-6 text-center">
+                <GlassCard className="p-4 sm:p-6 text-center">
                   <div className="flex items-center justify-center gap-3 mb-4">
                     <div className="p-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500">
                       <stat.icon size={24} className="text-white" />
                     </div>
                   </div>
-                  <div className={`text-sm font-medium mb-2 ${isLight ? 'text-green-700' : 'text-green-300'}`}>{stat.title}</div>
-                  <div className={`text-3xl font-bold mb-1 ${isLight ? 'text-slate-800' : 'text-white'}`}>
+                  <div className={`text-sm sm:text-base font-medium mb-2 ${isLight ? 'text-green-700' : 'text-green-300'}`}>{stat.title}</div>
+                  <div className={`text-2xl sm:text-3xl font-bold mb-1 ${isLight ? 'text-slate-800' : 'text-white'}`}>
                     {stat.loading ? (
                       <motion.div
                         animate={{ opacity: [0.5, 1, 0.5] }}
