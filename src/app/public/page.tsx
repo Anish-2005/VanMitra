@@ -14,7 +14,6 @@ import ThemeToggle from "@/components/ui/ThemeToggle";
 
 // Client-only components to prevent hydration mismatches
 const ThreeBackground = dynamic(() => import('@/components/ui/ThreeBackground'), { ssr: false });
-const FloatingOrbs = dynamic(() => import('@/components/ui/FloatingOrbs'), { ssr: false });
 const DecorativeElements = dynamic(() => import('@/components/ui/DecorativeElements'), { ssr: false });
 
 export default function PublicPage() {
@@ -69,7 +68,6 @@ export default function PublicPage() {
     }`}>
       <ThreeBackground />
       <DecorativeElements />
-      <FloatingOrbs />
 
       {/* Mesh Gradient Overlay */}
       <div className={isLight 

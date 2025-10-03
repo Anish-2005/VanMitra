@@ -28,7 +28,6 @@ import MagneticButton from "@/components/ui/MagneticButton"
 import AnimatedCounter from "@/components/ui/AnimatedCounter"
 
 // Client-only components to prevent hydration mismatches
-const FloatingOrbs = dynamicImport(() => import('@/components/ui/FloatingOrbs'), { ssr: false })
 const DecorativeElements = dynamicImport(() => import('@/components/ui/DecorativeElements'), { ssr: false })
 
 export default function AtlasPage() {
@@ -1714,7 +1713,6 @@ export default function AtlasPage() {
       }>
         <ThreeBackground />
         <DecorativeElements />
-        <FloatingOrbs />
 
         {/* Mesh Gradient Overlay */}
         <div className={isLight ? "fixed inset-0 bg-gradient-to-br from-white/40 via-transparent to-emerald-100/20 pointer-events-none z-1" : "fixed inset-0 bg-gradient-to-br from-green-900/20 via-transparent to-emerald-900/20 pointer-events-none z-1"} />

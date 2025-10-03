@@ -11,7 +11,6 @@ const MAside: React.FC<HTMLMotionProps<"aside">> = motion.aside;
 import { Leaf, MapPin, Database, Target, Satellite, ArrowRight, TrendingUp, Users, FileText, BarChart3, Activity, Calendar, Download, Filter, Layers, BookOpen, Upload, Server, Eye, Globe } from "lucide-react";
 import ThreeBackground from "@/components/ui/ThreeBackground";
 import DecorativeElements from "@/components/ui/DecorativeElements";
-import FloatingOrbs from "@/components/ui/FloatingOrbs";
 import Navbar from "@/components/ui/Navbar";
 import Footer from "@/components/ui/Footer";
 import Link from "next/link";
@@ -255,7 +254,6 @@ export default function Dashboard() {
       }>
         <ThreeBackground />
         <DecorativeElements />
-        <FloatingOrbs />
 
         {/* Mesh Gradient Overlay */}
         <div className={isLight ? "fixed inset-0 bg-gradient-to-br from-white/40 via-transparent to-emerald-100/20 pointer-events-none z-1" : "fixed inset-0 bg-gradient-to-br from-green-900/20 via-transparent to-emerald-900/20 pointer-events-none z-1"} />

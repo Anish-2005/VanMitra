@@ -13,7 +13,6 @@ import {
 import Navbar from "@/components/ui/Navbar";
 import Footer from "@/components/ui/Footer";
 import ThreeBackground from "@/components/ui/ThreeBackground";
-import FloatingOrbs from "@/components/ui/FloatingOrbs";
 import DecorativeElements from "@/components/ui/DecorativeElements";
 import GlassCard from "@/components/ui/GlassCard";
 import MagneticButton from "@/components/ui/MagneticButton";
@@ -82,7 +81,6 @@ export default function Terms() {
     }`}>
       <ThreeBackground />
       <DecorativeElements />
-      <FloatingOrbs />
 
       {/* Mesh Gradient Overlay */}
       <div className={isLight 
