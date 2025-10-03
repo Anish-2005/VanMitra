@@ -96,20 +96,22 @@ export default function PublicPage() {
           transition={{ duration: 0.8 }}
         >
           <motion.div
-            className={`h-12 w-12 rounded-2xl flex items-center justify-center border shadow-2xl ${
+            className={`h-16 w-16 rounded-2xl flex items-center justify-center border shadow-2xl overflow-hidden ${
               isLight 
-                ? 'bg-gradient-to-r from-green-500 to-emerald-500 border-green-200' 
-                : 'bg-gradient-to-r from-green-500 to-emerald-500 border-white/20'
+                ? 'bg-transparent border-green-200' 
+                : 'bg-transparent border-white/20'
             }`}
             whileHover={{ scale: 1.05, rotate: 5 }}
             transition={{ type: "spring", stiffness: 300 }}
           >
-            <Users className="text-white" size={24} />
+            <img src="/vanmitra.png" alt="VanMitra" className="h-10 w-10 object-contain" />
           </motion.div>
-          <div>
-            <h1 className={`text-2xl font-bold tracking-tight ${isLight ? 'text-slate-800' : 'text-white'}`}>Public VanMitra View</h1>
-            <p className={`text-sm ${isLight ? 'text-green-700' : 'text-green-300'}`}>Public map (no PII)</p>
-          </div>
+          <Link href="/" className="inline-block">
+            <div className="cursor-pointer">
+              <h1 className={`text-2xl font-bold tracking-tight ${isLight ? 'text-green-800' : 'text-green-200'}`}>VanMitra</h1>
+              <p className={`text-sm ${isLight ? 'text-green-700' : 'text-green-300'}`}>Public map (no PII)</p>
+            </div>
+          </Link>
         </motion.div>
         
         <motion.nav
