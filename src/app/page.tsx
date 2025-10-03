@@ -39,6 +39,32 @@ export default function Home() {
   const [claimsSummaryLoading, setClaimsSummaryLoading] = useState(false);
   const [claimsTotal, setClaimsTotal] = useState(20);
   const [claimsGranted, setClaimsGranted] = useState(3);
+  const [claimsError, setClaimsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchClaims = async () => {
+      setClaimsSummaryLoading(true);
+      setClaimsError(null);
+      try {
+        const res = await fetch('/api/claims?status=all');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        if (!mounted) return;
+        const features = json?.features ?? [];
+        setClaimsTotal(features.length);
+        setClaimsGranted(features.filter((f: any) => f?.properties?.status === 'granted').length);
+      } catch (err: any) {
+        if (!mounted) return;
+        setClaimsError(err?.message || 'Failed to load claims');
+      } finally {
+        if (mounted) setClaimsSummaryLoading(false);
+      }
+    };
+
+    fetchClaims();
+    return () => { mounted = false; };
+  }, []);
 
   const { scrollYProgress } = useScroll();
   const scaleProgress = useTransform(scrollYProgress, [0, 1], [1, 1.2]);
