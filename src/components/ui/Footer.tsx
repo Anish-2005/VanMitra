@@ -30,10 +30,10 @@ const Footer: React.FC = () => {
       >
         <div className="flex items-center gap-3 sm:gap-4">
           <motion.div
-            className={`h-10 w-10 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center shadow-lg ${
+            className={`h-10 w-10 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden ${
               isLight
-                ? 'bg-gradient-to-br from-green-600 to-emerald-700'
-                : 'bg-gradient-to-br from-emerald-400 to-emerald-600'
+                ? 'bg-transparent border border-green-200'
+                : 'bg-transparent border border-white/10'
             }`}
             whileHover={{ rotate: 360 }}
             transition={{ duration: 0.6 }}
