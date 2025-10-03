@@ -89,26 +89,25 @@ export default function Contact() {
   };
 
   return (
-    <div className={`min-h-screen relative overflow-hidden ${
-      isLight 
-        ? 'bg-gradient-to-br from-white via-emerald-50 to-green-50 text-slate-900' 
+    <div className={`min-h-screen relative overflow-hidden ${isLight
+        ? 'bg-gradient-to-br from-white via-emerald-50 to-green-50 text-slate-900'
         : 'bg-gradient-to-br from-slate-900 via-green-900 to-emerald-900 text-white'
-    }`}>
+      }`}>
       <ThreeBackground />
       <DecorativeElements />
       {/* Mesh Gradient Overlay */}
-      <div className={isLight 
-        ? "fixed inset-0 bg-gradient-to-br from-white/40 via-transparent to-emerald-100/20 pointer-events-none z-1" 
+      <div className={isLight
+        ? "fixed inset-0 bg-gradient-to-br from-white/40 via-transparent to-emerald-100/20 pointer-events-none z-1"
         : "fixed inset-0 bg-gradient-to-br from-green-900/20 via-transparent to-emerald-900/20 pointer-events-none z-1"
       } />
 
       {/* Animated Grid */}
-      <div className={isLight 
-        ? "fixed inset-0 opacity-10 pointer-events-none z-1" 
+      <div className={isLight
+        ? "fixed inset-0 opacity-10 pointer-events-none z-1"
         : "fixed inset-0 opacity-10 pointer-events-none z-1"
       }>
         <div className="absolute inset-0" style={{
-          backgroundImage: isLight 
+          backgroundImage: isLight
             ? `linear-gradient(rgba(16, 185, 129, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(16, 185, 129, 0.05) 1px, transparent 1px)`
             : `linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px)`,
           backgroundSize: '50px 50px'
@@ -135,9 +134,8 @@ export default function Contact() {
               exit={{ opacity: 0 }}
             />
             <motion.div
-              className={`relative rounded-3xl shadow-2xl p-8 w-full max-w-md mx-4 backdrop-blur-xl ${
-                isLight ? 'bg-white border border-slate-200' : 'bg-gradient-to-br from-slate-800 to-green-800 border border-white/20'
-              }`}
+              className={`relative rounded-3xl shadow-2xl p-8 w-full max-w-md mx-4 backdrop-blur-xl ${isLight ? 'bg-white border border-slate-200' : 'bg-gradient-to-br from-slate-800 to-green-800 border border-white/20'
+                }`}
               initial={{ scale: 0.8, opacity: 0, y: 50 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.8, opacity: 0, y: 50 }}
@@ -160,11 +158,10 @@ export default function Contact() {
                   placeholder="Email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 ${
-                    isLight 
-                      ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500' 
+                  className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 ${isLight
+                      ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500'
                       : 'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'
-                  }`}
+                    }`}
                   whileFocus={{ scale: 1.02 }}
                 />
                 <motion.input
@@ -172,11 +169,10 @@ export default function Contact() {
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 ${
-                    isLight 
-                      ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500' 
+                  className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 ${isLight
+                      ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500'
                       : 'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'
-                  }`}
+                    }`}
                   whileFocus={{ scale: 1.02 }}
                 />
                 <MagneticButton onClick={handleLogin} className="w-full">
@@ -197,11 +193,10 @@ export default function Contact() {
           transition={{ duration: 0.8 }}
         >
           <motion.div
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 ${
-              isLight 
-                ? 'bg-green-100 border border-green-200 text-green-800' 
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 ${isLight
+                ? 'bg-green-100 border border-green-200 text-green-800'
                 : 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 text-green-300'
-            }`}
+              }`}
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 200, damping: 15 }}
@@ -212,8 +207,8 @@ export default function Contact() {
 
           <h1 className="text-4xl lg:text-5xl font-extrabold leading-tight mb-6">
             <motion.span
-              className={isLight 
-                ? 'text-green-700' 
+              className={isLight
+                ? 'text-green-700'
                 : 'bg-gradient-to-r from-white via-green-300 to-emerald-300 bg-clip-text text-transparent'
               }
               initial={{ opacity: 0, y: 50 }}
@@ -290,11 +285,10 @@ export default function Contact() {
             </motion.div>
 
             <motion.div variants={itemVariants}>
-              <GlassCard className={`p-8 ${
-                isLight 
-                  ? 'bg-gradient-to-r from-green-100 to-emerald-100 border-green-300/60' 
+              <GlassCard className={`p-8 ${isLight
+                  ? 'bg-gradient-to-r from-green-100 to-emerald-100 border-green-300/60'
                   : 'bg-gradient-to-r from-green-600/20 to-emerald-600/20 border-green-400/30'
-              }`}>
+                }`}>
                 <h3 className={`text-xl font-bold mb-4 ${isLight ? 'text-slate-800' : 'text-white'}`}>Quick Links</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <MagneticButton variant={isLight ? "outline" : "secondary"} className="text-sm">
@@ -331,12 +325,11 @@ export default function Contact() {
                         type="text"
                         placeholder="Your Name"
                         value={contactForm.name}
-                        onChange={(e) => setContactForm({...contactForm, name: e.target.value})}
-                        className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 ${
-                          isLight 
-                            ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500' 
+                        onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                        className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 ${isLight
+                            ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500'
                             : 'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'
-                        }`}
+                          }`}
                         required
                       />
                     </motion.div>
@@ -346,12 +339,11 @@ export default function Contact() {
                         type="email"
                         placeholder="Your Email"
                         value={contactForm.email}
-                        onChange={(e) => setContactForm({...contactForm, email: e.target.value})}
-                        className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 ${
-                          isLight 
-                            ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500' 
+                        onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                        className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 ${isLight
+                            ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500'
                             : 'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'
-                        }`}
+                          }`}
                         required
                       />
                     </motion.div>
@@ -362,12 +354,11 @@ export default function Contact() {
                       type="text"
                       placeholder="Subject"
                       value={contactForm.subject}
-                      onChange={(e) => setContactForm({...contactForm, subject: e.target.value})}
-                      className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 ${
-                        isLight 
-                          ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500' 
+                      onChange={(e) => setContactForm({ ...contactForm, subject: e.target.value })}
+                      className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 ${isLight
+                          ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500'
                           : 'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'
-                      }`}
+                        }`}
                       required
                     />
                   </motion.div>
@@ -376,21 +367,23 @@ export default function Contact() {
                     <textarea
                       placeholder="Your Message"
                       value={contactForm.message}
-                      onChange={(e) => setContactForm({...contactForm, message: e.target.value})}
+                      onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
                       rows={6}
-                      className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 resize-none ${
-                        isLight 
-                          ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500' 
+                      className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 resize-none ${isLight
+                          ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500'
                           : 'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'
-                      }`}
+                        }`}
                       required
                     />
                   </motion.div>
 
                   <MagneticButton type="submit" className="w-full">
-                    <Send size={18} className="mr-2" />
-                    Send Message
+                    <div className="flex items-center justify-center">
+                      <Send size={18} className="mr-2" />
+                      Send Message
+                    </div>
                   </MagneticButton>
+
                 </form>
               </GlassCard>
             </motion.div>
