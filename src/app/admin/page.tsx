@@ -5,7 +5,6 @@ import { useTheme } from '@/components/ThemeProvider';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import ThreeBackground from '@/components/ui/ThreeBackground';
 import DecorativeElements from '@/components/ui/DecorativeElements';
-import Navbar from '@/components/ui/Navbar';
 import Footer from '@/components/ui/Footer';
 import AdminHeader from '@/components/admin/AdminHeader';
 import AdminMetrics from '@/components/admin/AdminMetrics';
@@ -122,7 +121,6 @@ export default function AdminPage() {
           }} />
         </div>
 
-        <Navbar />
 
   <AdminHeader title="Admin Dashboard" subtitle="Manage uploads, verification, users & system status" isLight={isLight} />
 
