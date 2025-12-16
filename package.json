@@ -29,7 +29,7 @@
     "html2canvas": "^1.4.1",
     "lucide-react": "^0.279.0",
     "maplibre-gl": "^5.7.0",
-    "next": "15.2.3",
+    "next": "15.2.8",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^3.3.1",
