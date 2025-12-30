@@ -3,8 +3,8 @@
 
 import React from 'react';
 import { X, Eye, EyeOff } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '../ui/button';
+import { Checkbox } from '../ui/checkbox';
 import { useAtlasStore } from '@/stores/atlas-store';
 
 interface LayerPanelProps {
