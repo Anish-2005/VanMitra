@@ -8,6 +8,11 @@ import type {
   RefObject,
 } from "react"
 
+declare module "*.css" {
+  const content: { [className: string]: string }
+  export default content
+}
+
 declare module "framer-motion" {
   interface MotionProps {
     // Common HTML attributes
