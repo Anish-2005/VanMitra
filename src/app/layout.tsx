@@ -55,7 +55,7 @@ export const metadata: Metadata = {
     siteName: "VanMitra",
     images: [
       {
-        url: "/og-image.jpg",
+        url: "https://vanmitra.vercel.app/og-image.jpg",
         width: 1200,
         height: 630,
         alt: "VanMitra - Forest Rights Mapping Platform",
@@ -66,7 +66,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "VanMitra: Friend of the Forest",
     description: "Digital platform for forest rights mapping and sustainable development",
-    images: ["/og-image.jpg"],
+    images: ["https://vanmitra.vercel.app/og-image.jpg"],
     creator: "@vanmitra",
   },
   robots: {

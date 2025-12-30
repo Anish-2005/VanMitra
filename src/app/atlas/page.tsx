@@ -304,7 +304,7 @@ export default function AtlasPage() {
     return () => {
       cancelled = true
     }
-  }, [searchParams])
+  }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const controller = new AbortController()
