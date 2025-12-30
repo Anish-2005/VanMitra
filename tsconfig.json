@@ -3,16 +3,14 @@
     "target": "ES2017",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
-
-    // ✅ Don't type-check node_modules (fixes framer-motion errors)
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-
-    // ✅ Relax strictness just enough
     "strict": true,
-    "noImplicitAny": false,            // allow implicit any
-
-    // Build & module settings
+    "noImplicitAny": false, // Gradually enable this
+    "exactOptionalPropertyTypes": false, // Gradually enable this
+    "noUncheckedIndexedAccess": false, // Gradually enable this
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
@@ -21,21 +19,15 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-
-    // Next.js plugin
     "plugins": [
       {
         "name": "next"
       }
     ],
-
-    // Path aliases
     "paths": {
       "@/*": ["./src/*"]
     }
   },
-
-  // ✅ Tell TS to also pick up global.d.ts (where you patch framer-motion types)
   "include": [
     "next-env.d.ts",
     "**/*.ts",
