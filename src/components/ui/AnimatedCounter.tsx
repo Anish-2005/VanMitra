@@ -2,7 +2,7 @@ import { motion, useInView } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 
 // Animated Counter Component
-const AnimatedCounter = ({ value, duration = 2000 }) => {
+const AnimatedCounter = ({ value, duration = 2000 }: { value: number; duration?: number }) => {
   const [count, setCount] = useState(0);
   const nodeRef = useRef<HTMLSpanElement>(null!);
   const isInView = useInView(nodeRef, { once: true });
@@ -24,6 +24,8 @@ const AnimatedCounter = ({ value, duration = 2000 }) => {
       }, incrementTime);
 
       return () => clearInterval(timer);
+    } else {
+      return;
     }
   }, [isInView, value, duration]);
 

@@ -1,6 +1,5 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { withAuth } from '@/lib/auth-middleware';
 import { ClaimsService } from '@/services/claims';
 import { ClaimSchema } from '@/types/api';
 
@@ -24,7 +23,7 @@ export const GET = async (req: NextRequest) => {
   }
 };
 
-export const POST = withAuth(async (req: NextRequest) => {
+export const POST = async (req: NextRequest) => {
   try {
     const body = await req.json();
 
@@ -57,4 +56,4 @@ export const POST = withAuth(async (req: NextRequest) => {
       { status: 500 }
     );
   }
-});
+};

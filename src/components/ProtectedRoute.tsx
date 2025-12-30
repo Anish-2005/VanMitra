@@ -25,6 +25,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         router.push('/');
       }, 3200);
       return () => clearTimeout(timer);
+    } else {
+      return;
     }
   }, [user, loading, router]);
 

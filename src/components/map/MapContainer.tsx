@@ -108,7 +108,7 @@ export function MapContainer({
         if (layer.data) {
           map.addSource(layer.id, {
             type: 'geojson',
-            data: layer.data,
+            data: layer.data as any,
           });
         }
 
