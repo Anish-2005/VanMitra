@@ -304,7 +304,7 @@ export default function AtlasPage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [searchParams])
 
   useEffect(() => {
     const controller = new AbortController()
