@@ -196,7 +196,7 @@ export default function AtlasPage() {
       // noop
     }
     // Intentionally depend on searchParams so updates to the URL reflect in UI
-  }, [searchParams])
+  }, [searchParams, stateFilter, districtFilter, villageFilter, statusFilter, claimTypeFilter])
 
   useEffect(() => {
     let cancelled = false
