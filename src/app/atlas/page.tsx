@@ -306,7 +306,7 @@ export default function AtlasPage() {
     }
   }, [searchParams])
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable react-hooks/exhaustive-deps
   useEffect(() => {
     const controller = new AbortController()
     const fetchClaims = async () => {
