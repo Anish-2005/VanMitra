@@ -153,8 +153,8 @@ export default function Home() {
       />
 
       {/* Main Content */}
-      <main id="atlas" className={`relative z-10 max-w-7xl mx-auto px-6 pt-16 py-16 ${isLight ? 'text-slate-900' : 'text-white'}`}>
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
+      <main id="atlas" className={`relative z-10 w-full max-w-[1440px] 2xl:max-w-[1680px] mx-auto px-2 sm:px-4 md:px-8 lg:px-12 pt-16 py-16 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 md:gap-14 lg:gap-16 items-start">
           <motion.section className="lg:col-span-7">
             <Hero isLight={isLight} router={router} containerVariants={containerVariants} itemVariants={itemVariants} setLoginOpen={setLoginOpen} />
 
