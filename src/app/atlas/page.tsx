@@ -1728,7 +1728,7 @@ export default function AtlasPage() {
 
         <Navbar />
 
-        <main className="relative z-10 max-w-7xl mx-auto px-6 py-10">
+      <main className={`relative z-10 w-full max-w-full 2xl:max-w-full mx-auto px-2 sm:px-4 md:px-8 lg:px-12 py-16 ${isLight ? 'text-slate-900' : 'text-white'}`}>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <section className="lg:col-span-8">
               <motion.div initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
