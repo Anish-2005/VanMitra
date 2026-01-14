@@ -1,59 +1,63 @@
-<!-------------------------------------------------
-VanMitra — Forest Rights & Asset Mapping Platform
-Rich README with a compact UI layout, feature tables, and clear run/dev instructions
-------------------------------------------------->
 
 <div align="center">
   <img src="./public/vanmitra.svg" alt="VanMitra" width="120" style="border-radius:16px; box-shadow: 0 12px 30px rgba(6,95,70,0.12);"/>
-
-  <h1 style="margin:8px 0 0; font-size:40px;">VanMitra</h1>
-  <p style="margin:6px 0 10px; color:#14532d; font-size:16px;">Forest Rights & Asset Mapping — a modern platform for claims, atlas maps, OCR extraction and decision support.</p>
+  
+  <h1 style="margin:8px 0 0; font-size:40px;">🌳 VanMitra</h1>
+  <p style="margin:6px 0 10px; color:#14532d; font-size:18px; font-weight:600;">Forest Rights & Asset Mapping Platform</p>
+  <p style="margin:0 0 10px; color:#166534; font-size:15px;">Interactive claims, atlas maps, OCR extraction, and decision support — all in one modern, beautiful app.</p>
 
   <p>
-    <a href="#features" style="margin-right:12px">✨ Features</a>
-    <a href="#getting-started" style="margin-right:12px">🚀 Get started</a>
-    <a href="#development" style="margin-right:12px">🧩 Development</a>
-    <a href="#animation-and-ui" style="margin-right:12px">🎞️ UI & Animations</a>
+    <a href="#features"><img alt="Features" src="https://img.shields.io/badge/-Features-16a34a?style=for-the-badge&logo=react"/></a>
+    <a href="#getting-started"><img alt="Get Started" src="https://img.shields.io/badge/-Get%20Started-2563eb?style=for-the-badge&logo=next.js"/></a>
+    <a href="#development"><img alt="Development" src="https://img.shields.io/badge/-Development-f59e0b?style=for-the-badge&logo=vercel"/></a>
+    <a href="#ui--animations"><img alt="UI & Animations" src="https://img.shields.io/badge/-UI%20%26%20Animations-10b981?style=for-the-badge&logo=framer"/></a>
   </p>
 </div>
 
+<p align="center">
+  <img src="./public/vanmitra-hero.png" alt="VanMitra Screenshot" width="80%" style="border-radius:18px; box-shadow:0 8px 32px rgba(16,185,129,0.10); margin:18px 0;"/>
+</p>
+
 ---
 
-## What is VanMitra
 
-VanMitra is a Next.js application focused on mapping, tracking and managing forest rights and assets. It combines interactive mapping (MapLibre + GeoJSON), OCR document processing, and decision-support dashboards into a single platform with a polished, accessible UI.
+## 🌟 What is VanMitra?
 
-This repository contains the full web app, API routes, UI components and small utilities used across VanMitra.
+> **VanMitra** is a next-generation platform for mapping, tracking, and managing forest rights and assets. It brings together:
+>
+> - 🗺️ Interactive mapping (MapLibre + GeoJSON)
+> - 📄 OCR document processing
+> - 📊 Decision-support dashboards
+> - ✨ A beautiful, accessible, and modern UI
 
-## Quick visual snapshot
+All in one open-source, developer-friendly app.
 
-<div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;margin-bottom:18px;">
-  <div style="flex:1;min-width:260px;max-width:540px;background:linear-gradient(180deg,#f8fff6,white);border-radius:12px;padding:14px;box-shadow:0 10px 30px rgba(6,95,70,0.06);">
-    <strong>Primary UI</strong>
-    <p style="margin:8px 0 0;">Interactive atlas, dashboard and OCR flows with motion-enhanced micro-interactions and accessible focus states.</p>
-  </div>
 
-  <div style="width:160px;min-width:140px;background:linear-gradient(180deg,#ecfdf5,#d1fae5);border-radius:12px;padding:12px;text-align:center;box-shadow:0 8px 20px rgba(6,95,70,0.06);">
-    <img src="./public/vanmitra.png" alt="logo" width="80" style="margin-bottom:8px;border-radius:10px;"/>
-    <div style="font-weight:600;color:#065f46;">VanMitra</div>
-  </div>
+## 👀 Quick Visual Snapshot
+
+<div align="center" style="display:flex;gap:24px;flex-wrap:wrap;justify-content:center;">
+  <img src="./public/atlas-preview.png" alt="Atlas UI" width="340" style="border-radius:10px;box-shadow:0 4px 18px #16a34a22;margin:8px;"/>
+  <img src="./public/ocr-preview.png" alt="OCR UI" width="340" style="border-radius:10px;box-shadow:0 4px 18px #2563eb22;margin:8px;"/>
+  <img src="./public/dashboard-preview.png" alt="Dashboard UI" width="340" style="border-radius:10px;box-shadow:0 4px 18px #f59e0b22;margin:8px;"/>
 </div>
 
 ---
 
-## Features
 
-| Area | Key capabilities |
-|---|---|
-| Atlas & Mapping | MapLibre-based interactive maps, GeoJSON boundaries, feature drilldown, preview panels |
-| Claims & OCR | Uploads, OCR extraction, claim submission endpoints and verification queue |
-| Dashboard & DSS | KPIs, recommendations, analytic views and decision support summaries |
-| UI & UX | TailwindCSS-driven design, Framer Motion micro-interactions, accessible components and dark mode |
-| Backend APIs | Lightweight Next.js serverless routes used as internal APIs for assets, atlas, OCR and claims |
+## ✨ Features
+
+| 🌍 Area         | 🚀 Key Capabilities |
+|----------------|--------------------|
+| **Atlas & Mapping** | MapLibre-based interactive maps, GeoJSON boundaries, feature drilldown, preview panels |
+| **Claims & OCR**    | Uploads, OCR extraction, claim submission endpoints, verification queue |
+| **Dashboard & DSS** | KPIs, recommendations, analytics, decision support summaries |
+| **UI & UX**         | TailwindCSS design, Framer Motion micro-interactions, accessible components, dark mode |
+| **Backend APIs**    | Next.js serverless routes for assets, atlas, OCR, claims |
 
 ---
 
-## Tech stack
+
+## 🛠️ Tech Stack
 
 <table>
   <tr>
@@ -76,7 +80,8 @@ This repository contains the full web app, API routes, UI components and small u
 
 ---
 
-## Getting started (Windows PowerShell)
+
+## 🚀 Getting Started
 
 Follow these steps locally to run the app for development.
 
@@ -97,13 +102,15 @@ Notes:
 
 ---
 
-## Development notes
+
+## 🧩 Development Notes
 
 - App router: source lives under `src/app` (pages & nested routes). Server-like API routes are under `src/app/api`.
 - Key UI components are under `src/components` with the `ui` subfolder containing primitives like `button.tsx`, `card.tsx`, `MagneticButton.tsx`, `ThemeToggle.tsx` and `Navbar.tsx`.
 - Mapping GeoJSON assets are under the `geojson/` and `data/` folders.
 
-### Useful scripts
+
+### 🛠️ Useful Scripts
 
 | Script | Purpose |
 |---|---|
@@ -114,7 +121,8 @@ Notes:
 
 ---
 
-## UI & Animations (what we improved)
+
+## 🎨 UI & Animations
 
 This app uses Framer Motion for consistent micro-interactions across the UI. A few design decisions to note:
 
@@ -127,7 +135,8 @@ If you'd like the README to visually demonstrate a particular component, I can a
 
 ---
 
-## Project structure (high level)
+
+## 🗂️ Project Structure
 
 ```
 src/
@@ -140,7 +149,8 @@ public/           # Images and static assets (logo used above)
 
 ---
 
-## Contributing
+
+## 🤝 Contributing
 
 Contributions are welcome. A good first step is:
 
@@ -152,14 +162,16 @@ If you're working on UI/animation improvements, please run the dev server and in
 
 ---
 
-## Troubleshooting
+
+## 🛟 Troubleshooting
 
 - If you run into hydration or SSR theme flashes, ensure you have a mounted theme guard (components use a `mounted` flag before rendering theme-dependent styles).
 - If animations are choppy: try toggling `prefers-reduced-motion` in your OS settings, or ensure your GPU drivers are up to date.
 
 ---
 
-## License & Contact
+
+## 📄 License & Contact
 
 This project uses an open source-friendly setup — add the license of your choice (e.g., MIT) to the repository root if you want to make it explicit.
 
@@ -167,7 +179,13 @@ For direct questions, reach out to the repo owner.
 
 ---
 
-_README generated and improved by a dev-assistant — tell me if you want a more visual README (GIFs/screenshots), or embedded live component examples._
+
+---
+
+<div align="center" style="margin-top:32px;">
+  <strong>Made with ❤️ by the VanMitra team</strong><br/>
+  <sub>README generated and improved by a dev-assistant — want more visuals or live component demos? Just ask!</sub>
+</div>
 
 # VanMitra — Frontend
 
