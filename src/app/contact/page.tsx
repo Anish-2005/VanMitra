@@ -185,7 +185,7 @@ export default function Contact() {
       </AnimatePresence>
 
       {/* Main Content */}
-      <main className={`relative z-10 max-w-6xl mx-auto px-6 py-16 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+      <main className={`relative z-10 w-full max-w-full 2xl:max-w-full mx-auto px-2 sm:px-4 md:px-8 lg:px-12 py-16 ${isLight ? 'text-slate-900' : 'text-white'}`}>
         <motion.div
           className="text-center mb-16"
           initial={{ y: 50, opacity: 0 }}

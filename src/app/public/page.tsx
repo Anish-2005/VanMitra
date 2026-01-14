@@ -73,7 +73,7 @@ export default function PublicPage() {
       
       <Header isLight={isLight} />
 
-      <main className={`relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+      <main className={`relative z-10 w-full max-w-[full 2xl:max-w-full mx-auto px-2 sm:px-4 md:px-8 lg:px-12 py-8 sm:py-12 md:py-16 ${isLight ? 'text-slate-900' : 'text-white'}`}>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-8">
             <MapPanel isLight={isLight} />

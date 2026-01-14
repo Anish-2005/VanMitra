@@ -11,7 +11,7 @@ type Props = { isLight: boolean };
 
 export default function Header({ isLight }: Props) {
     return (
-        <header className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-4 sm:pt-8">
+        <header className="relative z-10 w-full max-w-[1440px] 2xl:max-w-[1680px] mx-auto px-2 sm:px-4 md:px-8 lg:px-12 pt-4 sm:pt-8">
             <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                     <motion.div
