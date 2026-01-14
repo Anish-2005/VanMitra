@@ -117,7 +117,7 @@ export default function OCRPage() {
         }} />
       </div>
       <Navbar />
-      <div className={`relative z-10 max-w-7xl mx-auto px-6 py-16 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+      <div className={`relative z-10 w-full max-w-[1440px] 2xl:max-w-[1680px] mx-auto px-2 sm:px-4 md:px-8 lg:px-12 py-16 ${isLight ? 'text-slate-900' : 'text-white'}`}>
         <OCRHeader isLight={isLight} />
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
           <OCRUploadSection

@@ -11,9 +11,9 @@ interface OCRResultSectionProps {
 }
 
 const OCRResultSection: React.FC<OCRResultSectionProps> = ({ isLight, isProcessing, result, error }) => (
-  <GlassCard className="p-8 pb-28">
-    <div className="mb-12">
-      <h2 className={`text-2xl font-semibold mb-2 flex items-center gap-3 ${isLight ? 'text-slate-800' : 'text-white'}`}>
+  <GlassCard className="p-4 sm:p-6 md:p-8 pb-20 sm:pb-24 md:pb-28">
+    <div className="mb-8 sm:mb-10 md:mb-12">
+      <h2 className={`text-xl sm:text-2xl font-semibold mb-2 flex items-center gap-3 ${isLight ? 'text-slate-800' : 'text-white'}`}>
         <FileText className={isLight ? 'text-green-600' : 'text-green-400'} />
         OCR Results
       </h2>
@@ -44,7 +44,7 @@ const OCRResultSection: React.FC<OCRResultSectionProps> = ({ isLight, isProcessi
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -67,7 +67,7 @@ const OCRResultSection: React.FC<OCRResultSectionProps> = ({ isLight, isProcessi
         </motion.div>
         {/* Claim Details */}
         <motion.div
-          className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6"
+          className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4, staggerChildren: 0.1 }}
@@ -78,7 +78,7 @@ const OCRResultSection: React.FC<OCRResultSectionProps> = ({ isLight, isProcessi
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
           >
-            <GlassCard className="p-6">
+            <GlassCard className="p-4 sm:p-6">
               <h3 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${isLight ? 'text-slate-800' : 'text-white'}`}>
                 <MapPin className={`w-5 h-5 ${isLight ? 'text-green-600' : 'text-green-400'}`} />
                 Location Details
@@ -111,7 +111,7 @@ const OCRResultSection: React.FC<OCRResultSectionProps> = ({ isLight, isProcessi
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
           >
-            <GlassCard className="p-6">
+            <GlassCard className="p-4 sm:p-6">
               <h3 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${isLight ? 'text-slate-800' : 'text-white'}`}>
                 <FileText className={`w-5 h-5 ${isLight ? 'text-green-600' : 'text-green-400'}`} />
                 Claim Details
@@ -148,16 +148,16 @@ const OCRResultSection: React.FC<OCRResultSectionProps> = ({ isLight, isProcessi
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
         >
-          <GlassCard className="p-6">
-            <h3 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${isLight ? 'text-slate-800' : 'text-white'}`}>
+          <GlassCard className="p-4 sm:p-6">
+            <h3 className={`text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2 ${isLight ? 'text-slate-800' : 'text-white'}`}>
               <Eye className={`w-5 h-5 ${isLight ? 'text-green-600' : 'text-green-400'}`} />
               Extracted Information
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {Object.entries(JSON.parse(result).extracted_data).map(([key, value], index) => (
                 <motion.div
                   key={key}
-                  className={`rounded-lg p-4 border backdrop-blur-sm ${
+                  className={`rounded-lg p-3 sm:p-4 border backdrop-blur-sm ${
                     isLight
                       ? 'bg-green-50 border-green-200'
                       : 'bg-emerald-900/20 border-emerald-700/30'
@@ -166,8 +166,8 @@ const OCRResultSection: React.FC<OCRResultSectionProps> = ({ isLight, isProcessi
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.8 + index * 0.1 }}
                 >
-                  <div className={`text-sm mb-1 ${isLight ? 'text-green-700' : 'text-green-300'}`}>{key}</div>
-                  <div className={`font-medium ${isLight ? 'text-slate-800' : 'text-white'}`}>{String(value)}</div>
+                  <div className={`text-xs sm:text-sm mb-1 ${isLight ? 'text-green-700' : 'text-green-300'}`}>{key}</div>
+                  <div className={`font-medium text-sm sm:text-base ${isLight ? 'text-slate-800' : 'text-white'}`}>{String(value)}</div>
                 </motion.div>
               ))}
             </div>

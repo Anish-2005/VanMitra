@@ -18,7 +18,7 @@ interface OCRUploadSectionProps {
 const OCRUploadSection: React.FC<OCRUploadSectionProps> = ({
   isLight, preview, selectedFile, isProcessing, error, handleFileSelect, handleUpload, resetForm
 }) => (
-  <GlassCard className="p-8">
+  <GlassCard className="p-4 sm:p-6 md:p-8">
     <div className="mb-6">
       <h2 className={`text-2xl font-semibold mb-2 flex items-center gap-3 ${isLight ? 'text-slate-800' : 'text-white'}`}>
         <Upload className={isLight ? 'text-green-600' : 'text-green-400'} />
@@ -33,7 +33,7 @@ const OCRUploadSection: React.FC<OCRUploadSectionProps> = ({
     >
       <label
         htmlFor="file-upload"
-        className={`flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-300 backdrop-blur-sm ${
+        className={`flex flex-col items-center justify-center w-full h-48 sm:h-56 md:h-64 border-2 border-dashed rounded-2xl cursor-pointer transition-all duration-300 backdrop-blur-sm ${
           isLight
             ? 'border-green-300 bg-green-50 hover:border-green-400 hover:bg-green-100'
             : 'border-emerald-700/50 hover:border-emerald-400 hover:bg-emerald-900/20'
@@ -52,7 +52,7 @@ const OCRUploadSection: React.FC<OCRUploadSectionProps> = ({
               <img
                 src={preview}
                 alt="Preview"
-                className="max-w-full max-h-48 object-contain rounded-lg mb-4"
+                className="max-w-full max-h-32 sm:max-h-40 md:max-h-48 object-contain rounded-lg mb-4"
               />
             </motion.div>
           ) : (
@@ -101,7 +101,7 @@ const OCRUploadSection: React.FC<OCRUploadSectionProps> = ({
         </div>
       </motion.div>
     )}
-    <div className="flex gap-3">
+    <div className="flex flex-col sm:flex-row gap-3">
       <MagneticButton
         onClick={handleUpload}
         disabled={!selectedFile || isProcessing}

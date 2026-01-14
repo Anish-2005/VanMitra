@@ -8,7 +8,7 @@ interface OCRHeaderProps {
 
 const OCRHeader: React.FC<OCRHeaderProps> = ({ isLight }) => (
   <motion.div
-    className="text-center mb-16"
+    className="text-center mb-10 sm:mb-14 w-full max-w-[98vw] sm:max-w-[600px] md:max-w-2xl mx-auto px-2"
     initial={{ opacity: 0, y: 50 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.8, delay: 0.4 }}
@@ -26,7 +26,7 @@ const OCRHeader: React.FC<OCRHeaderProps> = ({ isLight }) => (
       <Sparkles size={16} className={isLight ? 'text-green-600' : 'text-green-400'} />
       <span className="font-medium">AI-Powered OCR Processing</span>
     </motion.div>
-    <h1 className="text-5xl font-bold mb-6">
+    <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 break-words leading-tight">
       <motion.span
         className={isLight
           ? 'text-green-700'
@@ -50,7 +50,8 @@ const OCRHeader: React.FC<OCRHeaderProps> = ({ isLight }) => (
       </motion.span>
     </h1>
     <motion.p
-      className={`text-xl max-w-2xl mx-auto ${isLight ? 'text-slate-700' : 'text-green-100'}`}
+      className={`text-base sm:text-lg md:text-xl max-w-[95vw] sm:max-w-xl mx-auto ${isLight ? 'text-slate-700' : 'text-green-100'}`}
+      style={{ wordBreak: 'break-word' }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ delay: 1.2, duration: 0.8 }}
