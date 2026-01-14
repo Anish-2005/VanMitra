@@ -3,6 +3,14 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import { useTheme } from "@/components/ThemeProvider";
 import AnimatedCounter from "@/components/ui/AnimatedCounter";
+import WelcomeSection from "@/components/dashboard/WelcomeSection";
+import KPISection from "@/components/dashboard/KPISection";
+import QuickActionsSection from "@/components/dashboard/QuickActionsSection";
+import RecentActivitySection from "@/components/dashboard/RecentActivitySection";
+import SystemStatusSection from "@/components/dashboard/SystemStatusSection";
+import DataVisualizationSection from "@/components/dashboard/DataVisualizationSection";
+import MapSection from "@/components/dashboard/MapSection";
+import PlatformOverviewSection from "@/components/dashboard/PlatformOverviewSection";
 import { STATES, DEFAULT_STATE, DEFAULT_DISTRICT } from '../../lib/regions';
 import { BarChart, Menu, Shield, X } from "lucide-react";
 import { motion, AnimatePresence, HTMLMotionProps } from "framer-motion";
@@ -405,618 +413,59 @@ export default function Dashboard() {
           {!isLoading && (
             <>
               {/* Welcome Section */}
-              <div className="mb-8">
-                <motion.div initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
-                  <GlassCard className={`p-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h2 className={`text-2xl font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>Welcome back, {user?.displayName || 'User'}!</h2>
-                        <p className={`mt-1 ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Here is what is happening with FRA claims and village development today.</p>
-                      </div>
-                      <div className="text-right">
-                        <div className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Last updated</div>
-                        <div className={`text-lg font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>{new Date().toLocaleDateString()}</div>
-                      </div>
-                    </div>
-                  </GlassCard>
-                </motion.div>
-              </div>
+              <WelcomeSection isLight={isLight} userName={user?.displayName || 'User'} />
 
               {/* Key Performance Indicators */}
-              <div className="mb-8">
-                <motion.div
-                  initial={{ y: 8, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.5, delay: 0.1 }}
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {kpis.map((kpi, index) => (
-                      <GlassCard
-                        key={index}
-                        className={`p-6 hover:shadow-lg transition-shadow ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className={`text-sm font-medium ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>{kpi.label}</p>
-                            <p className={`text-2xl font-bold mt-1 ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                              <AnimatedCounter value={Number(kpi.value ?? 0)} />
-                            </p>
-                            <div className="flex items-center mt-2">
-                              <TrendingUp className={`h-4 w-4 mr-1 ${isLight ? 'text-emerald-600' : 'text-emerald-300'}`} />
-                              <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>{kpi.trend}</span>
-                            </div>
-                          </div>
+              <KPISection isLight={isLight} kpis={kpis} timeSeries={timeSeries} />
 
-                          <div
-                            className={`h-12 w-12 rounded-xl flex items-center justify-center 
-                          ${isLight ? 'bg-emerald-100 border border-emerald-200' : 'bg-white/5 border border-white/10'} backdrop-blur-sm`}
-                          >
-                            <kpi.icon
-                              className={`h-6 w-6 
-                  ${kpi.color === 'emerald' ? (isLight ? 'text-emerald-600' : 'text-emerald-400') :
-                                  kpi.color === 'blue' ? (isLight ? 'text-blue-600' : 'text-blue-400') :
-                                    kpi.color === 'purple' ? (isLight ? 'text-purple-600' : 'text-purple-400') :
-                                      kpi.color === 'orange' ? (isLight ? 'text-orange-600' : 'text-orange-400') :
-                                        isLight ? 'text-gray-600' : 'text-gray-400'
-                                }`}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="mt-4">
-                          {timeSeries && timeSeries.length >= 2 ? (
-                            <Sparkline data={timeSeries.slice(-7).map(Number)} />
-                          ) : (
-                            <div className={`h-10 flex items-center ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>
-                              <span className="text-sm">No historical series</span>
-                            </div>
-                          )}
-                        </div>
-                      </GlassCard>
-                    ))}
-                  </div>
-                </motion.div>
-              </div>
-
-              {/* Quick Actions & Recent Activity */}
-              <div className="mb-8">
-                <motion.div initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, delay: 0.15 }}>
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Quick Actions */}
-                    <GlassCard className={`p-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
-                      <h3 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                        <Activity className="h-5 w-5" />
-                        Quick Actions
-                      </h3>
-
-                      <div className="space-y-3">
-                        <button className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left ${isLight ? 'bg-emerald-50 border border-emerald-200 hover:bg-emerald-100' : 'bg-white/5 border border-white/10 hover:bg-white/10'}`}>
-                          <FileText className={`h-5 w-5 ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`} />
-                          <div>
-                            <div className={`font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>New FRA Claim</div>
-                            <div className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Process a new forest rights claim</div>
-                          </div>
-                        </button>
-
-                        <button className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left ${isLight ? 'bg-emerald-50 border border-emerald-200 hover:bg-emerald-100' : 'bg-white/5 border border-white/10 hover:bg-white/10'}`}>
-                          <MapPin className={`h-5 w-5 ${isLight ? 'text-blue-600' : 'text-blue-400'}`} />
-                          <div>
-                            <div className={`font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>Map Analysis</div>
-                            <div className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Analyze village boundaries</div>
-                          </div>
-                        </button>
-
-                        <button className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left ${isLight ? 'bg-emerald-50 border border-emerald-200 hover:bg-emerald-100' : 'bg-white/5 border border-white/10 hover:bg-white/10'}`}>
-                          <Download className={`h-5 w-5 ${isLight ? 'text-purple-600' : 'text-purple-400'}`} />
-                          <div>
-                            <div className={`font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>Export Report</div>
-                            <div className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Generate comprehensive report</div>
-                          </div>
-                        </button>
-
-                        <button className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left ${isLight ? 'bg-emerald-50 border border-emerald-200 hover:bg-emerald-100' : 'bg-white/5 border border-white/10 hover:bg-white/10'}`}>
-                          <Users className={`h-5 w-5 ${isLight ? 'text-orange-600' : 'text-orange-400'}`} />
-                          <div>
-                            <div className={`font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>Team Assignment</div>
-                            <div className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Assign tasks to field officers</div>
-                          </div>
-                        </button>
-                      </div>
-                    </GlassCard>
-
-                    {/* Recent Activity */}
-                    <GlassCard className={`p-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
-                      <h3 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                        <Calendar className="h-5 w-5" />
-                        Recent Activity
-                      </h3>
-                      <div className="space-y-4">
-                        <div className="flex items-start gap-3">
-                          <div className={`h-2 w-2 rounded-full mt-2 ${isLight ? 'bg-green-600' : 'bg-green-500'}`}></div>
-                          <div className="flex-1">
-                            <p className={`text-sm font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>New claim processed</p>
-                            <p className={`text-xs ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Village: Chandrapur • 2 hours ago</p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3">
-                          <div className={`h-2 w-2 rounded-full mt-2 ${isLight ? 'bg-blue-600' : 'bg-blue-500'}`}></div>
-                          <div className="flex-1">
-                            <p className={`text-sm font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>Boundary survey completed</p>
-                            <p className={`text-xs ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>District: Raipur • 4 hours ago</p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3">
-                          <div className={`h-2 w-2 rounded-full mt-2 ${isLight ? 'bg-purple-600' : 'bg-purple-500'}`}></div>
-                          <div className="flex-1">
-                            <p className={`text-sm font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>Report generated</p>
-                            <p className={`text-xs ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Monthly summary • 1 day ago</p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3">
-                          <div className={`h-2 w-2 rounded-full mt-2 ${isLight ? 'bg-orange-600' : 'bg-orange-500'}`}></div>
-                          <div className="flex-1">
-                            <p className={`text-sm font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>Officer assigned</p>
-                            <p className={`text-xs ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Team Alpha • 2 days ago</p>
-                          </div>
-                        </div>
-                      </div>
-                    </GlassCard>
-
-                    {/* System Status */}
-                    <GlassCard className={`p-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
-                      <h3 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                        <Server className="h-5 w-5" />
-                        System Status
-                      </h3>
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>API Services</span>
-                          <div className="flex items-center gap-2">
-                            <div className={`h-2 w-2 rounded-full ${isLight ? 'bg-green-600' : 'bg-green-500'}`}></div>
-                            <span className={`text-xs ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Online</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Database</span>
-                          <div className="flex items-center gap-2">
-                            <div className={`h-2 w-2 rounded-full ${isLight ? 'bg-green-600' : 'bg-green-500'}`}></div>
-                            <span className={`text-xs ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Healthy</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>OCR Engine</span>
-                          <div className="flex items-center gap-2">
-                            <div className={`h-2 w-2 rounded-full ${isLight ? 'bg-green-600' : 'bg-green-500'}`}></div>
-                            <span className={`text-xs ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Active</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Map Services</span>
-                          <div className="flex items-center gap-2">
-                            <div className={`h-2 w-2 rounded-full ${isLight ? 'bg-green-500' : 'bg-green-500'}`}></div>
-                            <span className={`text-xs ${isLight ? 'text-green-300' : 'text-green-200'}`}>Active</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className={`mt-4 pt-4 border-t ${isLight ? 'border-emerald-200' : 'border-white/10'}`}>
-                        <div className={`text-xs ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>
-                          Last maintenance: 2 hours ago
-                        </div>
-                      </div>
-                    </GlassCard>
-                  </div>
-                </motion.div>
+              {/* Quick Actions & Recent Activity & System Status */}
+              <div className="mb-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <QuickActionsSection isLight={isLight} />
+                <RecentActivitySection isLight={isLight} />
+                <SystemStatusSection isLight={isLight} />
               </div>
 
               {/* Data Visualization Section */}
-              <div className="mb-8">
-                <motion.div initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, delay: 0.2 }}>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <GlassCard className={`p-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
-                      <h3 className={`text-lg font-semibold mb-4 ${isLight ? 'text-slate-900' : 'text-white'}`}>Claims Processing Trend</h3>
-                      {timeSeries && timeSeries.length >= 2 ? (
-                        <>
-                          <div className="h-64 flex items-end justify-between gap-2">
-                            {timeSeries.slice(-12).map((value: number, index: number) => (
-                              <div key={index} className="flex flex-col items-center flex-1">
-                                <div
-                                  className={`rounded-t w-full transition-all hover:opacity-80 ${isLight ? 'bg-emerald-500' : 'bg-emerald-500'}`}
-                                  style={{ height: `${(Number(value) / Math.max(...timeSeries.map(Number))) * 200}px` }}
-                                ></div>
-                                <span className={`text-xs mt-2 ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>{index + 1}</span>
-                              </div>
-                            ))}
-                          </div>
-                          <div className={`mt-4 flex justify-between text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>
-                            <span>Monthly claims processed</span>
-                            <span className="font-medium">{kpis[0]?.trend ?? '\u2014'} this month</span>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="h-64 flex items-center justify-center">
-                          <div className="text-center">
-                            <div className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>No historical series available</div>
-                            <div className={`text-2xl font-bold mt-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                              <AnimatedCounter value={totalClaims} />
-                            </div>
-                            <div className={`text-sm mt-1 ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>{kpis[0]?.trend ?? '\u2014'}</div>
-                          </div>
-                        </div>
-                      )}
-                    </GlassCard>
-
-                    <GlassCard className={`p-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
-                      <h3 className={`text-lg font-semibold mb-4 ${isLight ? 'text-slate-900' : 'text-white'}`}>Priority Distribution</h3>
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className={`h-4 w-4 rounded ${isLight ? 'bg-red-500' : 'bg-red-500'}`}></div>
-                            <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>High Priority</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className={`w-24 h-2 rounded ${isLight ? 'bg-emerald-200' : 'bg-white/10'}`}>
-                              <div className={`h-2 rounded ${isLight ? 'bg-red-500' : 'bg-red-500'}`} style={{ width: '35%' }}></div>
-                            </div>
-                            <span className={`text-sm font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>35%</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className={`h-4 w-4 rounded ${isLight ? 'bg-yellow-500' : 'bg-yellow-500'}`}></div>
-                            <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Medium Priority</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className={`w-24 h-2 rounded ${isLight ? 'bg-emerald-200' : 'bg-white/10'}`}>
-                              <div className={`h-2 rounded ${isLight ? 'bg-yellow-500' : 'bg-yellow-500'}`} style={{ width: '45%' }}></div>
-                            </div>
-                            <span className={`text-sm font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>45%</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className={`h-4 w-4 rounded ${isLight ? 'bg-green-500' : 'bg-green-500'}`}></div>
-                            <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Low Priority</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className={`w-24 h-2 rounded ${isLight ? 'bg-emerald-200' : 'bg-white/10'}`}>
-                              <div className={`h-2 rounded ${isLight ? 'bg-emerald-500' : 'bg-emerald-500'}`} style={{ width: '20%' }}></div>
-                            </div>
-                            <span className={`text-sm font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>20%</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className={`mt-6 pt-4 border-t ${isLight ? 'border-emerald-200' : 'border-white/10'}`}>
-                        <div className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>
-                          Total villages monitored: <span className={`font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>{filtered.length}</span>
-                        </div>
-                      </div>
-                    </GlassCard>
-                  </div>
-                </motion.div>
-              </div>
+              <DataVisualizationSection
+                isLight={isLight}
+                timeSeries={timeSeries}
+                totalClaims={totalClaims}
+                kpiTrend={kpis[0]?.trend ?? '\u2014'}
+                filteredLength={filtered.length}
+              />
 
               {/* Interactive Map Preview */}
-              <div className="mb-8">
-                <motion.div initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5, delay: 0.25 }}>
-                  <GlassCard className={`p-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
-                    <div className="flex items-center justify-between mb-6">
-                      <h3 className={`text-lg font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>Interactive Map Preview</h3>
-
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => setFiltersCollapsed(!filtersCollapsed)}
-                          className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm 
-                   ${isLight ? 'bg-emerald-100 border border-emerald-200 hover:bg-emerald-200 text-emerald-800' : 'bg-white/5 border border-white/10 hover:bg-white/10 text-white'}`}
-                        >
-                          <Filter className={`h-4 w-4 ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`} />
-                          <span>Filters</span>
-                        </button>
-
-                        <button
-                          onClick={handleExportMap}
-                          className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm 
-                   ${isLight ? 'bg-emerald-100 border border-emerald-200 hover:bg-emerald-200 text-emerald-800' : 'bg-white/5 border border-white/10 hover:bg-white/10 text-white'}`}
-                        >
-                          <Download className={`h-4 w-4 ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`} />
-                          <span>Export</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Filters Panel */}
-                    {!filtersCollapsed && (
-                      <motion.div
-                        className={`mb-6 p-6 rounded-3xl ${isLight ? 'bg-emerald-50 border border-emerald-200' : 'border border-emerald-700/50 bg-gradient-to-r from-emerald-900/20 to-green-900/20 backdrop-blur-xl shadow-2xl'}`}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5 }}
-                      >
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                          <div>
-                            <label className={`block text-sm font-medium mb-2 ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>State</label>
-                            <motion.select
-                              value={stateFilter}
-                              onChange={(e) => setStateFilter(e.target.value)}
-                              className={`w-full px-4 py-2 rounded-2xl focus:outline-none focus:ring-2 ${isLight
-                                ? 'bg-white border border-emerald-300 text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
-                                : 'border border-emerald-700/50 bg-gradient-to-r from-emerald-900/20 to-green-900/20 backdrop-blur-sm text-white placeholder-green-300 focus:ring-emerald-400 focus:border-emerald-400'}`}
-                              whileHover={{ scale: 1.02 }}
-                              whileFocus={{ scale: 1.02 }}
-                              transition={{ type: "spring", stiffness: 300 }}
-                            >
-                              {STATES.map(state => (
-                                <option key={state.name} value={state.name} className={isLight ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'}>{state.name}</option>
-                              ))}
-                            </motion.select>
-                          </div>
-                          <div>
-                            <label className={`block text-sm font-medium mb-2 ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>District</label>
-                            <motion.select
-                              value={districtFilter}
-                              onChange={(e) => setDistrictFilter(e.target.value)}
-                              className={`w-full px-4 py-2 rounded-2xl focus:outline-none focus:ring-2 ${isLight
-                                ? 'bg-white border border-emerald-300 text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
-                                : 'border border-emerald-700/50 bg-gradient-to-r from-emerald-900/20 to-green-900/20 backdrop-blur-sm text-white placeholder-green-300 focus:ring-emerald-400 focus:border-emerald-400'}`}
-                              whileHover={{ scale: 1.02 }}
-                              whileFocus={{ scale: 1.02 }}
-                              transition={{ type: "spring", stiffness: 300 }}
-                            >
-                              <option value="All" className={isLight ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'}>All Districts</option>
-                              <option value="Raipur" className={isLight ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'}>Raipur</option>
-                              <option value="Bilaspur" className={isLight ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'}>Bilaspur</option>
-                              <option value="Durg" className={isLight ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'}>Durg</option>
-                            </motion.select>
-                          </div>
-                          <div>
-                            <label className={`block text-sm font-medium mb-2 ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>Search Village</label>
-                            <motion.input
-                              type="text"
-                              value={villageQuery}
-                              onChange={(e) => setVillageQuery(e.target.value)}
-                              placeholder="Enter village name..."
-                              className={`w-full px-4 py-2 rounded-2xl focus:outline-none focus:ring-2 ${isLight
-                                ? 'bg-white border border-emerald-300 text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
-                                : 'border border-emerald-700/50 bg-gradient-to-r from-emerald-900/20 to-green-900/20 backdrop-blur-sm text-white placeholder-green-300 focus:ring-emerald-400 focus:border-emerald-400'}`}
-                              whileFocus={{ scale: 1.02 }}
-                              transition={{ type: "spring", stiffness: 300 }}
-                            />
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-
-                    {/* Map Container */}
-                    <div className="relative h-96 rounded-lg overflow-hidden">
-                      <WebGIS
-                        ref={webGISRef}
-                        center={[stateCenter[0], stateCenter[1]]}
-                        zoom={8}
-                        layers={layers}
-                        markers={markers}
-                        onLayerToggle={handleLayerToggle}
-                        onFeatureClick={handleFeatureClick}
-                        onMapClick={handleMapClick}
-                      />
-                      <div className="absolute top-4 left-4">
-                        <GlassCard className={`p-2 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
-                          <div className={`flex items-center gap-2 text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-600'}`}>
-                            <MapPin className="h-4 w-4" />
-                            <span className={isLight ? 'text-slate-900' : 'text-white'}>{stateFilter}, {districtFilter}</span>
-                          </div>
-                        </GlassCard>
-                      </div>
-                      <div className="absolute bottom-4 right-4">
-                        <GlassCard className={`p-2 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
-                          <div className={`text-xs ${isLight ? 'text-emerald-600' : 'text-emerald-600'}`}>
-                            <span className={isLight ? 'text-slate-900' : 'text-white'}>Zoom: 8x</span>
-                            <span className={`mx-2 ${isLight ? 'text-emerald-600' : 'text-emerald-600'}`}>•</span>
-                            <span className={isLight ? 'text-slate-900' : 'text-white'}>Layers: {layers.filter(l => l.visible).length}/{layers.length}</span>
-                          </div>
-                        </GlassCard>
-                      </div>
-                    </div>
-
-                    {/* Map Legend */}
-                    <div className="mt-4 flex flex-wrap gap-4">
-                      {layers.map(layer => (
-                        <div key={layer.id} className="flex items-center gap-2">
-                          <div
-                            className="h-4 w-4 rounded border-2 border-white shadow-sm"
-                            style={{ backgroundColor: layer.style.fillColor }}
-                          ></div>
-                          <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>{layer.name}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </GlassCard>
-                </motion.div>
-              </div>
+              <MapSection
+                isLight={isLight}
+                filtersCollapsed={filtersCollapsed}
+                setFiltersCollapsed={setFiltersCollapsed}
+                stateFilter={stateFilter}
+                setStateFilter={setStateFilter}
+                districtFilter={districtFilter}
+                setDistrictFilter={setDistrictFilter}
+                villageQuery={villageQuery}
+                setVillageQuery={setVillageQuery}
+                STATES={STATES}
+                webGISRef={webGISRef}
+                stateCenter={stateCenter}
+                layers={layers}
+                markers={markers}
+                handleLayerToggle={handleLayerToggle}
+                handleFeatureClick={handleFeatureClick}
+                handleMapClick={handleMapClick}
+                handleExportMap={handleExportMap}
+              />
 
               {/* Platform Overview Section */}
-              <section className="relative mt-20">
-                <div className={`absolute inset-0 rounded-3xl blur-3xl ${isLight ? 'bg-emerald-100/20' : 'bg-emerald-900/20'}`} />
-
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.8 }}
-                  className="relative"
-                >
-                  {/* Section header */}
-                  <div className="text-center mb-14">
-                    <span className={`px-3 py-1 text-xs font-medium uppercase tracking-wider rounded-full ${isLight ? 'text-emerald-700 bg-emerald-100' : 'text-emerald-300 bg-emerald-800/30'}`}>
-                      Features
-                    </span>
-                    <h2 className={`text-4xl md:text-5xl font-extrabold mt-4 ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                      Explore VanMitra Platform
-                    </h2>
-                    <p className={`mt-3 max-w-2xl mx-auto ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>
-                      Discover powerful tools for forest rights management and empower
-                      communities with data-driven insights.
-                    </p>
-                    <div className={`mt-5 h-1 w-28 mx-auto rounded-full shadow-lg ${isLight ? 'bg-gradient-to-r from-emerald-500 to-green-600' : 'bg-gradient-to-r from-emerald-400 to-green-600'}`} />
-                  </div>
-
-                  {/* Features Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-                    {[
-                      {
-                        title: "Interactive Atlas",
-                        desc: "Map-based visualization of claims & layers",
-                        icon: Layers,
-                        color: "emerald",
-                        href: "/atlas",
-                        strong: true, // highlight
-                        preview: (
-                          <div className={`h-28 flex items-center justify-center rounded-lg ${isLight ? 'bg-emerald-100' : 'bg-emerald-500/5'}`}>
-                            <Globe className={`h-10 w-10 ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`} />
-                          </div>
-                        ),
-                      },
-                       {
-                        title: "Public Portal",
-                        desc: "Community transparency & FRA status",
-                        icon: Globe,
-                        color: "teal",
-                        href: "/public",
-                        strong: true, // highlight
-                        preview: (
-                          <div className={`h-28 grid grid-cols-3 text-center rounded-lg ${isLight ? 'bg-teal-100' : 'bg-teal-500/5'}`}>
-                            {[
-                              { label: 'Claims', value: totalClaims, loading: claimsLoading, error: claimsError },
-                              { label: 'Granted', value: grantedCount, loading: claimsLoading, error: claimsError },
-                              { label: 'Villages', value: uniqueVillages, loading: claimsLoading, error: claimsError }
-                            ].map((s, si) => (
-                              <div key={si}>
-                                <p className={`text-lg font-bold ${isLight ? 'text-teal-700' : 'text-teal-300'}`}>
-                                  {s.loading ? (
-                                    <span className={isLight ? 'text-slate-600' : 'text-teal-300'}>Loading…</span>
-                                  ) : s.error ? (
-                                    <span className={isLight ? 'text-red-600' : 'text-red-400'}>—</span>
-                                  ) : (
-                                    <AnimatedCounter value={s.value} />
-                                  )}
-                                </p>
-                                <p className={`text-xs ${isLight ? 'text-teal-700' : 'text-teal-200'}`}>{s.label}</p>
-                              </div>
-                            ))}
-                          </div>
-                        ),
-                      },
-                     
-                      {
-                        title: "OCR Processing",
-                        desc: "Digitize & extract data from documents",
-                        icon: Upload,
-                        color: "purple",
-                        href: "/ocr",
-                        strong: true, // highlight
-                        preview: (
-                          <div className={`h-28 border-2 border-dashed rounded-lg flex items-center justify-center ${isLight ? 'border-purple-400 bg-purple-100' : 'border-purple-400/40 bg-purple-500/5'}`}>
-                            <Upload className={`h-8 w-8 ${isLight ? 'text-purple-600' : 'text-purple-400'}`} />
-                            <span className={`text-xs ml-2 ${isLight ? 'text-purple-700' : 'text-purple-200'}`}>Drop file</span>
-                          </div>
-                        ),
-                      },
-                      {
-                        title: "Admin Dashboard",
-                        desc: "Manage claims, users & FRA documents",
-                        icon: Shield,
-                        color: "red",
-                        href: "/admin",
-                        preview: (
-                          <div className={`h-28 flex flex-col justify-center items-center rounded-lg ${isLight ? 'bg-red-100' : 'bg-red-500/5'}`}>
-                            <Users className={`h-8 w-8 mb-2 ${isLight ? 'text-red-600' : 'text-red-400'}`} />
-                            <span className={`text-xs ${isLight ? 'text-red-700' : 'text-red-200'}`}>Role: Super Admin</span>
-                          </div>
-                        ),
-                      },
-                      {
-                        title: "Decision Support",
-                        desc: "Smart scheme recommendations for your location",
-                        icon: BookOpen,
-                        color: "blue",
-                        href: "/dss",
-                        preview: (
-                          <div className={`h-28 flex flex-col justify-center items-center gap-2 rounded-lg ${isLight ? 'bg-blue-100' : 'bg-blue-500/5'}`}>
-                            <input
-                              type="text"
-                              placeholder="Latitude"
-                              className={`w-32 px-2 py-1 text-xs rounded ${isLight ? 'bg-blue-50 border border-blue-300 text-blue-900' : 'bg-blue-950/20 border border-blue-400/30 text-blue-200'}`}
-                              readOnly
-                            />
-                            <input
-                              type="text"
-                              placeholder="Longitude"
-                              className={`w-32 px-2 py-1 text-xs rounded ${isLight ? 'bg-blue-50 border border-blue-300 text-blue-900' : 'bg-blue-950/20 border border-blue-400/30 text-blue-200'}`}
-                              readOnly
-                            />
-                          </div>
-                        ),
-                      },
-                      {
-                        title: "Analytics Hub",
-                        desc: "Advanced reports & visual insights",
-                        icon: BarChart3,
-                        color: "indigo",
-                        href: "/analytics",
-                        preview: (
-                          <div className={`h-28 flex flex-col gap-2 justify-center px-4 rounded-lg ${isLight ? 'bg-indigo-100' : 'bg-indigo-500/5'}`}>
-                            <div className={`h-2 w-3/4 rounded ${isLight ? 'bg-indigo-400' : 'bg-indigo-400/60'}`}></div>
-                            <div className={`h-2 w-1/2 rounded ${isLight ? 'bg-indigo-400' : 'bg-indigo-400/60'}`}></div>
-                            <div className={`h-2 w-5/6 rounded ${isLight ? 'bg-indigo-400' : 'bg-indigo-400/60'}`}></div>
-                          </div>
-                        ),
-                      },
-                    ].map((item, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ opacity: 0, y: 30 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: i * 0.1, duration: 0.5 }}
-                        whileHover={{ scale: 1.03, rotateX: 2, rotateY: -2 }}
-                        className="transform-gpu"
-                      >
-                        <GlassCard className={`p-6 flex flex-col h-full backdrop-blur-xl border ${isLight ? 'border-slate-200 hover:shadow-xl hover:shadow-emerald-500/20' : 'border-white/10 hover:shadow-xl hover:shadow-emerald-500/20'} transition-all duration-300`}>
-                          {/* Card header */}
-                          <div className="flex items-center gap-3 mb-5">
-                            <div
-                              className={`h-12 w-12 rounded-full flex items-center justify-center shadow-inner ${isLight ? `bg-${item.color}-100` : `bg-${item.color}-500/20`}`}
-                            >
-                              <item.icon className={`h-6 w-6 ${isLight ? `text-${item.color}-600` : `text-${item.color}-400`}`} />
-                            </div>
-                            <div>
-                              <h3 className={`text-lg font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>{item.title}</h3>
-                              <p className={`text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-200'}`}>{item.desc}</p>
-                            </div>
-                          </div>
-
-                          {/* Card preview */}
-                          <div className="flex-1">{item.preview}</div>
-
-                          {/* Card CTA */}
-                          <Link
-                            href={item.href}
-                            className={`mt-6 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all
-    ${item.strong
-                                ? strongBtnClasses[item.color]   // ✅ solid colors now always work
-                                : isLight
-                                  ? `bg-gradient-to-r from-${item.color}-500 to-${item.color}-600 text-white hover:shadow-lg hover:shadow-${item.color}-500/40`
-                                  : `bg-gradient-to-r from-${item.color}-500 to-${item.color}-600 text-white hover:shadow-lg hover:shadow-${item.color}-500/40`
-                              }`}
-                          >
-                            Open {item.title}
-                            <ArrowRight size={14} />
-                          </Link>
-
-                        </GlassCard>
-                      </motion.div>
-                    ))}
-                  </div>
-
-                </motion.div>
-              </section>
+              <PlatformOverviewSection
+                isLight={isLight}
+                totalClaims={totalClaims}
+                grantedCount={grantedCount}
+                uniqueVillages={uniqueVillages}
+                claimsLoading={claimsLoading}
+                claimsError={claimsError}
+                strongBtnClasses={strongBtnClasses}
+              />
             </>
           )}
         </main>
