@@ -30,7 +30,7 @@ const Footer: React.FC = () => {
         transition={{ type: "spring", stiffness: 200 }}
       >
         <div className="flex items-center gap-3 sm:gap-4">
-          <motion.div className={`h-10 w-10 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden ${isLight ? 'bg-transparent border border-green-200' : 'bg-transparent border border-white/10'}`} whileHover={{ rotate: 360 }} transition={{ duration: 0.6 }}>
+          <motion.div className={`relative h-14 w-14 rounded-2xl flex items-center justify-center overflow-hidden `}>
             <Logo size={40} />
           </motion.div>
           <div>

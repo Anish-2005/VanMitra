@@ -142,7 +142,7 @@ const Navbar: React.FC = () => {
           whileHover={{ scale: 1.02 }}
           transition={{ type: "spring", stiffness: 300 }}
         >
-          <motion.div className={`relative h-14 w-14 rounded-2xl flex items-center justify-center shadow-2xl overflow-hidden ${isLight ? 'border border-green-200' : 'border border-white/8'}`} whileHover={{ scale: 1.05, rotate: 5 }} transition={{ type: "spring", stiffness: 300 }}>
+          <motion.div className={`relative h-14 w-14 rounded-2xl flex items-center justify-center overflow-hidden `}>
             <Logo size={48} />
           </motion.div>
           <Link href="/">

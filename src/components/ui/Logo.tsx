@@ -10,36 +10,83 @@ type Props = {
 
 export default function Logo({ size = 40, className = "" }: Props) {
   const { theme } = useTheme();
-  const isLight = typeof window !== 'undefined' ? (document.documentElement.getAttribute('data-theme') === 'light' || theme === 'light') : true;
+  const isLight = typeof window !== 'undefined' ? (document.documentElement.getAttribute('data-theme') === 'light' || theme === 'light') : (theme === 'light');
 
-  const bg = isLight ? '#ffffff' : 'none';
-  const dot = isLight ? '#064E3B' : '#A7F3D0';
-  const accent = isLight ? '#FFFFFF' : '#0F172A';
+  // theme-aware colors
+  const primaryA = isLight ? '#10B981' : '#059669';
+  const primaryB = isLight ? '#059669' : '#0EA5A4';
+  const waterA = isLight ? '#60A5FA' : '#38BDF8';
+  const bgFill = isLight ? '#FFFFFF' : 'rgba(255,255,255,0.02)';
+  const frameStroke = isLight ? 'rgba(5,150,105,0.08)' : 'rgba(255,255,255,0.06)';
 
   return (
-    <svg width={size} height={size} viewBox="0 0 256 256" className={className} role="img" aria-label="VanMitra logo">
-      <defs>
-        <linearGradient id="vmG1" x1="0%" x2="100%" y1="0%" y2="100%">
-          <stop offset="0%" stopColor="#34D399" />
-          <stop offset="100%" stopColor="#059669" />
-        </linearGradient>
-        <linearGradient id="vmG2" x1="0%" x2="100%" y1="0%" y2="100%">
-          <stop offset="0%" stopColor="#7DD3FC" />
-          <stop offset="100%" stopColor="#06B6D4" />
-        </linearGradient>
-      </defs>
+    <svg
+  width="512"
+  height="512"
+  viewBox="0 0 512 512"
+  xmlns="http://www.w3.org/2000/svg"
+  fill="none"
+>
 
-      <rect x="0" y="0" width="256" height="256" rx="36" ry="36" fill={bg} />
+  <circle
+    cx="256"
+    cy="256"
+    r="220"
+    stroke="#2EE59D"
+    strokeWidth="18"
+  />
 
-      <g transform="translate(24,16) scale(0.8)">
-        <path d="M128 16C78 16 32 62 32 112c0 72 96 176 96 176s96-104 96-176c0-50-46-96-96-96z" fill="url(#vmG1)" />
-        <path d="M128 48c-18 0-64 24-80 64 12-12 44-28 80-28s68 16 80 28c-16-40-62-64-80-64z" fill={accent} opacity="0.95" />
-        <circle cx="128" cy="128" r="8" fill={dot} />
-      </g>
+  <circle
+    cx="256"
+    cy="256"
+    r="180"
+    stroke="#1FAF78"
+    strokeWidth="10"
+    strokeDasharray="14 14"
+  />
 
-      <g transform="translate(16,208) scale(0.6)">
-        <path d="M0 32 C48 0 112 0 160 32 C208 64 272 64 320 32" stroke="url(#vmG2)" strokeWidth="12" fill="none" strokeLinecap="round" strokeLinejoin="round" opacity="0.95" />
-      </g>
-    </svg>
+  <path
+    d="M136 300C176 260 216 280 256 250C296 220 336 230 376 210"
+    stroke="#0E3D2F"
+    strokeWidth="12"
+    strokeLinecap="round"
+  />
+  <path
+    d="M136 340C176 300 216 320 256 290C296 260 336 270 376 250"
+    stroke="#0E3D2F"
+    strokeWidth="10"
+    strokeLinecap="round"
+  />
+
+  <path
+    d="M256 140
+       C210 180 190 230 256 300
+       C322 230 302 180 256 140Z"
+    fill="#2EE59D"
+  />
+
+  <rect
+    x="246"
+    y="290"
+    width="20"
+    height="70"
+    rx="6"
+    fill="#1FAF78"
+  />
+
+  <line x1="256" y1="120" x2="256" y2="390" stroke="#2EE59D" strokeWidth="6"/>
+  <line x1="120" y1="256" x2="390" y2="256" stroke="#2EE59D" strokeWidth="6"/>
+
+  <circle
+    cx="256"
+    cy="256"
+    r="14"
+    fill="#0E3D2F"
+    stroke="#2EE59D"
+    strokeWidth="6"
+  />
+
+</svg>
+
   );
 }
