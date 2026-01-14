@@ -227,7 +227,7 @@ export default function Dashboard() {
   };
 
   const [selected, setSelected] = useState<any | null>(null);
-  const webGISRef = useRef<WebGISRef>(null);
+  const webGISRef = useRef<WebGISRef>(null) as React.RefObject<WebGISRef>;
   const stateCenter = STATES.find(s => s.name === stateFilter)?.center ?? STATES.find(s => s.name === DEFAULT_STATE)?.center ?? [78.9629, 22.9734];
 
   function downloadCSV(rows: any[]) {
