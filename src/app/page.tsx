@@ -20,6 +20,11 @@ import GlassCard from "@/components/ui/GlassCard";
 import MagneticButton from "@/components/ui/MagneticButton";
 import Tooltip from "@/components/ui/Tooltip";
 import AnimatedCounter from "@/components/ui/AnimatedCounter";
+import Hero from "@/components/home/Hero";
+import StatsGrid from "@/components/home/StatsGrid";
+import RightSidebar from "@/components/home/RightSidebar";
+import Sections from "@/components/home/Sections";
+import LoginModal from "@/components/home/LoginModal";
 
 // Client-only components to prevent hydration mismatches
 const DecorativeElements = dynamic(() => import('@/components/ui/DecorativeElements'), { ssr: false });
@@ -135,213 +140,28 @@ export default function Home() {
       <Navbar />
 
       {/* Login Modal */}
-      <AnimatePresence>
-        {loginOpen && (
-          <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className={isLight ? "absolute inset-0 bg-white/60 backdrop-blur-sm" : "absolute inset-0 bg-black/60 backdrop-blur-sm"}
-              onClick={() => setLoginOpen(false)}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            />
-            <motion.div
-              className={`relative rounded-3xl shadow-2xl p-8 w-full max-w-md mx-4 backdrop-blur-xl ${isLight ? 'bg-white border border-slate-200' : 'bg-gradient-to-br from-slate-800 to-green-800 border border-white/20'}`}
-              initial={{ scale: 0.8, opacity: 0, y: 50 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.8, opacity: 0, y: 50 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            >
-              <h3 className={`text-2xl font-bold mb-6 text-center ${isLight ? 'text-slate-900' : 'text-white'}`}>Welcome Back</h3>
-              {error && (
-                <motion.p
-                  className="text-red-500 mb-4 text-center"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                >
-                  {error}
-                </motion.p>
-              )}
-
-              <div className="space-y-4">
-                <motion.input
-                  type="email"
-                  placeholder="Email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 ${isLight ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500' : 'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'}`}
-                  whileFocus={{ scale: 1.02 }}
-                />
-                <motion.input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={`w-full px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 ${isLight ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500' : 'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'}`}
-                  whileFocus={{ scale: 1.02 }}
-                />
-                <MagneticButton onClick={handleLogin} className="w-full">
-                  Sign In
-                </MagneticButton>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <LoginModal
+        loginOpen={loginOpen}
+        setLoginOpen={setLoginOpen}
+        isLight={isLight}
+        email={email}
+        setEmail={setEmail}
+        password={password}
+        setPassword={setPassword}
+        error={error}
+        handleLogin={handleLogin}
+      />
 
       {/* Main Content */}
       <main id="atlas" className={`relative z-10 max-w-7xl mx-auto px-6 py-16 ${isLight ? 'text-slate-900' : 'text-white'}`}>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
-          {/* Hero Section */}
-          <motion.section
-            className="lg:col-span-7"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            <motion.div variants={itemVariants}>
-              <motion.div
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 ${isLight ? 'bg-green-100 border border-green-200 text-green-800' : 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 text-green-300'}`}
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 200, damping: 15 }}
-              >
-                <Sparkles size={16} className={isLight ? 'text-green-600' : 'text-green-400'} />
-                <span className="font-medium">Next-Gen Forest Rights Platform</span>
-              </motion.div>
+          <Hero isLight={isLight} router={router} containerVariants={containerVariants} itemVariants={itemVariants} setLoginOpen={setLoginOpen} />
 
-              <h2 className="text-5xl lg:text-5xl font-extrabold leading-tight mb-6">
-                <motion.span
-                  className={isLight ? 'text-slate-900' : 'bg-gradient-to-r from-white via-green-300 to-emerald-300 bg-clip-text text-transparent'}
-                  initial={{ opacity: 0, y: 50 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2, duration: 0.8 }}
-                >
-                  Empowering
-                </motion.span>
-                <br />
-                <motion.span
-                  className={isLight ? 'text-green-700' : 'bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent'}
-                  initial={{ opacity: 0, y: 50 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4, duration: 0.8 }}
-                >
-                  Tribal Communities
-                </motion.span>
-                <br />
-                <motion.span
-                  className={isLight ? 'text-slate-800' : 'text-white'}
-                  initial={{ opacity: 0, y: 50 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6, duration: 0.8 }}
-                >
-                  Through Technology
-                </motion.span>
-              </h2>
-            </motion.div>
-
-            <motion.div
-              className={`text-xl leading-relaxed max-w-2xl mb-8 ${isLight ? 'text-slate-700' : 'text-green-100'}`}
-              variants={itemVariants}
-            >
-              A revolutionary{" "}
-              <Tooltip content="Web-based Geographic Information System - A platform for displaying, analyzing, and managing spatial data through web browsers">
-                <span className={`${isLight ? 'text-green-700 font-semibold underline decoration-dotted cursor-help' : 'text-green-300 font-semibold underline decoration-dotted cursor-help'}`}>WebGIS</span>
-              </Tooltip>{" "}
-              platform that transforms Forest Rights Act records, maps community assets with{" "}
-              <Tooltip content="Artificial Intelligence algorithms that automatically detect and classify features from satellite images">
-                <span className={`${isLight ? 'text-green-700 font-semibold underline decoration-dotted cursor-help' : 'text-green-300 font-semibold underline decoration-dotted cursor-help'}`}>AI-powered</span>
-              </Tooltip>{" "}
-              satellite imagery, and delivers intelligent decision support for targeted rural development.
-            </motion.div>
-
-            <motion.div
-              className="flex flex-wrap gap-3 mb-12 pr-1"
-              variants={itemVariants}
-            >
-              <MagneticButton
-                onClick={() => router.push('/atlas')}
-                className={`group ${isLight
-                  ? 'bg-green-600 hover:bg-green-700 text-white border-green-700'
-                  : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white border-white/20'
-                  }`}
-              >
-                <div className="flex items-center">
-                  <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform mr-2" />
-                  Explore Atlas
-
-                </div>
-              </MagneticButton>
-
-              <MagneticButton
-                onClick={() => router.push('/contact')}
-                variant={isLight ? "outline" : "secondary"}
-                className={isLight
-                  ? "border-green-600 text-green-700 hover:bg-green-50 hover:border-green-700 hover:text-green-800"
-                  : ""
-                }
-              >
-                <div className="flex items-center">
-                  <Globe size={16} className="mr-2" />
-                  Request Demo
-                </div>
-              </MagneticButton>
-
-              <MagneticButton
-                onClick={() => router.push('/dss')}
-                variant={isLight ? "outline" : "secondary"}
-                className={isLight
-                  ? "border-green-600 text-green-700 hover:bg-green-50 hover:border-green-700 hover:text-green-800"
-                  : ""
-                }
-              >
-                <div className="flex items-center">
-                  <Zap size={16} className="mr-2" />
-                  DSS Features
-                </div>
-              </MagneticButton>
-            </motion.div>
-
-            {/* Stats Cards */}
-            <motion.div
-              className="grid grid-cols-1 md:grid-cols-3 gap-6"
-              variants={containerVariants}
-            >
-              {[
-                { icon: MapPin, title: "Claims", value: claimsTotal, subtitle: "legacy + recent uploads" },
-                { icon: Database, title: "Grants issued", value: claimsGranted, subtitle: "verified & geo-referenced" },
-                { icon: Layers, title: "AI assets", value: 12, subtitle: "ponds, farms, homesteads" }
-              ].map((stat, i) => (
-                <motion.div key={i} variants={itemVariants}>
-                  <GlassCard className={`p-6 ${isLight ? 'bg-white/90 border border-slate-200 text-slate-900 shadow-md' : ''}`}>
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className={`p-2 rounded-xl ${isLight ? 'bg-gradient-to-r from-green-400 to-emerald-400' : 'bg-gradient-to-r from-green-500 to-emerald-500'}`}>
-                        <stat.icon size={20} className="text-white" />
-                      </div>
-                      <h4 className={`font-semibold ${isLight ? 'text-slate-800' : 'text-green-100'}`}>{stat.title}</h4>
-                    </div>
-                    <div className={`text-3xl font-bold mb-1 ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                      <AnimatedCounter value={stat.value} />
-                    </div>
-                    <div className={`text-sm ${isLight ? 'text-green-700' : 'text-green-300'}`}>{stat.subtitle}</div>
-                  </GlassCard>
-                </motion.div>
-              ))}
-            </motion.div>
+          <motion.section className="lg:col-span-7">
+            <StatsGrid isLight={isLight} claimsTotal={claimsTotal} claimsGranted={claimsGranted} containerVariants={containerVariants} itemVariants={itemVariants} />
 
             {/* Problem Section */}
-            <motion.div
-              className="mt-16"
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true }}
-            >
+            <motion.div className="mt-16" initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} viewport={{ once: true }}>
               <GlassCard className={`p-8 ${isLight ? 'bg-gradient-to-r from-amber-100 to-orange-100 border-amber-200 text-amber-900' : 'bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-400/20 text-green-100'}`}>
                 <div className="flex items-center gap-3 mb-4">
                   <Shield size={24} className={isLight ? 'text-amber-600' : 'text-amber-400'} />
@@ -357,149 +177,7 @@ export default function Home() {
             </motion.div>
           </motion.section>
 
-          {/* Right Sidebar */}
-          <motion.aside
-            className="lg:col-span-5"
-            initial={{ opacity: 0, x: 100 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.5, duration: 0.8 }}
-          >
-            <motion.div
-              className="relative"
-              whileHover={{ scale: 1.02 }}
-              transition={{ type: "spring", stiffness: 200 }}
-            >
-              <GlassCard className={`p-8 ${isLight ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 text-slate-900' : 'bg-gradient-to-br from-green-600/20 to-emerald-600/20 border-green-400/30 text-white'}`}>
-                {/* Animated background pattern */}
-                <div className="absolute inset-0 opacity-10">
-                  <div className={`absolute inset-0 ${isLight ? 'bg-gradient-to-r from-green-200/20 to-transparent' : 'bg-gradient-to-r from-green-400/20 to-transparent'} animate-pulse`} />
-                </div>
-
-                <div className="relative z-10 flex flex-col items-center space-y-6 px-4 md:px-0">
-                  {/* Madhya Pradesh silhouette */}
-                  <motion.div
-                    className="mb-4 w-full flex justify-center"
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.8, duration: 0.6 }}
-                  >
-                    <svg
-                      viewBox="0 0 1000 1000"
-                      className="w-56 h-36 rounded-3xl shadow-2xl"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M500,50 L550,150 L600,200 L650,250 L600,300 L550,350 L500,400 L450,350 L400,300 L450,250 L400,200 L450,150 Z"
-                        fill="url(#mpGradient)"
-                        stroke={isLight ? "#059669" : "white"}
-                        strokeWidth="4"
-                      />
-                      <defs>
-                        <linearGradient id="mpGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                          <stop offset="0%" stopColor={isLight ? "#34d399" : "#22c55e"} />
-                          <stop offset="100%" stopColor={isLight ? "#10b981" : "#10b981"} />
-                        </linearGradient>
-                      </defs>
-                    </svg>
-                  </motion.div>
-
-                  {/* Pilot & claims counter */}
-                  <div className="text-center mb-4">
-                    <div className={`text-sm font-medium mb-2 tracking-wide ${isLight ? 'text-green-700' : 'text-green-300'}`}>Pilot: Madhya Pradesh</div>
-                    <div className={`text-4xl md:text-5xl font-extrabold flex justify-center items-center gap-4 ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                      <div className="flex items-center gap-1">
-                        <AnimatedCounter value={claimsTotal} />
-                        <span className={`text-lg md:text-xl font-semibold ${isLight ? 'text-green-700' : 'text-green-300'}`}>claims</span>
-                      </div>
-                      <span className={isLight ? 'text-green-600 font-bold' : 'text-green-500 font-bold'}>•</span>
-                      <div className="flex items-center gap-1">
-                        <AnimatedCounter value={claimsGranted} />
-                        <span className={`text-lg md:text-xl font-semibold ${isLight ? 'text-green-700' : 'text-green-300'}`}>granted</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Stats Cards */}
-                  <div className="w-full max-w-md flex flex-col gap-4">
-                    <GlassCard className={`p-5 backdrop-blur-md rounded-2xl hover:scale-105 transition-transform duration-300 shadow-lg ${isLight ? 'bg-green-50/80 border border-green-200' : 'bg-white/10'}`}>
-                      <div className="flex justify-between items-center">
-                        <span className={isLight ? 'text-green-700 font-medium' : 'text-green-200 font-medium'}>AI-derived ponds:</span>
-                        <span className={`font-bold text-lg ${isLight ? 'text-slate-900' : 'text-white'}`}>412</span>
-                      </div>
-                      <div className="flex justify-between items-center mt-2">
-                        <span className={isLight ? 'text-green-700 font-medium' : 'text-green-200 font-medium'}>Cropland area:</span>
-                        <span className={`font-bold text-lg ${isLight ? 'text-slate-900' : 'text-white'}`}>3,120 ha</span>
-                      </div>
-                    </GlassCard>
-
-                    <GlassCard className={`p-5 backdrop-blur-md rounded-2xl hover:scale-105 transition-transform duration-300 shadow-lg ${isLight ? 'bg-amber-50/80 border border-amber-200' : 'bg-white/10'}`}>
-                      <div className="flex justify-between items-center">
-                        <span className={isLight ? 'text-amber-700 font-medium' : 'text-green-200 font-medium'}>Water index:</span>
-                        <span className={`font-bold text-lg ${isLight ? 'text-amber-600' : 'text-amber-300'}`}>Low</span>
-                      </div>
-                      <div className="flex justify-between items-center mt-2">
-                        <span className={isLight ? 'text-amber-700 font-medium' : 'text-green-200 font-medium'}>Vulnerability score:</span>
-                        <span className={`font-bold text-lg ${isLight ? 'text-red-600' : 'text-red-300'}`}>High</span>
-                      </div>
-                    </GlassCard>
-                  </div>
-                </div>
-              </GlassCard>
-            </motion.div>
-
-            {/* Tech Cards */}
-            <motion.div
-              className="mt-8 space-y-6"
-              variants={containerVariants}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-            >
-              {[
-                {
-                  icon: Satellite,
-                  title: "AI & Remote Sensing",
-                  description: "Semantic segmentation (U-Net/DeepLab), NDVI/NDWI indices, STAC-managed imagery, and active learning to refine asset detection.",
-                  tags: ["Computer Vision", "Satellite Imagery", "Land Classification"],
-                  color: "blue",
-                  tooltip: "Advanced AI techniques for analyzing satellite and aerial imagery to identify and classify land features, water bodies, and vegetation patterns."
-                },
-                {
-                  icon: Server,
-                  title: "Backend & Data Infrastructure",
-                  description: "PostGIS for spatial joins, STAC + Titiler for imagery, GeoServer or vector-tile pipeline for map serving, and FastAPI for DSS microservices.",
-                  tags: ["PostGIS", "STAC", "FastAPI"],
-                  color: "indigo",
-                  tooltip: "Robust server-side architecture for handling spatial data, imagery processing, and delivering map services efficiently."
-                }
-              ].map((tech, i) => (
-                <motion.div key={i} variants={itemVariants}>
-                  <GlassCard className={`p-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
-                    <div className="flex items-center gap-3 mb-3">
-                      <Tooltip content={tech.tooltip} position="top">
-                        <div className={`p-3 rounded-xl bg-gradient-to-r from-${tech.color}-500 to-${tech.color}-600 cursor-help`}>
-                          <tech.icon size={20} className="text-white" />
-                        </div>
-                      </Tooltip>
-                      <h4 className={`font-semibold ${isLight ? 'text-slate-800' : 'text-white'}`}>{tech.title}</h4>
-                    </div>
-                    <div className={`mb-4 leading-relaxed ${isLight ? 'text-slate-700' : 'text-green-100'}`}>{tech.description}</div>
-                    <div className="flex flex-wrap gap-2">
-                      {tech.tags.map((tag, j) => (
-                        <motion.span
-                          key={j}
-                          className={`text-xs px-3 py-1 rounded-full border ${isLight ? `bg-${tech.color}-100 text-${tech.color}-800 border-${tech.color}-200` : `bg-${tech.color}-500/20 text-${tech.color}-300 border-${tech.color}-400/30`}`}
-                          whileHover={{ scale: 1.05 }}
-                        >
-                          {tag}
-                        </motion.span>
-                      ))}
-                    </div>
-                  </GlassCard>
-                </motion.div>
-              ))}
-            </motion.div>
-          </motion.aside>
+          <RightSidebar isLight={isLight} claimsTotal={claimsTotal} claimsGranted={claimsGranted} containerVariants={containerVariants} itemVariants={itemVariants} />
         </div>
 
         {/* OCR Section */}
