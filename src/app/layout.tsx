@@ -135,8 +135,8 @@ export default function RootLayout({
   <html lang="en">
       <head>
         {/* Script runs before hydration to set theme attr */}
-        <link rel="icon" href="/vanmitra.png" />
-        <link rel="apple-touch-icon" href="/vanmitra.png" />
+        <link rel="icon" href="/vanmitra.svg" />
+        <link rel="apple-touch-icon" href="/vanmitra.svg" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         <meta name="theme-color" content="#10b981" />

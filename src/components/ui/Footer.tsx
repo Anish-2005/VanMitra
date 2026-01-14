@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Leaf } from "lucide-react";
 import { useTheme } from "../ThemeProvider";
+import Logo from "./Logo";
 
 const Footer: React.FC = () => {
   const { theme } = useTheme();
@@ -29,16 +30,8 @@ const Footer: React.FC = () => {
         transition={{ type: "spring", stiffness: 200 }}
       >
         <div className="flex items-center gap-3 sm:gap-4">
-          <motion.div
-            className={`h-10 w-10 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden ${
-              isLight
-                ? 'bg-transparent border border-green-200'
-                : 'bg-transparent border border-white/10'
-            }`}
-            whileHover={{ rotate: 360 }}
-            transition={{ duration: 0.6 }}
-          >
-            <img src="/vanmitra.png" alt="VanMitra" className="h-8 w-8 object-contain" />
+          <motion.div className={`h-10 w-10 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden ${isLight ? 'bg-transparent border border-green-200' : 'bg-transparent border border-white/10'}`} whileHover={{ rotate: 360 }} transition={{ duration: 0.6 }}>
+            <Logo size={40} />
           </motion.div>
           <div>
             <div className={`text-base sm:text-lg font-semibold ${
