@@ -10,6 +10,7 @@ import Footer from "@/components/ui/Footer";
 import GlassCard from "@/components/ui/GlassCard";
 import MagneticButton from "@/components/ui/MagneticButton";
 import Link from "next/link";
+import Results from '@/components/dss/Results';
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 // Client-only components to prevent hydration mismatches
@@ -34,6 +35,7 @@ export default function DSSPage() {
   });
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<DSSResponse | null>(null);
+  const resultsRef = useRef<HTMLDivElement | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,6 +88,10 @@ export default function DSSPage() {
           success: true,
           data: data
         });
+        // scroll to results on success
+        setTimeout(() => {
+          try { resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {}
+        }, 120);
       } else if (res.status === 422) {
         const errorData = await res.json();
         setResponse({
@@ -118,6 +124,20 @@ export default function DSSPage() {
     // Clear previous response when user starts typing
     if (response) {
       setResponse(null);
+    }
+  };
+
+  const handleReset = () => {
+    setCoordinates({ latitude: '', longitude: '' });
+    setResponse(null);
+  };
+
+  const handleCopy = async (text?: string) => {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (e) {
+      // ignore
     }
   };
 
@@ -188,30 +208,30 @@ export default function DSSPage() {
                   <span className="font-medium">Decision Support System</span>
                 </motion.div>
 
-                <h2 className="text-5xl lg:text-5xl font-extrabold leading-tight mb-6">
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight mb-4 sm:mb-6">
                   <motion.span
                     className={isLight ? 'text-slate-900' : 'bg-gradient-to-r from-white via-green-300 to-emerald-300 bg-clip-text text-transparent'}
-                    initial={{ opacity: 0, y: 50 }}
+                    initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2, duration: 0.8 }}
+                    transition={{ delay: 0.15, duration: 0.6 }}
                   >
                     Intelligent
                   </motion.span>
                   <br />
                   <motion.span
                     className={isLight ? 'text-green-700' : 'bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent'}
-                    initial={{ opacity: 0, y: 50 }}
+                    initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4, duration: 0.8 }}
+                    transition={{ delay: 0.3, duration: 0.6 }}
                   >
                     Scheme Recommendations
                   </motion.span>
                   <br />
                   <motion.span
                     className={isLight ? 'text-slate-800' : 'text-white'}
-                    initial={{ opacity: 0, y: 50 }}
+                    initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.6, duration: 0.8 }}
+                    transition={{ delay: 0.45, duration: 0.6 }}
                   >
                     for Tribal Communities
                   </motion.span>
@@ -219,43 +239,39 @@ export default function DSSPage() {
               </motion.div>
 
               <motion.div
-                className={`text-xl leading-relaxed max-w-2xl mb-8 ${isLight ? 'text-slate-700' : 'text-green-100'}`}
+                className={`text-base sm:text-lg leading-relaxed max-w-full sm:max-w-2xl mb-6 sm:mb-8 ${isLight ? 'text-slate-700' : 'text-green-100'}`}
                 variants={itemVariants}
               >
-                Get personalized scheme recommendations based on geographical location and community needs.
-                Our AI-powered system analyzes spatial data to suggest the most appropriate development interventions.
+                Get personalized scheme recommendations based on geographical location and community needs. Our AI-powered system analyzes spatial data to suggest the most appropriate development interventions.
               </motion.div>
 
               <motion.div
-                className="flex flex-wrap gap-3 mb-12 pr-1"
+                className="flex flex-col sm:flex-row gap-3 mb-8"
                 variants={itemVariants}
               >
-                <Link href="/dss">
-                <MagneticButton 
-                  
-                  className={`group ${isLight
-                    ? 'bg-green-600 hover:bg-green-700 text-white border-green-700'
-                    : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white border-white/20'
+                <Link href="/dss" className="w-full sm:w-auto">
+                  <MagneticButton
+                    className={`group w-full sm:w-auto ${isLight
+                      ? 'bg-green-600 hover:bg-green-700 text-white border-green-700'
+                      : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white border-white/20'
                     }`}
-                >
-                  <div className="flex items-center">
-                  <ArrowRight size={20} className="mr-2 group-hover:translate-x-1 transition-transform" />
-                  Get Recommendations
-                  </div>
-                </MagneticButton>
+                  >
+                    <div className="flex items-center justify-center">
+                      <ArrowRight size={20} className="mr-2 group-hover:translate-x-1 transition-transform" />
+                      Get Recommendations
+                    </div>
+                  </MagneticButton>
                 </Link>
-                <Link href="/atlas">
+
+                <Link href="/atlas" className="w-full sm:w-auto">
                   <MagneticButton
                     as="a"
                     variant={isLight ? "outline" : "secondary"}
-                    className={isLight
-                      ? "border-green-600 text-green-700 hover:bg-green-50 hover:border-green-700 hover:text-green-800"
-                      : ""
-                    }
+                    className={`w-full sm:w-auto ${isLight ? "border-green-600 text-green-700 hover:bg-green-50 hover:border-green-700 hover:text-green-800" : ""}`}
                   >
-                     <div className="flex items-center">
-                    <MapPin size={16} className="mr-2" />
-                    View Atlas
+                    <div className="flex items-center justify-center">
+                      <MapPin size={16} className="mr-2" />
+                      View Atlas
                     </div>
                   </MagneticButton>
                 </Link>
@@ -273,7 +289,7 @@ export default function DSSPage() {
                 whileHover={{ scale: 1.02 }}
                 transition={{ type: "spring", stiffness: 200 }}
               >
-                <GlassCard className={`p-8 ${isLight ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 text-slate-900' : 'bg-gradient-to-br from-green-600/20 to-emerald-600/20 border-green-400/30 text-white'}`}>
+                <GlassCard className={`p-4 sm:p-6 lg:p-8 lg:sticky lg:top-28 ${isLight ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 text-slate-900' : 'bg-gradient-to-br from-green-600/20 to-emerald-600/20 border-green-400/30 text-white'}`}>
                   <div className="flex items-center gap-3 mb-6">
                     <motion.div
                       className={`p-3 rounded-xl ${isLight ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-to-r from-green-500 to-emerald-500'}`}
@@ -286,66 +302,76 @@ export default function DSSPage() {
                   </div>
 
                   <form onSubmit={handleSubmit} className="space-y-6">
-                    <div>
-                      <label htmlFor="latitude" className={`block text-sm font-medium mb-2 ${isLight ? 'text-green-700' : 'text-green-300'}`}>
-                        Latitude
-                      </label>
-                      <motion.div whileFocus={{ scale: 1.02 }}>
-                        <input
-                          type="number"
-                          id="latitude"
-                          step="any"
-                          value={coordinates.latitude}
-                          onChange={(e) => handleInputChange('latitude', e.target.value)}
-                          placeholder="e.g., 23.2599"
-                          className={`w-full px-4 py-3 rounded-2xl backdrop-blur-sm focus:outline-none focus:ring-2 ${isLight 
-                            ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500' 
-                            : 'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'}`}
-                          required
-                        />
-                      </motion.div>
-                      <p className={`text-xs mt-1 ${isLight ? 'text-green-600' : 'text-green-400'}`}>Range: -90 to 90</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="latitude" className={`block text-sm font-medium mb-2 ${isLight ? 'text-green-700' : 'text-green-300'}`}>
+                          Latitude
+                        </label>
+                          <motion.div whileFocus={{ scale: 1.02 }}>
+                          <input
+                            type="number"
+                            id="latitude"
+                              inputMode="decimal"
+                            step="any"
+                            value={coordinates.latitude}
+                            onChange={(e) => handleInputChange('latitude', e.target.value)}
+                            placeholder="e.g., 23.2599"
+                            className={`w-full px-4 py-3 rounded-2xl backdrop-blur-sm focus:outline-none focus:ring-2 ${isLight 
+                              ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500' 
+                              : 'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'}`}
+                            required
+                          />
+                        </motion.div>
+                        <p className={`text-xs mt-1 ${isLight ? 'text-green-600' : 'text-green-400'}`}>Range: -90 to 90</p>
+                      </div>
+
+                      <div>
+                        <label htmlFor="longitude" className={`block text-sm font-medium mb-2 ${isLight ? 'text-green-700' : 'text-green-300'}`}>
+                          Longitude
+                        </label>
+                          <motion.div whileFocus={{ scale: 1.02 }}>
+                          <input
+                            type="number"
+                            id="longitude"
+                              inputMode="decimal"
+                            step="any"
+                            value={coordinates.longitude}
+                            onChange={(e) => handleInputChange('longitude', e.target.value)}
+                            placeholder="e.g., 77.4126"
+                            className={`w-full px-4 py-3 rounded-2xl backdrop-blur-sm focus:outline-none focus:ring-2 ${isLight 
+                              ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500' 
+                              : 'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'}`}
+                            required
+                          />
+                        </motion.div>
+                        <p className={`text-xs mt-1 ${isLight ? 'text-green-600' : 'text-green-400'}`}>Range: -180 to 180</p>
+                      </div>
                     </div>
 
-                    <div>
-                      <label htmlFor="longitude" className={`block text-sm font-medium mb-2 ${isLight ? 'text-green-700' : 'text-green-300'}`}>
-                        Longitude
-                      </label>
-                      <motion.div whileFocus={{ scale: 1.02 }}>
-                        <input
-                          type="number"
-                          id="longitude"
-                          step="any"
-                          value={coordinates.longitude}
-                          onChange={(e) => handleInputChange('longitude', e.target.value)}
-                          placeholder="e.g., 77.4126"
-                          className={`w-full px-4 py-3 rounded-2xl backdrop-blur-sm focus:outline-none focus:ring-2 ${isLight 
-                            ? 'bg-white border border-slate-300 text-slate-900 placeholder-slate-500 focus:ring-green-500' 
-                            : 'bg-white/10 border border-white/20 text-white placeholder-green-300 focus:ring-green-400'}`}
-                          required
-                        />
-                      </motion.div>
-                      <p className={`text-xs mt-1 ${isLight ? 'text-green-600' : 'text-green-400'}`}>Range: -180 to 180</p>
-                    </div>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <MagneticButton 
+                        type="submit" 
+                        disabled={loading} 
+                        className="w-full sm:flex-1"
+                        variant={isLight ? "primary" : "default"}
+                      >
+                        {loading ? (
+                          <div className="flex items-center justify-center">
+                            <Loader2 size={18} className="animate-spin mr-2" />
+                            Getting Recommendations...
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center">
+                            <BookOpen size={18} className="mr-2" />
+                            Get Scheme Recommendations
+                          </div>
+                        )}
+                      </MagneticButton>
 
-                    <MagneticButton 
-                      type="submit" 
-                      disabled={loading} 
-                      className="w-full"
-                      variant={isLight ? "primary" : "default"}
-                    >
-                      {loading ? (
-                        <div className="flex items-center justify-center">
-                          <Loader2 size={18} className="animate-spin mr-2" />
-                          Getting Recommendations...
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center">
-                          <BookOpen size={18} className="mr-2" />
-                          Get Scheme Recommendations
-                        </div>
-                      )}
-                    </MagneticButton>
+                      <button type="button" onClick={handleReset} className={`w-full sm:w-auto px-4 py-3 rounded-2xl border ${isLight ? 'bg-white text-green-700 border-slate-200' : 'bg-white/5 text-white border-white/10'}`}>
+                        Reset
+                      </button>
+                    </div>
                   </form>
                 </GlassCard>
               </motion.div>
@@ -402,76 +428,9 @@ export default function DSSPage() {
                 Recommendations
               </h3>
 
-              {response === null && !loading && (
-                <motion.div
-                  className="text-center py-12"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                >
-                  <BookOpen className={`mx-auto mb-4 ${isLight ? 'text-green-500' : 'text-green-300'}`} size={48} />
-                  <p className={isLight ? 'text-green-600' : 'text-green-300'}>
-                    Enter coordinates above to get scheme recommendations for that location
-                  </p>
-                </motion.div>
-              )}
-
-              {loading && (
-                <motion.div
-                  className="text-center py-12"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                >
-                  <Loader2 className={`mx-auto animate-spin mb-4 ${isLight ? 'text-green-500' : 'text-green-400'}`} size={48} />
-                  <p className={isLight ? 'text-green-600' : 'text-green-300'}>Analyzing location and generating recommendations...</p>
-                </motion.div>
-              )}
-
-              {response && !loading && (
-                <motion.div
-                  className="space-y-4"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  {response.success ? (
-                    <GlassCard className={`p-6 ${isLight 
-                      ? 'bg-green-50 border border-green-200 text-slate-900' 
-                      : 'bg-green-500/10 border-green-400/30 text-white'}`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${isLight 
-                          ? 'bg-green-100' 
-                          : 'bg-green-500/20'}`}
-                        >
-                          <BookOpen className={isLight ? 'text-green-600' : 'text-green-400'} size={16} />
-                        </div>
-                        <div className="flex-1">
-                          <h4 className={`font-semibold mb-2 ${isLight ? 'text-green-800' : 'text-green-300'}`}>Scheme Recommendation</h4>
-                          <div className={`rounded-md p-4 border ${isLight 
-                            ? 'bg-slate-100 border-green-200 text-slate-800' 
-                            : 'bg-slate-800/50 border-green-400/20 text-white'}`}
-                          >
-                            <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed">{response.data}</pre>
-                          </div>
-                        </div>
-                      </div>
-                    </GlassCard>
-                  ) : (
-                    <GlassCard className={`p-6 ${isLight 
-                      ? 'bg-red-50 border border-red-200 text-slate-900' 
-                      : 'bg-red-500/10 border-red-400/30 text-white'}`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <AlertCircle className={`flex-shrink-0 mt-0.5 ${isLight ? 'text-red-500' : 'text-red-400'}`} size={20} />
-                        <div>
-                          <h4 className={`font-semibold mb-2 ${isLight ? 'text-red-800' : 'text-red-300'}`}>Error</h4>
-                          <p className={isLight ? 'text-red-700' : 'text-red-200'}>{response.error}</p>
-                        </div>
-                      </div>
-                    </GlassCard>
-                  )}
-                </motion.div>
-              )}
+              <div ref={resultsRef}>
+                <Results isLight={isLight} response={response} loading={loading} onCopy={handleCopy} />
+              </div>
             </GlassCard>
           </motion.section>
         </main>
