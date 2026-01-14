@@ -1,16 +1,13 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Users, MapPin, Database, Layers } from "lucide-react";
+import { motion } from "framer-motion";
 import dynamic from 'next/dynamic';
-import Link from "next/link";
-import MapPreview from "../../components/MapPreview";
-import GlassCard from "@/components/ui/GlassCard";
-import AnimatedCounter from "@/components/ui/AnimatedCounter";
+import Header from "@/components/public/Header";
+import MapPanel from "@/components/public/MapPanel";
+import PublicStatsGrid from "@/components/public/PublicStatsGrid";
 import Footer from "@/components/ui/Footer";
 import { useTheme } from "@/components/ThemeProvider";
-import ThemeToggle from "@/components/ui/ThemeToggle";
 
 // Client-only components to prevent hydration mismatches
 const ThreeBackground = dynamic(() => import('@/components/ui/ThreeBackground'), { ssr: false });
@@ -21,35 +18,21 @@ export default function PublicPage() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
   const isLight = mounted && theme === 'light';
-  const [boundarySelection, setBoundarySelection] = useState<"none"|"state"|"district"|"tehsil">("none");
-  const layersBoundaries = (() => {
-    switch (boundarySelection) {
-      case 'state': return 'state';
-      case 'district': return ['state','district'];
-      case 'tehsil': return ['state','district','tehsil'];
-      default: return false;
-    }
-  })();
+  
 
   // dynamic claims stats
   const [claimsData, setClaimsData] = useState<any | null>(null);
-  const [claimsLoading, setClaimsLoading] = useState(false);
-  const [claimsError, setClaimsError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
     const fetchClaims = async () => {
-      setClaimsLoading(true);
-      setClaimsError(null);
       try {
         const res = await fetch('/api/claims?status=all');
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) return;
         const json = await res.json();
         if (mounted) setClaimsData(json);
-      } catch (err: any) {
-        if (mounted) setClaimsError(err?.message || 'Failed to load claims');
-      } finally {
-        if (mounted) setClaimsLoading(false);
+      } catch (err) {
+        // fail silently for public page
       }
     };
     fetchClaims();
@@ -88,161 +71,16 @@ export default function PublicPage() {
         }} />
       </div>
       
-  <header className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <motion.div
-          className="flex items-center gap-3"
-          initial={{ opacity: 0, x: -50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.8 }}
-        >
-          <motion.div
-            className={`h-16 w-16 rounded-2xl flex items-center justify-center border shadow-2xl overflow-hidden ${
-              isLight 
-                ? 'bg-transparent border-green-200' 
-                : 'bg-transparent border-white/20'
-            }`}
-            whileHover={{ scale: 1.05, rotate: 5 }}
-            transition={{ type: "spring", stiffness: 300 }}
-          >
-            <img src="/vanmitra.png" alt="VanMitra" className="h-10 w-10 object-contain" />
-          </motion.div>
-          <Link href="/" className="inline-block">
-            <div className="cursor-pointer">
-              <h1 className={`text-2xl font-bold tracking-tight ${isLight ? 'text-green-800' : 'text-green-200'}`}>VanMitra</h1>
-              <p className={`text-sm ${isLight ? 'text-green-700' : 'text-green-300'}`}>Public map (no PII)</p>
-            </div>
-          </Link>
-        </motion.div>
-        
-        <motion.nav
-          className="flex items-center gap-3 sm:gap-4 mt-3 sm:mt-0"
-          initial={{ opacity: 0, x: 50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-        >
-          <Link href="/" className={`text-sm font-medium px-4 py-2 rounded-xl backdrop-blur-sm border transition-colors ${
-            isLight 
-              ? 'text-green-700 border-green-300 bg-green-50 hover:bg-green-100 hover:text-green-800' 
-              : 'text-green-300 border-white/20 bg-white/10 hover:bg-white/20 hover:text-green-400'
-          }`}>
-            Home
-          </Link>
-          <ThemeToggle />
-        </motion.nav>
-      </header>
+      <Header isLight={isLight} />
 
-  <main className={`relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16 ${isLight ? 'text-slate-900' : 'text-white'}`}>
-        <motion.div
-          className={`rounded-3xl overflow-hidden shadow-2xl border p-8 ${
-            isLight 
-              ? 'bg-white/80 border-green-200/60 backdrop-blur-xl' 
-              : 'bg-white/5 border-white/20 backdrop-blur-xl'
-          }`}
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-        >
-          <motion.div
-            className="text-center mb-8"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-          >
-            <h2 className={`text-2xl sm:text-3xl font-bold mb-2 ${isLight ? 'text-slate-800' : 'text-white'}`}>Public FRA Progress Map</h2>
-            <div className={isLight ? 'text-green-700' : 'text-green-300'}>Public map of FRA progress (aggregated)</div>
-          </motion.div>
+      <main className={`relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+        <div className="space-y-8">
+          <MapPanel isLight={isLight} />
 
-          <motion.div
-            className="mb-8"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
-              <div className={isLight ? 'text-green-700 font-medium' : 'text-green-300 font-medium'}>Interactive Preview</div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
-                <label className={isLight ? 'text-green-700 font-medium' : 'text-green-300 font-medium'}>Boundaries</label>
-                <motion.select
-                  value={boundarySelection}
-                  onChange={(e) => setBoundarySelection(e.target.value as any)}
-                  className={`w-full sm:w-auto rounded-2xl border backdrop-blur-sm px-4 py-2 focus:outline-none focus:ring-2 transition-all duration-300 cursor-pointer appearance-none ${
-                    isLight
-                      ? 'border-green-300 bg-white text-slate-900 placeholder-green-600 focus:ring-green-500 focus:border-green-500 hover:bg-green-50'
-                      : 'border-emerald-700/50 bg-gradient-to-r from-emerald-900/20 to-green-900/20 text-white placeholder-green-300 focus:ring-emerald-400 focus:border-emerald-400 hover:bg-gradient-to-r hover:from-emerald-900/30 hover:to-green-900/30'
-                  }`}
-                  style={{
-                    backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='${
-                      isLight ? '%23059669' : '%236ee7b7'
-                    }' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
-                    backgroundPosition: 'right 0.5rem center',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundSize: '1.5em 1.5em',
-                    paddingRight: '2.5rem'
-                  }}
-                  whileHover={{ scale: 1.02 }}
-                  whileFocus={{ scale: 1.02 }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                >
-                  <option value="none" className={isLight ? 'bg-white text-slate-900' : 'bg-emerald-900 text-white'}>None</option>
-                  <option value="state" className={isLight ? 'bg-white text-slate-900' : 'bg-emerald-900 text-white'}>State</option>
-                  <option value="district" className={isLight ? 'bg-white text-slate-900' : 'bg-emerald-900 text-white'}>District (state + district)</option>
-                  <option value="tehsil" className={isLight ? 'bg-white text-slate-900' : 'bg-emerald-900 text-white'}>Tehsil (state + district + tehsil)</option>
-                </motion.select>
-              </div>
-            </div>
-
-            <div className={`h-[320px] sm:h-[420px] md:h-[520px] rounded-2xl overflow-hidden border ${
-              isLight ? 'border-green-200/60' : 'border-white/20'
-            }`}>
-              <MapPreview layers={{ boundaries: layersBoundaries }} />
-            </div>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+            <PublicStatsGrid totalClaims={totalClaims} grantedCount={grantedCount} uniqueVillages={uniqueVillages} isLight={isLight} />
           </motion.div>
-
-          <motion.div
-            className="grid grid-cols-1 md:grid-cols-3 gap-6"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1, staggerChildren: 0.2 }}
-          >
-            {[
-              { icon: MapPin, title: "Claims processed", value: totalClaims, loading: claimsLoading, error: claimsError },
-              { icon: Database, title: "Granted", value: grantedCount, loading: claimsLoading, error: claimsError },
-              { icon: Layers, title: "Villages covered", value: uniqueVillages, loading: claimsLoading, error: claimsError }
-            ].map((stat, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1 + i * 0.2 }}
-                whileHover={{ scale: 1.05 }}
-              >
-                <GlassCard className="p-4 sm:p-6 text-center">
-                  <div className="flex items-center justify-center gap-3 mb-4">
-                    <div className="p-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500">
-                      <stat.icon size={24} className="text-white" />
-                    </div>
-                  </div>
-                  <div className={`text-sm sm:text-base font-medium mb-2 ${isLight ? 'text-green-700' : 'text-green-300'}`}>{stat.title}</div>
-                  <div className={`text-2xl sm:text-3xl font-bold mb-1 ${isLight ? 'text-slate-800' : 'text-white'}`}>
-                    {stat.loading ? (
-                      <motion.div
-                        animate={{ opacity: [0.5, 1, 0.5] }}
-                        transition={{ duration: 1.5, repeat: Infinity }}
-                        className={isLight ? 'text-slate-600' : 'text-green-300'}
-                      >
-                        Loading…
-                      </motion.div>
-                    ) : stat.error ? (
-                      <span className={isLight ? 'text-red-600' : 'text-red-400'}>—</span>
-                    ) : (
-                      <AnimatedCounter value={stat.value} />
-                    )}
-                  </div>
-                </GlassCard>
-              </motion.div>
-            ))}
-          </motion.div>
-        </motion.div>
+        </div>
       </main>
       <Footer />
     </div>

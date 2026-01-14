@@ -4,7 +4,7 @@ Rich README with a compact UI layout, feature tables, and clear run/dev instruct
 ------------------------------------------------->
 
 <div align="center">
-  <img src="./public/vanmitra.png" alt="VanMitra" width="120" style="border-radius:16px; box-shadow: 0 12px 30px rgba(6,95,70,0.12);"/>
+  <img src="./public/vanmitra.svg" alt="VanMitra" width="120" style="border-radius:16px; box-shadow: 0 12px 30px rgba(6,95,70,0.12);"/>
 
   <h1 style="margin:8px 0 0; font-size:40px;">VanMitra</h1>
   <p style="margin:6px 0 10px; color:#14532d; font-size:16px;">Forest Rights & Asset Mapping — a modern platform for claims, atlas maps, OCR extraction and decision support.</p>
