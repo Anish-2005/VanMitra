@@ -15,7 +15,7 @@ export default function AdminHeader({
   isLight?: boolean;
 }) {
   return (
-    <header className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8">
+      <header className={`relative z-10 w-full max-w-full 2xl:max-w-full mx-auto px-2 sm:px-4 md:px-8 pt-8 pb-16 ${isLight ? 'text-slate-900' : 'text-white'}`}>
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
         {/* Left: Logo + Title */}
         <div className="flex items-center gap-3">

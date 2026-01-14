@@ -122,9 +122,11 @@ export default function AdminPage() {
         </div>
 
 
-  <AdminHeader title="Admin Dashboard" subtitle="Manage uploads, verification, users & system status" isLight={isLight} />
+        <AdminHeader title="Admin Dashboard" subtitle="Manage uploads, verification, users & system status" isLight={isLight} />
 
-        <main className="relative z-10 max-w-7xl mx-auto px-6 py-8">
+
+        <main className={`relative z-10 w-full max-w-full 2xl:max-w-full mx-auto px-2 sm:px-4 md:px-8 lg:px-12  ${isLight ? 'text-slate-900' : 'text-white'}`}>
+
           <section className="mb-8">
             {error && (
               <div className={`mb-4 p-4 rounded-md ${isLight ? 'bg-red-50 border border-red-200 text-red-800' : 'bg-red-900/30 border-red-700 text-red-200'}`}>
