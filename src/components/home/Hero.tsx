@@ -16,7 +16,7 @@ type Props = {
 
 export default function Hero({ isLight, router, containerVariants, itemVariants }: Props) {
   return (
-    <motion.section className="lg:col-span-7" variants={containerVariants} initial="hidden" animate="visible">
+    <motion.div variants={containerVariants} initial="hidden" animate="visible">
       <motion.div variants={itemVariants}>
         <motion.div
           className={`inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 ${isLight ? 'bg-green-100 border border-green-200 text-green-800' : 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/30 text-green-300'}`}
@@ -54,6 +54,6 @@ export default function Hero({ isLight, router, containerVariants, itemVariants 
           <div className="flex items-center"><Zap size={16} className="mr-2" />DSS Features</div>
         </MagneticButton>
       </motion.div>
-    </motion.section>
+    </motion.div>
   );
 }

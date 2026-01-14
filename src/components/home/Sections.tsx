@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import GlassCard from "@/components/ui/GlassCard";
 import { FileText, Globe, Cpu, BarChart3, Target, Users } from "lucide-react";
 import Tooltip from "@/components/ui/Tooltip";
+import MagneticButton from "../ui/MagneticButton";
 
 type Props = {
   isLight: boolean;
