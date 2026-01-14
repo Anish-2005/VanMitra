@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from 'next/link';
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Leaf, Menu, X, Map, FileText, BarChart3, Globe, LayoutDashboard, Sparkles } from "lucide-react";
+import { Leaf, Menu, X, Map, FileText, BarChart3, Globe, LayoutDashboard, Mail } from "lucide-react";
 import { useAuth } from "../AuthProvider";
 import { signOut, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "@/lib/firebase";
@@ -13,6 +13,7 @@ import GlassCard from "./GlassCard";
 import { useTheme } from "../ThemeProvider";
 import ThemeToggle from "./ThemeToggle";
 import Logo from "./Logo";
+import NavBrand from './NavBrand';
 
 const Navbar: React.FC = () => {
   const router = useRouter();
@@ -115,7 +116,8 @@ const Navbar: React.FC = () => {
     { name: "OCR", icon: FileText, route: "/ocr" },
     { name: "DSS", icon: BarChart3, route: "/dss" },
     { name: "Public Data", icon: Globe, route: "/public" },
-    { name: "Dashboard", icon: LayoutDashboard, route: "/dashboard" }
+    { name: "Dashboard", icon: LayoutDashboard, route: "/dashboard" },
+    { name: "Contact", icon: Mail, route: "/contact" }
   ];
 
   // Navigation function for routing to specific pages
@@ -131,51 +133,12 @@ const Navbar: React.FC = () => {
     <>
       {/* Header */}
       <motion.header
-        className="relative z-20 max-w-7xl mx-auto px-6 pt-8 flex items-center justify-between"
+        className="relative z-20 max-w-8xl mx-auto px-6 pt-8 flex items-center justify-between"
         initial={{ y: -100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: "spring", stiffness: 100, damping: 20 }}
       >
-        {/* Logo/Brand */}
-        <motion.div
-          className="flex items-center gap-4"
-          whileHover={{ scale: 1.02 }}
-          transition={{ type: "spring", stiffness: 300 }}
-        >
-          <motion.div className={`relative h-14 w-14 rounded-2xl flex items-center justify-center overflow-hidden `}>
-            <Logo size={48} />
-          </motion.div>
-          <Link href="/">
-            <div>
-              <motion.h1
-              className="text-2xl font-bold tracking-tight"
-              style={{
-                backgroundImage: isLight
-                  ? 'linear-gradient(135deg, #059669, #047857)'
-                  : 'linear-gradient(to right, white, #a7f3d0, #6ee7b7)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                color: 'transparent'
-              }}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              VanMitra
-            </motion.h1>
-            <motion.p
-              className="text-sm font-medium"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-              style={isLight ? { color: '#059669' } : { color: 'var(--primary-300)' }}
-            >
-              Forest Rights & Asset Mapping Platform
-            </motion.p>
-            </div>
-          </Link>
-        </motion.div>
+        <NavBrand isLight={isLight} />
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-2">
@@ -280,73 +243,67 @@ const Navbar: React.FC = () => {
             className="md:hidden fixed inset-0 z-30"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
           >
-            {/* Backdrop */}
             <motion.div
               className="absolute inset-0 backdrop-blur-sm"
               style={isLight
                 ? { background: 'linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(240,253,244,0.6))' }
                 : { background: 'linear-gradient(to bottom, rgba(9, 55, 42, 0.8), rgba(18, 139, 107, 0.6))' }
               }
-
               onClick={onMobileMenuToggle}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             />
 
-            {/* Sidebar */}
             <motion.aside
               className="absolute top-0 right-0 w-80 h-full backdrop-blur-xl shadow-2xl"
               style={isLight
                 ? { background: 'linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(155, 204, 170, 0.6))' }
                 : { background: 'linear-gradient(to bottom, rgba(10, 38, 30, 0.8), rgba(11, 84, 36, 0.6))' }
               }
-
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             >
-              {/* Header */}
-              <div className="p-6" style={isLight ? { borderBottom: '1px solid rgba(0,0,0,0.06)' } : { borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                <motion.div
-                  className="flex items-center gap-3"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 }}
-                >
+              <motion.nav
+              className="flex flex-col gap-2 p-6"
+              initial="hidden"
+              animate="visible"
+              variants={{
+                hidden: { opacity: 0 },
+                visible: {
+                  opacity: 1,
+                  transition: {
+                    staggerChildren: 0.1,
+                    delayChildren: 0.2
+                  }
+                }
+              }}
+            >
+              <motion.div
+                className="flex items-center justify-between mb-4 w-full"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.05 }}
+              >
+                <div className="flex items-center gap-3">
                   <motion.div
                     className="h-10 w-10 rounded-xl flex items-center justify-center shadow-lg"
                     style={isLight ? { background: 'linear-gradient(135deg, #10b981, #059669)' } : { background: 'linear-gradient(135deg,var(--primary-500),var(--primary-600))' }}
-                    whileHover={{ scale: 1.05, rotate: 5 }}
                   >
-                    <Leaf className="" size={20} style={{ color: 'white' }} />
+                    <Leaf size={18} className="text-white" />
                   </motion.div>
                   <div>
-                    <h2 className="text-lg font-bold" style={isLight ? { color: '#064e3b' } : { color: 'var(--foreground)' }}>VanMitra</h2>
-                    <p className="text-xs" style={isLight ? { color: '#059669' } : { color: 'var(--primary-300)' }}>Navigation</p>
+                    <div className={`font-bold ${isLight ? 'text-green-900' : 'text-white'}`}>VanMitra</div>
+                    <div className={`text-xs ${isLight ? 'text-green-600' : 'text-green-300'}`}>Navigation</div>
                   </div>
-                </motion.div>
-              </div>
-
-              {/* Navigation Items */}
-              <motion.nav
-                className="flex flex-col gap-2 p-6"
-                initial="hidden"
-                animate="visible"
-                variants={{
-                  hidden: { opacity: 0 },
-                  visible: {
-                    opacity: 1,
-                    transition: {
-                      staggerChildren: 0.1,
-                      delayChildren: 0.2
-                    }
-                  }
-                }}
-              >
+                </div>
+                <div>
+                  <ThemeToggle />
+                </div>
+              </motion.div>
                 {navigationItems.map((item, index) => (
                   <motion.button
                     key={item.name}
@@ -403,27 +360,14 @@ const Navbar: React.FC = () => {
                   </motion.button>
                 ))}
 
-                {/* Mobile Theme Toggle */}
-                {/* Mobile Theme Toggle */}
-                <motion.div
-                  className={`mt-6 p-4 rounded-2xl shadow-inner border flex flex-col items-center gap-3 ${isLight
-                      ? "bg-white/60 border-green-200"
-                      : "bg-white/5 border-white/10"
-                    }`}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 1 }}
-                >
-                  
-                  <ThemeToggle />
-                </motion.div>
+                {/* Mobile Theme Toggle moved to header */}
 
               </motion.nav>
               
 
-              {/* User Section */}
+              {/* User Section: simplified to only sign in / sign out button */}
               <motion.div
-                className={`absolute bottom-0 left-0 right-0 p-6 border-t ${isLight ?
+                className={`absolute bottom-0 left-0 right-0 p-6 border-t flex items-center justify-center ${isLight ?
                   'border-green-100 bg-gradient-to-t from-white/20 to-transparent' :
                   'border-white/10 bg-gradient-to-t from-black/20 to-transparent'
                   }`}
@@ -432,72 +376,32 @@ const Navbar: React.FC = () => {
                 transition={{ delay: 0.8 }}
               >
                 {user ? (
-                  <div className="space-y-4">
-                    {/* User Info */}
-                    <motion.div
-                      className={`flex items-center gap-3 p-3 rounded-xl border ${isLight ?
-                        'bg-green-50 border-green-200' :
-                        'bg-white/5 border-white/10'
-                        }`}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.9 }}
-                    >
-                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center">
-                        <span className="text-white font-semibold text-sm">
-                          {user.email?.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={`font-medium text-sm truncate ${isLight ? 'text-green-900' : 'text-white'}`}>
-                          {user.email?.split('@')[0]}
-                        </p>
-                        <p className={isLight ? 'text-green-600 text-xs' : 'text-green-300 text-xs'}>Signed in</p>
-                      </div>
-                    </motion.div>
-
-                    {/* Sign Out Button */}
-                    <MagneticButton
-                      onClick={() => {
-                        handleSignOut();
-                        onMobileMenuToggle();
-                      }}
-                      className={`w-full font-semibold rounded-xl shadow-lg hover:shadow-2xl border ${isLight ?
-                        'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-400 hover:to-orange-400 text-white border-red-300' :
-                        'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-400 hover:to-orange-400 text-white border-white/20'
-                        }`}
-                    >
-                      Sign out
-                    </MagneticButton>
-                  </div>
+                  <MagneticButton
+                    onClick={() => {
+                      handleSignOut();
+                      onMobileMenuToggle();
+                    }}
+                    className={`w-full font-semibold rounded-xl shadow-lg hover:shadow-2xl border ${isLight ?
+                      'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-400 hover:to-orange-400 text-white border-red-300' :
+                      'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-400 hover:to-orange-400 text-white border-white/20'
+                      }`}
+                  >
+                    Sign out
+                  </MagneticButton>
                 ) : (
-                  <div className="space-y-4">
-                    <motion.div
-                      className="text-center"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.9 }}
-                    >
-                      <p className={isLight ? 'text-green-700 text-sm mb-4' : 'text-green-300 text-sm mb-4'}>
-                        Access all features by signing in
-                      </p>
-                    </motion.div>
-
-                    <MagneticButton
-                      onClick={() => {
-                        handleSignIn();
-                        onMobileMenuToggle();
-                      }}
-                      className={`w-full font-semibold rounded-xl shadow-lg hover:shadow-2xl border ${isLight ?
-                        'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white border-green-300' :
-                        'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white border-white/20'
-                        }`}
-                    >
-                      Sign in
-                    </MagneticButton>
-                  </div>
+                  <MagneticButton
+                    onClick={() => {
+                      handleSignIn();
+                      onMobileMenuToggle();
+                    }}
+                    className={`w-full font-semibold rounded-xl shadow-lg hover:shadow-2xl border ${isLight ?
+                      'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white border-green-300' :
+                      'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white border-white/20'
+                      }`}
+                  >
+                    Sign in
+                  </MagneticButton>
                 )}
-                
               </motion.div>
             </motion.aside>
           </motion.div>
@@ -543,7 +447,7 @@ const Navbar: React.FC = () => {
                     className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-600 mb-4"
                     whileHover={{ scale: 1.05, rotate: 5 }}
                   >
-                    <img src="/vanmitra.png" alt="VanMitra" className="h-10 w-10 object-contain" />
+                    <img src="/vanmitra.svg" alt="VanMitra" className="h-10 w-10 object-contain" />
                   </motion.div>
                   <h3 className={`text-2xl font-bold mb-2 ${isLight ? 'text-green-900' : 'text-white'}`}>Welcome Back</h3>
                   <p className={isLight ? 'text-green-700' : 'text-green-300'}>Sign in to access VanMitra</p>
