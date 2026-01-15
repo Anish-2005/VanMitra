@@ -6,9 +6,11 @@ const bundleAnalyzer = withBundleAnalyzer({
 });
 
 const nextConfig: NextConfig = {
+  reactStrictMode: true,
   eslint: {
     ignoreDuringBuilds: false,
   },
+  productionBrowserSourceMaps: false,
   typescript: {
     ignoreBuildErrors: false,
   },

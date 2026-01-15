@@ -2,7 +2,8 @@ const CACHE_NAME = 'vanmitra-v1'
 const STATIC_CACHE_URLS = [
   '/',
   '/globals.css',
-  '/vanmitra.svg'
+  '/vanmitra.svg',
+  '/offline.html'
 ]
 
 self.addEventListener('install', (event) => {
@@ -63,6 +64,12 @@ self.addEventListener('fetch', (event) => {
             })
           }
           return response
+        }).catch(() => {
+          // If navigation request fails (offline), serve offline.html fallback
+          if (event.request.mode === 'navigate') {
+            return caches.match('/offline.html');
+          }
+          return caches.match(event.request);
         })
       })
     )

@@ -18,18 +18,18 @@ import Link from "next/link";
 import GlassCard from "@/components/ui/GlassCard";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/components/AuthProvider";
-import { signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+// Lazy-load firebase auth to avoid bundling it in initial client JS
 import { GISLayer, GISMarker, WebGISRef } from "../../components/WebGIS";
 import { createGeoJSONPoint, exportToGeoJSON } from "../../lib/gis-utils";
 import KPISection from "../../components/dashboard/KPISection";
 import QuickActionsSection from "../../components/dashboard/QuickActionsSection";
 import RecentActivitySection from "../../components/dashboard/RecentActivitySection";
 import SystemStatusSection from "../../components/dashboard/SystemStatusSection";
-import DataVisualizationSection from "../../components/dashboard/DataVisualizationSection";
 import WelcomeSection from "../../components/dashboard/WelcomeSection";
-import MapSection from "../../components/dashboard/MapSection";
-import PlatformOverviewSection from "../../components/dashboard/PlatformOverviewSection";
+
+const DataVisualizationSection = dynamic(() => import('../../components/dashboard/DataVisualizationSection'));
+const PlatformOverviewSection = dynamic(() => import('../../components/dashboard/PlatformOverviewSection'));
+const MapSection = dynamic(() => import('../../components/dashboard/MapSection'), { ssr: false, loading: () => <div className="w-full h-96 bg-gray-100 dark:bg-gray-800 rounded-lg" /> });
 import DashboardLoadingState from "../../components/dashboard/DashboardLoadingState";
 import RecommendationModal from "../../components/dashboard/RecommendationModal";
 
@@ -131,7 +131,15 @@ export default function Dashboard() {
   }, []);
 
   const handleLogout = async () => {
-    await signOut(auth);
+    try {
+      const [{ signOut }, { auth }] = await Promise.all([
+        import('firebase/auth'),
+        import('@/lib/firebase')
+      ]);
+      await signOut(auth);
+    } catch (err) {
+      console.error('Logout failed', err);
+    }
   };
 
   const filtered = useMemo(() => {
