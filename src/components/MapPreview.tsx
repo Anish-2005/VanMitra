@@ -38,6 +38,9 @@ export default function MapPreview({
   const ref = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any | null>(null);
   const createdMarkers = useRef<any[]>([]);
+  // Precompute stable keys for complex dependencies
+  const centerKey = JSON.stringify(center);
+  const markersKey = JSON.stringify(markers.map((m: any) => [m.lng, m.lat]));
   const createdSources = useRef<Record<string, boolean>>({});
   const createdLayers = useRef<Record<string, boolean>>({});
   const pointerMarkerRef = useRef<any | null>(null);
@@ -45,6 +48,7 @@ export default function MapPreview({
   const prevLayers = useRef<any>({ ...layers });
 
   // initialize map and load maplibre once
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const cssId = "maplibre-css";
     if (!document.getElementById(cssId)) {
@@ -527,6 +531,10 @@ export default function MapPreview({
     if ((window as any).maplibregl) init();
     else if (script) script.addEventListener('load', init);
 
+    // Capture current created layer/source keys for safe cleanup
+    const createdLayerKeys = Object.keys(createdLayers.current);
+    const createdSourceKeys = Object.keys(createdSources.current);
+
     return () => {
       try {
         // remove markers
@@ -535,10 +543,10 @@ export default function MapPreview({
         // remove any created layers and sources and destroy map
         const map = mapRef.current;
         if (map) {
-          Object.keys(createdLayers.current).forEach((id) => {
+          createdLayerKeys.forEach((id) => {
             try { if (map.getLayer(id)) map.removeLayer(id); } catch {}
           });
-          Object.keys(createdSources.current).forEach((id) => {
+          createdSourceKeys.forEach((id) => {
             try { if (map.getSource(id)) map.removeSource(id); } catch {}
           });
           try { if (map.remove) map.remove(); } catch {}
@@ -546,10 +554,12 @@ export default function MapPreview({
       } catch {}
       if (appended && script && script.parentNode) script.parentNode.removeChild(script);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(center), zoom, JSON.stringify(markers), showCenterMarker]);
+  }, [centerKey, zoom, markersKey, showCenterMarker, layersKey, onFeatureClick]);
 
   // dynamic layer diff
+  const layersKey = JSON.stringify(layers);
+  // Intentionally run this effect when `layersKey` changes; internals manage map mutations.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -681,7 +691,7 @@ export default function MapPreview({
     if (prev.assets !== want.assets) { if (want.assets) ensureAdded('assets', '/api/atlas/assets', 'circle'); else removeLayer('assets'); }
 
     prevLayers.current = { ...want };
-  }, [JSON.stringify(layers)]);
+  }, [layersKey]);
 
   // center/zoom/markers reactive
   useEffect(() => {
@@ -712,7 +722,7 @@ export default function MapPreview({
           } catch  {}
       });
     } catch {}
-  }, [JSON.stringify(center), zoom, JSON.stringify(markers.map((m: any) => [m.lng, m.lat])), showCenterMarker]);
+  }, [centerKey, zoom, markersKey, showCenterMarker]);
 
   return <div ref={ref} className="w-full h-full rounded-3xl overflow-hidden bg-emerald-900/95 border border-emerald-700/50 backdrop-blur-sm shadow-2xl" />;
 }

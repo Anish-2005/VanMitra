@@ -200,13 +200,14 @@ const ThreeBackground: React.FC<ThreeBackgroundProps> = ({ className = "" }) => 
 
       window.addEventListener('resize', handleResize);
 
+      const mountEl = mountRef.current;
       return () => {
         window.removeEventListener('resize', handleResize);
         if (frameRef.current) {
           cancelAnimationFrame(frameRef.current);
         }
-        if (rendererRef.current && mountRef.current) {
-          mountRef.current.removeChild(rendererRef.current.domElement);
+        if (rendererRef.current && mountEl) {
+          mountEl.removeChild(rendererRef.current.domElement);
         }
         if (rendererRef.current) {
           rendererRef.current.dispose();

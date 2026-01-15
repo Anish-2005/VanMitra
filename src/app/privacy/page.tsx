@@ -30,7 +30,7 @@ export default function Privacy() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [user, setUser] = useState<{ email: string } | null>(null);
+  const [, setUser] = useState<{ email: string } | null>(null);
 
   const { scrollYProgress } = useScroll();
 

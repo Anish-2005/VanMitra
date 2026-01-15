@@ -112,11 +112,12 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
   const [mapLoaded, setMapLoaded] = useState(false)
   const [mapError, setMapError] = useState<string | null>(null)
   const [isLoadingData, setIsLoadingData] = useState(false)
-  // Draggable marker state
-  const [draggedMarker, setDraggedMarker] = useState<string | null>(null)
-  const [isDragging, setIsDragging] = useState(false)
+  // Draggable marker state (track setters only — values used elsewhere via refs)
+  const [, setDraggedMarker] = useState<string | null>(null)
+  const [, setIsDragging] = useState(false)
 
   // Initialize map
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!mapContainer.current) return
 
@@ -237,7 +238,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
         map.current.remove()
       }
     }
-  }, [])
+  }, [baseRasterTiles, baseRasterAttribution, JSON.stringify(center), onMapClick, zoom])
 
   // Update map center and zoom
   useEffect(() => {
@@ -482,19 +483,17 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
               map.current.moveLayer(subFill)
             }
           }
-        } catch (e) { }
+        } catch { }
 
         try {
           if (map.current.getLayer(subLayer)) {
             if (anchor && anchor.id) {
-              // @ts-ignore
               map.current.moveLayer(subLayer, anchor.id)
             } else {
-              // @ts-ignore
               map.current.moveLayer(subLayer)
             }
           }
-        } catch (e) { }
+        } catch { }
 
         try {
           // Place outline ABOVE the anchor so users can click thin boundary lines even when other
@@ -505,19 +504,15 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
               const idx = styleLayers.findIndex((l: any) => l.id === anchor.id)
               const nextLayer = idx >= 0 ? styleLayers[idx + 1]?.id : undefined
               try {
-                // @ts-ignore
                 if (nextLayer) map.current.moveLayer(subOutline, nextLayer)
                 else map.current.moveLayer(subOutline)
               } catch  {
                 // fallback to moving to top
                 try {
-                  // @ts-ignore
                   map.current.moveLayer(subOutline)
                 } catch  { }
               }
             } else {
-              // fallback: move outline to top
-              // @ts-ignore
               map.current.moveLayer(subOutline)
             }
           }
@@ -547,7 +542,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
     } catch {
       /* ignore */
     }
-  }, [currentLayers, mapLoaded])
+  }, [currentLayers, mapLoaded, addLayerFromSource])
 
   const addLayerFromSource = (layer: GISLayer, sourceId: string, layerId: string) => {
     if (!map.current) return
@@ -582,7 +577,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
             }
             try {
               map.current.moveLayer(layerConfig.id)
-            } catch (e) { }
+            } catch { }
           } catch (error) {
             console.error("Error adding circle layer", layerConfig.id, ":", error)
           }
@@ -635,7 +630,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
 
             map.current.on("move", updateFn)
             map.current.on("zoom", updateFn)
-              ; (map.current as any)._pointLayerHandlers[layerConfig.id] = updateFn
+            (map.current as any)._pointLayerHandlers[layerConfig.id] = updateFn;
 
             // initialize immediately
             updateFn()
@@ -654,8 +649,8 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
               map.current!.addLayer(layerConfig as any)
             }
             try {
-              map.current!.moveLayer(layerConfig.id)
-            } catch (e) { }
+              map.current.moveLayer(layerConfig.id)
+            } catch { }
           } catch (error) {
             console.error("Error adding line layer", layerConfig.id, ":", error)
           }
@@ -1175,31 +1170,31 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
 
       // Add drag event handlers for the marker (only for claim-area-center)
       if (marker.id === "claim-area-center") {
-        ; (mapMarker as any).on("dragstart", () => {
+        (mapMarker as any).on("dragstart", () => {
           setDraggedMarker(marker.id)
           setIsDragging(true)
-          map.current!.getCanvas().style.cursor = "grabbing"
-            ; (map.current as any).dragPan.disable() // Disable map dragging while dragging marker
+          if (map.current) map.current.getCanvas().style.cursor = "grabbing"
+          if ((map.current as any).dragPan && (map.current as any).dragPan.disable) (map.current as any).dragPan.disable()
         })
 
-          ; (mapMarker as any).on("drag", () => {
-            // Update cursor during drag
-            map.current!.getCanvas().style.cursor = "grabbing"
-          })
+        (mapMarker as any).on("drag", () => {
+          // Update cursor during drag
+          if (map.current) map.current.getCanvas().style.cursor = "grabbing"
+        })
 
-          ; (mapMarker as any).on("dragend", (e: any) => {
-            console.log("Marker dragend event:", marker.id, e.target.getLngLat())
-            setDraggedMarker(null)
-            setIsDragging(false)
-            map.current!.getCanvas().style.cursor = ""
-              ; (map.current as any).dragPan.enable() // Re-enable map dragging
+        (mapMarker as any).on("dragend", (e: any) => {
+          console.log("Marker dragend event:", marker.id, e.target.getLngLat())
+          setDraggedMarker(null)
+          setIsDragging(false)
+          if (map.current) map.current.getCanvas().style.cursor = ""
+          if ((map.current as any).dragPan && (map.current as any).dragPan.enable) (map.current as any).dragPan.enable()
 
-            // If this is the claim area marker, update the claim area center
-            if (marker.id === "claim-area-center" && onMapClick) {
-              console.log("Calling onMapClick with:", e.target.getLngLat())
-              onMapClick(e.target.getLngLat())
-            }
-          })
+          // If this is the claim area marker, update the claim area center
+          if (marker.id === "claim-area-center" && onMapClick) {
+            console.log("Calling onMapClick with:", e.target.getLngLat())
+            onMapClick(e.target.getLngLat())
+          }
+        })
       } newCreatedMarkers.push(mapMarker)
     })
 
@@ -1266,14 +1261,14 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
 
     if (map.current) {
       try {
-        ; (map.current as any)._markerZoomHandler && map.current.off("move", (map.current as any)._markerZoomHandler)
+        if ((map.current as any)._markerZoomHandler) map.current.off("move", (map.current as any)._markerZoomHandler)
       } catch { }
       try {
-        ; (map.current as any)._markerZoomHandler && map.current.off("zoom", (map.current as any)._markerZoomHandler)
+        if ((map.current as any)._markerZoomHandler) map.current.off("zoom", (map.current as any)._markerZoomHandler)
       } catch { }
       map.current.on("move", updateMarkerSizes)
       map.current.on("zoom", updateMarkerSizes)
-        ; (map.current as any)._markerZoomHandler = updateMarkerSizes
+      (map.current as any)._markerZoomHandler = updateMarkerSizes
       updateMarkerSizes()
     }
 
@@ -1286,7 +1281,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
         }
       } catch { }
     }
-  }, [markers, mapLoaded])
+  }, [markers, mapLoaded, onMapClick])
   const startMeasurement = useCallback(() => {
     if (externalStartMeasurement) {
       externalStartMeasurement()
@@ -1462,7 +1457,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
         console.log("Map style loaded:", !!map.current?.getStyle())
 
         // Add a simple marker to verify map is working
-        const marker = new maplibregl.Marker({ color: "#ff0000" }) // Red marker
+        new maplibregl.Marker({ color: "#ff0000" }) // Red marker
           .setLngLat([77.209, 28.6139]) // Delhi coordinates as example
           .addTo(map.current!)
 

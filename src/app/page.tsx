@@ -41,13 +41,13 @@ export default function Home() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [user, setUser] = useState<{ email: string } | null>(null);
+  const [, setUser] = useState<{ email: string } | null>(null);
 
   // Mock data - replace with real API calls
-  const [claimsSummaryLoading, setClaimsSummaryLoading] = useState(false);
+  const [, setClaimsSummaryLoading] = useState(false);
   const [claimsTotal, setClaimsTotal] = useState(20);
   const [claimsGranted, setClaimsGranted] = useState(3);
-  const [claimsError, setClaimsError] = useState<string | null>(null);
+  const [, setClaimsError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
