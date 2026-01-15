@@ -7,11 +7,13 @@ import Script from "next/script";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -134,13 +136,18 @@ export default function RootLayout({
   return (
   <html lang="en">
       <head>
-        {/* Script runs before hydration to set theme attr */}
-        <link rel="icon" href="/vanmitra.svg" />
-        <link rel="apple-touch-icon" href="/vanmitra.svg" />
-        <link rel="manifest" href="/manifest.json" />
+        {/* Preload critical resources */}
+        <link rel="preload" href="/vanmitra.svg" as="image" type="image/svg+xml" />
+        <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+        <link rel="dns-prefetch" href="//fonts.gstatic.com" />
+        
+        {/* Performance hints */}
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         <meta name="theme-color" content="#10b981" />
         <link rel="canonical" href="https://vanmitra.vercel.app" />
+        <link rel="icon" href="/vanmitra.svg" />
+        <link rel="apple-touch-icon" href="/vanmitra.svg" />
+        <link rel="manifest" href="/manifest.json" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <Script

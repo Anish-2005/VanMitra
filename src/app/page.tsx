@@ -15,7 +15,6 @@ import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import Navbar from "@/components/ui/Navbar";
 import Footer from "@/components/ui/Footer";
-import ThreeBackground from "@/components/ui/ThreeBackground";
 import GlassCard from "@/components/ui/GlassCard";
 import MagneticButton from "@/components/ui/MagneticButton";
 import Tooltip from "@/components/ui/Tooltip";
@@ -25,6 +24,12 @@ import StatsGrid from "@/components/home/StatsGrid";
 import RightSidebar from "@/components/home/RightSidebar";
 import Sections from "@/components/home/Sections";
 import LoginModal from "@/components/home/LoginModal";
+
+// Dynamically import heavy components to reduce initial bundle size
+const ThreeBackground = dynamic(() => import('@/components/ui/ThreeBackground'), {
+  ssr: false,
+  loading: () => null
+});
 
 // Client-only components to prevent hydration mismatches
 const DecorativeElements = dynamic(() => import('@/components/ui/DecorativeElements'), { ssr: false });

@@ -11,21 +11,30 @@ import { Layers, Ruler, Download, MapPin, Copy, ZoomIn, FileDown, Plus, Filter }
 import dynamicImport from "next/dynamic"
 import DecorativeBackground from "@/components/ui/DecorativeBackground"
 import Link from "next/link"
-import WebGIS, { type WebGISRef as WebGISRefType } from "../../components/WebGIS"
-import LayerManager from "../../components/LayerManager"
-import Modal from "../../components/Modal"
-import VillageClaimsPanel from "../../components/VillageClaimsPanel"
 import { useRouter } from "next/navigation"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
-import type { GISLayer, GISMarker } from "../../components/WebGIS"
+import type { GISLayer, GISMarker, WebGISRef } from "../../components/WebGIS"
 import { exportToGeoJSON } from "../../lib/gis-utils"
 import type { GeoJSON } from "geojson"
 import Navbar from "@/components/ui/Navbar"
 import Footer from "@/components/ui/Footer"
-import ThreeBackground from "@/components/ui/ThreeBackground"
 import GlassCard from "@/components/ui/GlassCard"
 import MagneticButton from "@/components/ui/MagneticButton"
 import AnimatedCounter from "@/components/ui/AnimatedCounter"
+
+// Dynamically import heavy components to reduce initial bundle size
+const WebGIS = dynamicImport(() => import("../../components/WebGIS"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-96 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+      <div className="text-gray-500 dark:text-gray-400">Loading GIS interface...</div>
+    </div>
+  )
+})
+const LayerManager = dynamicImport(() => import("../../components/LayerManager"), { ssr: false })
+const Modal = dynamicImport(() => import("../../components/Modal"), { ssr: false })
+const VillageClaimsPanel = dynamicImport(() => import("../../components/VillageClaimsPanel"), { ssr: false })
+const ThreeBackground = dynamicImport(() => import("@/components/ui/ThreeBackground"), { ssr: false })
 
 // Client-only components to prevent hydration mismatches
 const DecorativeElements = dynamicImport(() => import('@/components/ui/DecorativeElements'), { ssr: false })
@@ -714,7 +723,7 @@ export default function AtlasPage() {
   const [isMeasuring, setIsMeasuring] = useState(false)
   const [measurementDistance, setMeasurementDistance] = useState<number | null>(null)
 
-  const webGISRef = useRef<WebGISRefType>(null)
+  const webGISRef = useRef<WebGISRef>(null)
 
   // Extract a robust boundary label from feature properties. Hoisted to component scope
   // so multiple UI paths can reuse it (feature click, previews, modals).

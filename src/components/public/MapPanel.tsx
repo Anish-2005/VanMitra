@@ -2,7 +2,17 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import MapPreview from "@/components/MapPreview";
+import dynamic from 'next/dynamic';
+
+// Dynamically import MapPreview to reduce initial bundle size
+const MapPreview = dynamic(() => import('@/components/MapPreview'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-80 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+      <div className="text-gray-500 dark:text-gray-400">Loading map...</div>
+    </div>
+  )
+});
 
 type Props = { isLight: boolean };
 

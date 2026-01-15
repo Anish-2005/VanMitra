@@ -10,20 +10,33 @@ const MDiv: React.FC<HTMLMotionProps<"div">> = motion.div;
 const MBackdrop: React.FC<HTMLMotionProps<"div">> = motion.div;
 const MAside: React.FC<HTMLMotionProps<"aside">> = motion.aside;
 import { Leaf, MapPin, Database, Target, Satellite, ArrowRight, TrendingUp, Users, FileText, BarChart3, Activity, Calendar, Download, Filter, Layers, BookOpen, Upload, Server, Eye, Globe } from "lucide-react";
-import ThreeBackground from "@/components/ui/ThreeBackground";
+import dynamic from 'next/dynamic';
 import DecorativeElements from "@/components/ui/DecorativeElements";
 import Navbar from "@/components/ui/Navbar";
 import Footer from "@/components/ui/Footer";
 import Link from "next/link";
 import GlassCard from "@/components/ui/GlassCard";
-import WebGIS from "../../components/WebGIS";
-import LayerManager from "../../components/LayerManager";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/components/AuthProvider";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { GISLayer, GISMarker, WebGISRef } from "../../components/WebGIS";
 import { createGeoJSONPoint, exportToGeoJSON } from "../../lib/gis-utils";
+
+// Dynamically import heavy components to reduce initial bundle size
+const ThreeBackground = dynamic(() => import('@/components/ui/ThreeBackground'), {
+  ssr: false,
+  loading: () => null
+});
+const WebGIS = dynamic(() => import("../../components/WebGIS"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-96 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+      <div className="text-gray-500 dark:text-gray-400">Loading map...</div>
+    </div>
+  )
+});
+const LayerManager = dynamic(() => import("../../components/LayerManager"), { ssr: false });
 
 function Sparkline({ data, width = 160, height = 40 }: { data: number[]; width?: number; height?: number }) {
   const max = Math.max(...data, 1);

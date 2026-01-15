@@ -9,7 +9,11 @@ export const GET = async (req: NextRequest) => {
     const status = url.searchParams.get('status') || undefined;
 
     const claims = await ClaimsService.getAllClaims(status);
-    return NextResponse.json(claims);
+
+    // Add caching headers for better performance
+    const response = NextResponse.json(claims);
+    response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600'); // Cache for 5 minutes, serve stale for 10 minutes
+    return response;
   } catch (error) {
     console.error('GET /api/claims error:', error);
     return NextResponse.json(
