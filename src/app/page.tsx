@@ -22,8 +22,12 @@ import AnimatedCounter from "@/components/ui/AnimatedCounter";
 import Hero from "@/components/home/Hero";
 import StatsGrid from "@/components/home/StatsGrid";
 import RightSidebar from "@/components/home/RightSidebar";
-import Sections from "@/components/home/Sections";
 import LoginModal from "@/components/home/LoginModal";
+
+// Lazy load below-the-fold components
+const Sections = dynamic(() => import('@/components/home/Sections'), {
+  loading: () => <div className="h-96 animate-pulse bg-gray-100 dark:bg-gray-800 rounded-lg"></div>
+});
 
 // Dynamically import heavy components to reduce initial bundle size
 const ThreeBackground = dynamic(() => import('@/components/ui/ThreeBackground'), {

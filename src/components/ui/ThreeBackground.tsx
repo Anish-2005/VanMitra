@@ -46,8 +46,9 @@ const ThreeBackground: React.FC<ThreeBackgroundProps> = ({ className = "" }) => 
       sceneRef.current = scene;
       rendererRef.current = renderer;
 
-      // Create enhanced floating particles
-      const particleCount = 120; // Increased count
+  // Performance optimization: Reduce particles on mobile
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const particleCount = isMobile ? 60 : 120; // Reduced count for mobile
       const positions = new Float32Array(particleCount * 3);
       const colors = new Float32Array(particleCount * 3);
       const sizes = new Float32Array(particleCount);

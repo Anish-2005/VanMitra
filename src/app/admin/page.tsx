@@ -3,19 +3,24 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/components/ThemeProvider';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
-import ThreeBackground from '@/components/ui/ThreeBackground';
-import DecorativeElements from '@/components/ui/DecorativeElements';
-import Footer from '@/components/ui/Footer';
-import AdminHeader from '@/components/admin/AdminHeader';
-import AdminMetrics from '@/components/admin/AdminMetrics';
-import UploadManager from '@/components/admin/UploadManager';
-import VerificationQueue from '@/components/admin/VerificationQueue';
-import RecentUploads from '@/components/admin/RecentUploads';
-import AuditLogPanel from '@/components/admin/AuditLogPanel';
-import SystemStatus from '@/components/admin/SystemStatus';
-import UserManagement from '@/components/admin/UserManagement';
+import dynamic from 'next/dynamic';
 import GlassCard from '@/components/ui/GlassCard';
 import { DEFAULT_STATE, DEFAULT_DISTRICT } from '@/lib/regions';
+
+// Dynamically import heavy admin components to reduce initial bundle size
+const ThreeBackground = dynamic(() => import('@/components/ui/ThreeBackground'), { ssr: false });
+const DecorativeElements = dynamic(() => import('@/components/ui/DecorativeElements'), { ssr: false });
+const Footer = dynamic(() => import('@/components/ui/Footer'), { ssr: false });
+const AdminHeader = dynamic(() => import('@/components/admin/AdminHeader'), { ssr: false });
+const AdminMetrics = dynamic(() => import('@/components/admin/AdminMetrics'), {
+  loading: () => <div className="h-64 animate-pulse bg-gray-100 dark:bg-gray-800 rounded-lg"></div>
+});
+const UploadManager = dynamic(() => import('@/components/admin/UploadManager'), { ssr: false });
+const VerificationQueue = dynamic(() => import('@/components/admin/VerificationQueue'), { ssr: false });
+const RecentUploads = dynamic(() => import('@/components/admin/RecentUploads'), { ssr: false });
+const AuditLogPanel = dynamic(() => import('@/components/admin/AuditLogPanel'), { ssr: false });
+const SystemStatus = dynamic(() => import('@/components/admin/SystemStatus'), { ssr: false });
+const UserManagement = dynamic(() => import('@/components/admin/UserManagement'), { ssr: false });
 
 export default function AdminPage() {
   const { theme } = useTheme();

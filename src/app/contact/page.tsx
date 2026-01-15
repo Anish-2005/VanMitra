@@ -11,13 +11,16 @@ import {
   Sprout, Droplets, Trees, Mountain, Sun, Mail, Phone, MapPin as MapPinIcon,
   Send, MessageSquare, Clock as ClockIcon
 } from "lucide-react";
+import dynamic from 'next/dynamic';
 import Navbar from "@/components/ui/Navbar";
-import Footer from "@/components/ui/Footer";
-import ThreeBackground from "@/components/ui/ThreeBackground";
-import DecorativeElements from "@/components/ui/DecorativeElements";
 import GlassCard from "@/components/ui/GlassCard";
 import MagneticButton from "@/components/ui/MagneticButton";
 import { useTheme } from "@/components/ThemeProvider";
+
+// Dynamically import heavy components to reduce initial bundle size
+const Footer = dynamic(() => import('@/components/ui/Footer'), { ssr: false });
+const ThreeBackground = dynamic(() => import('@/components/ui/ThreeBackground'), { ssr: false });
+const DecorativeElements = dynamic(() => import('@/components/ui/DecorativeElements'), { ssr: false });
 
 export default function Contact() {
   const { theme } = useTheme();

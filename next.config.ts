@@ -1,4 +1,9 @@
 import type { NextConfig } from "next";
+import withBundleAnalyzer from '@next/bundle-analyzer';
+
+const bundleAnalyzer = withBundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
+});
 
 const nextConfig: NextConfig = {
   eslint: {
@@ -27,6 +32,7 @@ const nextConfig: NextConfig = {
   },
   compress: true,
   poweredByHeader: false,
+  generateEtags: false, // Reduce header size
   async headers() {
     return [
       {
@@ -59,4 +65,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default bundleAnalyzer(nextConfig);

@@ -140,7 +140,26 @@ export default function RootLayout({
         <link rel="preload" href="/vanmitra.svg" as="image" type="image/svg+xml" />
         <link rel="dns-prefetch" href="//fonts.googleapis.com" />
         <link rel="dns-prefetch" href="//fonts.gstatic.com" />
-        
+        <link rel="dns-prefetch" href="//demotiles.maplibre.org" />
+
+        {/* Font optimization */}
+        <link
+          rel="preconnect"
+          href="https://fonts.googleapis.com"
+          crossOrigin=""
+        />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin=""
+        />
+
+        {/* Preload critical routes */}
+        <link rel="prefetch" href="/dashboard" />
+        <link rel="prefetch" href="/atlas" />
+        <link rel="prefetch" href="/api/claims" />
+        <link rel="prefetch" href="/api/dashboard/kpis" />
+
         {/* Performance hints */}
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         <meta name="theme-color" content="#10b981" />
