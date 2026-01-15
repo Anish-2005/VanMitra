@@ -16,6 +16,9 @@ import GlassCard from "@/components/ui/GlassCard";
 import MagneticButton from "@/components/ui/MagneticButton";
 import AnimatedCounter from "@/components/ui/AnimatedCounter";
 import type { WebGISRef, GISLayer, GISMarker } from "@/components/WebGIS";
+import LoadingState from "@/components/atlas/LoadingState";
+import ErrorState from "@/components/atlas/ErrorState";
+import FeatureHeader from "@/components/atlas/FeatureHeader";
 
 // Dynamically import heavy components to reduce initial bundle size
 const WebGIS = dynamic(() => import("@/components/WebGIS"), {
@@ -412,18 +415,7 @@ export default function FeaturePage({
   if (loading) {
     return (
       <ProtectedRoute>
-        <div className={
-          `min-h-screen p-8 ${isLight ?
-            'bg-gradient-to-br from-emerald-50 via-green-100 to-teal-100 text-slate-900' :
-            'bg-emerald-900/95 text-white'}`
-        }>
-          <div className={`max-w-3xl mx-auto p-8 rounded-3xl shadow-2xl backdrop-blur-sm ${isLight ? 'bg-white/90 border border-slate-200' : 'bg-emerald-800/30 border border-emerald-700/50'}`}>
-            <div className="flex items-center justify-center">
-              <div className={`w-6 h-6 rounded-full animate-pulse mr-3 ${isLight ? 'bg-emerald-600' : 'bg-emerald-400'}`}></div>
-              <span className={isLight ? 'text-emerald-700' : 'text-emerald-100'}>Loading...</span>
-            </div>
-          </div>
-        </div>
+        <LoadingState isLight={isLight} />
       </ProtectedRoute>
     );
   }
@@ -431,21 +423,7 @@ export default function FeaturePage({
   if (error || !feature) {
     return (
       <ProtectedRoute>
-        <div className={
-          `min-h-screen p-8 ${isLight ?
-            'bg-gradient-to-br from-emerald-50 via-green-100 to-teal-100 text-slate-900' :
-            'bg-emerald-900/95 text-white'}`
-        }>
-          <div className={`max-w-3xl mx-auto p-8 rounded-3xl shadow-2xl backdrop-blur-sm ${isLight ? 'bg-white/90 border border-slate-200' : 'bg-emerald-800/30 border border-emerald-700/50'}`}>
-            <h2 className={`text-xl font-semibold mb-4 ${isLight ? 'text-red-600' : 'text-red-400'}`}>{error || "Feature not found"}</h2>
-            <div className="mt-6">
-              <Link href="/atlas" className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl transition-colors duration-200 shadow-lg hover:shadow-xl ${isLight ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-emerald-600 hover:bg-emerald-500 text-white'}`}>
-                <ArrowLeft size={16} />
-                Back to Atlas
-              </Link>
-            </div>
-          </div>
-        </div>
+        <ErrorState isLight={isLight} error={error} />
       </ProtectedRoute>
     );
   }
@@ -489,77 +467,7 @@ export default function FeaturePage({
               </div>
 
               {/* Feature Header */}
-              <GlassCard className={`p-8 mb-8 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
-                {/* Top Row: Status + Type */}
-                <div className="flex items-start gap-6 mb-8">
-                  <div className="flex flex-wrap gap-3">
-                    <div
-                      className={`px-4 py-1.5 rounded-full text-sm font-semibold border shadow-sm backdrop-blur-sm ${String(props.status).toLowerCase() === 'approved'
-                        ? isLight
-                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300 shadow-emerald-200/50'
-                          : 'bg-emerald-600/30 text-emerald-100 border-emerald-400/40 shadow-emerald-800/20'
-                        : isLight
-                          ? 'bg-amber-100 text-amber-800 border-amber-300 shadow-amber-200/50'
-                          : 'bg-amber-600/30 text-amber-100 border-amber-400/40 shadow-amber-800/20'
-                        }`}
-                    >
-                      {String(props.status ?? '').toUpperCase()}
-                    </div>
-                    <div className={`px-4 py-1.5 rounded-full text-sm font-semibold border shadow-inner ${isLight ? 'bg-slate-100 text-slate-700 border-slate-300' : 'bg-slate-700/40 text-slate-200 border border-slate-600/40'}`}>
-                      {String(props.claim_type ?? '').toUpperCase()}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Info Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-sm">
-                  {/* ID */}
-                  <div className={`group relative rounded-2xl p-6 border shadow-lg transition-colors ${isLight ? 'bg-emerald-50 border-emerald-200 hover:border-emerald-300 shadow-emerald-100/50' : 'bg-emerald-900/20 border-emerald-700/40 hover:border-emerald-500/50 shadow-emerald-900/10'}`}>
-                    <span className={`font-semibold text-xs uppercase tracking-wide flex items-center gap-2 ${isLight ? 'text-emerald-700' : 'text-emerald-300/70'}`}>
-                      <svg className={`w-4 h-4 ${isLight ? 'text-emerald-600' : 'text-emerald-400/80'}`} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                        <path d="M9 12h6m2 0a2 2 0 100-4h-1V7a2 2 0 10-4 0v1H9a2 2 0 100 4h1v1a2 2 0 104 0v-1h1z" />
-                      </svg>
-                      ID
-                    </span>
-                    <p className={`text-2xl font-bold mt-2 truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>{props.id}</p>
-                  </div>
-
-                  {/* Area */}
-                  <div className={`group relative rounded-2xl p-6 border shadow-lg transition-colors ${isLight ? 'bg-emerald-50 border-emerald-200 hover:border-emerald-300 shadow-emerald-100/50' : 'bg-emerald-900/20 border-emerald-700/40 hover:border-emerald-500/50 shadow-emerald-900/10'}`}>
-                    <span className={`font-semibold text-xs uppercase tracking-wide flex items-center gap-2 ${isLight ? 'text-emerald-700' : 'text-emerald-300/70'}`}>
-                      <svg className={`w-4 h-4 ${isLight ? 'text-emerald-600' : 'text-emerald-400/80'}`} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                        <path d="M4 4h16v16H4z" />
-                      </svg>
-                      Area
-                    </span>
-                    <span className={`text-2xl font-bold mt-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                      <AnimatedCounter value={props.area || 0} /> <span className={`text-base ${isLight ? 'text-emerald-700' : 'text-emerald-300/70'}`}>ha</span>
-                    </span>
-                  </div>
-
-                  {/* State */}
-                  <div className={`group relative rounded-2xl p-6 border shadow-lg transition-colors ${isLight ? 'bg-emerald-50 border-emerald-200 hover:border-emerald-300 shadow-emerald-100/50' : 'bg-emerald-900/20 border-emerald-700/40 hover:border-emerald-500/50 shadow-emerald-900/10'}`}>
-                    <span className={`font-semibold text-xs uppercase tracking-wide flex items-center gap-2 ${isLight ? 'text-emerald-700' : 'text-emerald-300/70'}`}>
-                      <svg className={`w-4 h-4 ${isLight ? 'text-emerald-600' : 'text-emerald-400/80'}`} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                        <path d="M12 2l9 4.5v11L12 22l-9-4.5v-11L12 2z" />
-                      </svg>
-                      State
-                    </span>
-                    <p className={`text-2xl font-bold mt-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>{props.state ?? '—'}</p>
-                  </div>
-
-                  {/* Village */}
-                  <div className={`group relative rounded-2xl p-6 border shadow-lg transition-colors ${isLight ? 'bg-emerald-50 border-emerald-200 hover:border-emerald-300 shadow-emerald-100/50' : 'bg-emerald-900/20 border-emerald-700/40 hover:border-emerald-500/50 shadow-emerald-900/10'}`}>
-                    <span className={`font-semibold text-xs uppercase tracking-wide flex items-center gap-2 ${isLight ? 'text-emerald-700' : 'text-emerald-300/70'}`}>
-                      <svg className={`w-4 h-4 ${isLight ? 'text-emerald-600' : 'text-emerald-400/80'}`} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                        <path d="M12 22s8-4 8-10a8 8 0 10-16 0c0 6 8 10 8 10z" />
-                      </svg>
-                      Village
-                    </span>
-                    <p className={`text-2xl font-bold mt-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>{props.village ?? '—'}</p>
-                  </div>
-                </div>
-              </GlassCard>
+              <FeatureHeader isLight={isLight} props={props} />
 
               {/* Main Content Area */}
               <div className="flex flex-col gap-8">

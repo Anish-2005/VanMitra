@@ -7,6 +7,9 @@ import maplibregl, { type Map, type Marker, type Popup, type GeoJSONSource } fro
 import type MaplibreGeocoder from "@maplibre/maplibre-gl-geocoder"
 import * as turf from "@turf/turf"
 import { Layers, Ruler, MapPin } from "lucide-react"
+import LoadingOverlay from "./map/LoadingOverlay"
+import MapErrorOverlay from "./map/MapErrorOverlay"
+import WebGISControls from "./map/WebGISControls"
 
 // Types
 export interface GISLayer {
@@ -2006,148 +2009,44 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
       />
 
       {/* Loading Overlay */}
-      {isLoadingData && (
-        <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center z-20">
-          <div className="bg-emerald-900/95 border border-emerald-700/50 rounded-3xl p-6 shadow-2xl flex items-center gap-4 backdrop-blur-sm">
-            <div className="relative">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-emerald-400 border-t-transparent"></div>
-              <div className="absolute inset-0 rounded-full border-2 border-green-300/30 animate-ping"></div>
-            </div>
-            <div>
-              <span className="text-white font-medium">Loading map data...</span>
-              <div className="text-xs text-emerald-300 mt-1">Please wait</div>
-            </div>
-          </div>
-        </div>
-      )}
+      <LoadingOverlay isLoadingData={isLoadingData} />
 
       {/* Map error overlay */}
-      {mapError && (
-        <div className="absolute inset-0 flex items-center justify-center z-40">
-          <div className="bg-emerald-900/95 border border-emerald-700/50 rounded-3xl p-6 shadow-2xl max-w-lg text-center backdrop-blur-sm">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <div className="w-3 h-3 bg-red-400 rounded-full animate-pulse"></div>
-              <h3 className="text-lg font-semibold text-white">Map error</h3>
-            </div>
-            <p className="text-emerald-300 mb-6">{mapError}</p>
-            <div className="flex justify-center gap-3">
-              <button
-                onClick={() => {
-                  // Simple retry: remove and re-create the map by forcing unload
-                  try {
-                    setMapLoaded(false)
-                    setMapError(null)
-                    if (map.current) {
-                      map.current.remove()
-                      map.current = null
-                    }
-                    // Re-run the init effect by toggling a small state; easiest is to
-                    // reload the page as a last resort for deterministic recovery.
-                    window.location.reload()
-                  } catch (err) {
-                    console.error("Retry failed", err)
-                    setMapError(String(err))
-                  }
-                }}
-                className="px-6 py-2 rounded-2xl bg-emerald-600 text-white hover:bg-emerald-700 transition-all duration-200 font-medium"
-              >
-                Retry
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <MapErrorOverlay
+        mapError={mapError}
+        onRetry={() => {
+          // Simple retry: remove and re-create the map by forcing unload
+          try {
+            setMapLoaded(false)
+            setMapError(null)
+            if (map.current) {
+              map.current.remove()
+              map.current = null
+            }
+            // Re-run the init effect by toggling a small state; easiest is to
+            // reload the page as a last resort for deterministic recovery.
+            window.location.reload()
+          } catch (err) {
+            console.error("Retry failed", err)
+            setMapError(String(err))
+          }
+        }}
+      />
 
       {/* Map Controls */}
-      {showControls && (
-        <div className="absolute top-4 left-4 z-10 space-y-2">
-          {/* Layer Control */}
-          {showLayerControls && (
-            <div className="bg-emerald-900/95 border border-emerald-700/50 rounded-3xl shadow-2xl p-4 backdrop-blur-sm">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <Layers size={16} className="text-emerald-300" />
-                <span className="text-sm font-semibold text-white">Layers</span>
-              </div>
-              <div className="space-y-2">
-                {currentLayers.map((layer) => (
-                  <label key={layer.id} className="flex items-center gap-3 text-sm text-emerald-300 hover:text-white transition-colors p-2 rounded-xl hover:bg-emerald-800/30">
-                    <input
-                      type="checkbox"
-                      checked={layer.visible}
-                      onChange={() => toggleLayer(layer.id)}
-                      className="rounded border-emerald-600 bg-emerald-800/50 text-green-400 focus:ring-green-400 focus:ring-2"
-                    />
-                    <span className="font-medium">{layer.name}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Measurement Control */}
-          {showMeasurementControls && enableMeasurement && (
-            <div className="bg-emerald-900/95 border border-emerald-700/50 rounded-3xl shadow-2xl p-4 backdrop-blur-sm">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <Ruler size={16} className="text-emerald-300" />
-                <span className="text-sm font-semibold text-white">Measure</span>
-              </div>
-              <div className="space-y-3">
-                {!isMeasuring ? (
-                  <button
-                    onClick={startMeasurement}
-                    className="w-full text-sm bg-emerald-600 text-white px-4 py-2 rounded-2xl hover:bg-emerald-700 transition-all duration-200 font-medium"
-                  >
-                    Start Measurement
-                  </button>
-                ) : (
-                  <div className="text-xs text-emerald-400 bg-emerald-800/30 p-3 rounded-xl border border-emerald-700/30">
-                    Click two points to measure distance
-                  </div>
-                )}
-                {measurementDistance && (
-                  <div className="text-xs text-emerald-300 bg-emerald-800/30 p-3 rounded-xl border border-emerald-700/30">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                      Distance: {measurementDistance.toFixed(2)} km
-                    </div>
-                  </div>
-                )}
-                <button
-                  onClick={clearMeasurement}
-                  className="w-full text-sm bg-gray-600 text-white px-4 py-2 rounded-2xl hover:bg-gray-700 transition-all duration-200 font-medium"
-                >
-                  Clear
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Export Status */}
-      {isExporting && (
-        <div className="absolute top-4 right-4 z-10 bg-emerald-900/95 border border-emerald-700/50 text-white px-4 py-3 rounded-2xl shadow-2xl backdrop-blur-sm">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="animate-spin rounded-full h-5 w-5 border-2 border-emerald-400 border-t-transparent"></div>
-              <div className="absolute inset-0 rounded-full border-2 border-green-300/30 animate-ping"></div>
-            </div>
-            <span className="text-sm font-medium">Exporting map...</span>
-          </div>
-        </div>
-      )}
-
-      {measurementDistance && (
-        <div className="absolute bottom-4 left-4 z-10 bg-emerald-900/95 border border-emerald-700/50 text-white px-4 py-3 rounded-2xl shadow-2xl backdrop-blur-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            <Ruler size={16} className="text-emerald-300" />
-            <span className="text-sm font-medium">Distance: {measurementDistance.toFixed(2)} km</span>
-          </div>
-        </div>
-      )}
+      <WebGISControls
+        showControls={showControls}
+        showLayerControls={showLayerControls}
+        showMeasurementControls={showMeasurementControls}
+        enableMeasurement={enableMeasurement}
+        currentLayers={currentLayers}
+        isMeasuring={isMeasuring}
+        measurementDistance={measurementDistance}
+        isExporting={isExporting}
+        onToggleLayer={toggleLayer}
+        onStartMeasurement={startMeasurement}
+        onClearMeasurement={clearMeasurement}
+      />
     </div>
   )
 })
