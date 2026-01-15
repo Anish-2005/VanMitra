@@ -4,6 +4,7 @@
 import { AuthProvider } from './AuthProvider';
 import { ThemeProvider } from './ThemeProvider';
 import { useEffect } from 'react';
+import { collectAndSendNavTiming } from '@/lib/telemetry';
 
 interface ClientProvidersProps {
   children: React.ReactNode;
@@ -22,20 +23,13 @@ export function ClientProviders({ children }: ClientProvidersProps) {
         });
     }
 
-    // Performance monitoring
-    if (process.env.NODE_ENV === 'development' && 'performance' in window) {
-      window.addEventListener('load', () => {
-        setTimeout(() => {
-          const perfData = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-          console.log('Page Load Performance:', {
-            'DNS Lookup': perfData.domainLookupEnd - perfData.domainLookupStart,
-            'TCP Connect': perfData.connectEnd - perfData.connectStart,
-            'Server Response': perfData.responseStart - perfData.requestStart,
-            'Page Load': perfData.loadEventEnd - perfData.fetchStart,
-            'DOM Ready': perfData.domContentLoadedEventEnd - perfData.fetchStart,
-          });
-        }, 0);
-      });
+    // Collect and send navigation timing telemetry (non-blocking)
+    if ('performance' in window) {
+      try {
+        collectAndSendNavTiming();
+      } catch (err) {
+        console.warn('Telemetry collection failed', err);
+      }
     }
   }, []);
 
