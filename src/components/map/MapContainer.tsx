@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import maplibregl, { Map as MapLibreMap, Marker, Popup } from 'maplibre-gl';
+import maplibregl, { Map as MapLibreMap } from 'maplibre-gl';
 import { useAtlasStore } from '@/stores/atlas-store';
 import { MapControls } from './MapControls';
 import { LayerPanel } from './LayerPanel';
@@ -15,7 +15,7 @@ interface MapContainerProps {
 
 export function MapContainer({
   className = "w-full h-full",
-  onFeatureClick,
+  
   onMapClick
 }: MapContainerProps) {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -137,7 +137,6 @@ export function MapContainer({
   useEffect(() => {
     if (!mapInstanceRef.current) return;
 
-    const map = mapInstanceRef.current;
 
     // Clear existing markers (simplified - in real app, track them)
     // For now, we'll skip marker management to keep this simple

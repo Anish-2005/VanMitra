@@ -1,14 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
-import { motion, AnimatePresence, useScroll, useTransform, useSpring, useInView } from "framer-motion";
-import * as THREE from 'three';
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence, useScroll} from "framer-motion";
 import {
-  ArrowRight, Leaf, MapPin, Server, Database, Layers,
-  Cloud, Cpu, BookOpen, Clock, Check, Users,
-  Shield, BarChart3, Target, Satellite, Map, Sparkles, Zap, Globe,
-  Info, ChevronDown, ChevronUp, Search, Filter, FileText,
-  Sprout, Droplets, Trees, Mountain, Sun, FileCheck, Scale, AlertTriangle
+   Server,Clock, Check, Users,
+  Shield, FileText,
+   FileCheck, Scale, AlertTriangle
 } from "lucide-react";
 import dynamic from 'next/dynamic';
 import Navbar from "@/components/ui/Navbar";
@@ -29,7 +26,6 @@ export default function Terms() {
     return () => clearTimeout(id);
   }, []);
   const isLight = mounted && theme === 'light';
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,8 +33,6 @@ export default function Terms() {
   const [user, setUser] = useState<{ email: string } | null>(null);
 
   const { scrollYProgress } = useScroll();
-  const scaleProgress = useTransform(scrollYProgress, [0, 1], [1, 1.2]);
-  const opacityProgress = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
   const handleLogin = async () => {
     try {
@@ -49,10 +43,6 @@ export default function Terms() {
     } catch {
       setError("Invalid credentials");
     }
-  };
-
-  const handleLogout = async () => {
-    setUser(null);
   };
 
   // Container variants for stagger animation

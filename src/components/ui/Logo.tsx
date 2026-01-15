@@ -1,16 +1,7 @@
 "use client";
 
 import React from "react";
-import { useTheme } from "@/components/ThemeProvider";
-
-type Props = {
-  size?: number;
-  className?: string;
-};
-
 export default function Logo(){
-  const { theme } = useTheme();
-  const isLight = typeof window !== 'undefined' ? (document.documentElement.getAttribute('data-theme') === 'light' || theme === 'light') : (theme === 'light');
 
 
   return (

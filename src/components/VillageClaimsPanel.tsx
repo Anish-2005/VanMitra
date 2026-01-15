@@ -76,7 +76,7 @@ export default function VillageClaimsPanel({ open, village, claims, onClose, onG
                     lng = Number(cent.geometry.coordinates[0])
                     lat = Number(cent.geometry.coordinates[1])
                   }
-                } catch (e) {
+                } catch {
                   // ignore centroid errors
                 }
               }

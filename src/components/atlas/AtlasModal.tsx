@@ -19,7 +19,7 @@ interface AtlasModalProps {
   pushToast: (msg: string, type?: string) => void;
 }
 
-const AtlasModal: React.FC<AtlasModalProps> = (props) => {
+const AtlasModal: React.FC<AtlasModalProps> = () => {
   // ...for brevity, actual implementation would mirror the Modal logic from the main page
   return <div>{/* AtlasModal implementation here */}</div>;
 };

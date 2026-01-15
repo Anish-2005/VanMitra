@@ -4,11 +4,9 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence, useScroll, useTransform, useSpring, useInView } from "framer-motion";
 import * as THREE from 'three';
 import {
-  ArrowRight, Leaf, MapPin, Server, Database, Layers,
-  Cloud, Cpu, BookOpen, Clock, Check, Users,
-  Shield, BarChart3, Target, Satellite, Map, Sparkles, Zap, Globe,
-  Info, ChevronDown, ChevronUp, Search, Filter, FileText,
-  Sprout, Droplets, Trees, Mountain, Sun, ShieldCheck, Eye, Lock
+  Database, Users,
+  Shield, Target,
+  ShieldCheck, Eye, Lock
 } from "lucide-react";
 import dynamic from 'next/dynamic';
 import Navbar from "@/components/ui/Navbar";
@@ -29,7 +27,6 @@ export default function Privacy() {
     return () => clearTimeout(id);
   }, []);
   const isLight = mounted && theme === 'light';
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,8 +34,6 @@ export default function Privacy() {
   const [user, setUser] = useState<{ email: string } | null>(null);
 
   const { scrollYProgress } = useScroll();
-  const scaleProgress = useTransform(scrollYProgress, [0, 1], [1, 1.2]);
-  const opacityProgress = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
   const handleLogin = async () => {
     try {
@@ -51,9 +46,6 @@ export default function Privacy() {
     }
   };
 
-  const handleLogout = async () => {
-    setUser(null);
-  };
 
   // Container variants for stagger animation
   const containerVariants = {

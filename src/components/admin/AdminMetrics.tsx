@@ -1,7 +1,7 @@
 import React from 'react';
 import GlassCard from '@/components/ui/GlassCard';
 import AnimatedCounter from '@/components/ui/AnimatedCounter';
-import { FileText, Database, Satellite, Target } from 'lucide-react';
+import { FileText } from 'lucide-react';
 
 export default function AdminMetrics({ metrics, isLight = true }: { metrics: Array<{ label: string; value: number | string; trend?: string; icon?: any; color?: string }>; isLight?: boolean }) {
   return (

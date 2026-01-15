@@ -544,9 +544,8 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
           const id: string = l.id || ''
           if (id.startsWith('layer-claims')) {
             try {
-              // @ts-ignore
               map.current.moveLayer(id)
-            } catch (e) {
+            } catch {
               /* ignore move failures */
             }
           }
@@ -614,15 +613,8 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
             // initialize handlers storage on the map instance
             if (!(map.current as any)._pointLayerHandlers) (map.current as any)._pointLayerHandlers = {}
 
-            // Enhanced sizing parameters for better visibility across zoom levels
-            const maxDiameterMeters = (layer.style as any).maxDiameterMeters || 100000 // Increased to 100km for better visibility
-            const minRadiusPx = (layer.style as any).minRadiusPx || 6 // Increased minimum size
-            const maxRadiusPx = (layer.style as any).maxRadiusPx || 40 // Added maximum size limit
-
-            const metersPerPixelAt = (lat: number, zoomLevel: number) => {
-              // WebMercator approximation: metersPerPixel = 156543.03392 * cos(latitude) / 2^zoom
-              return (156543.03392 * Math.cos((lat * Math.PI) / 180)) / Math.pow(2, zoomLevel)
-            }
+           
+            
 
             const updateFn = () => {
               try {
@@ -633,9 +625,9 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
                     // Use fixed radius instead of dynamic calculation
                     map.current.setPaintProperty(layerConfig.id, "circle-radius", 8)
                     map.current.setPaintProperty(layerConfig.id, "circle-stroke-width", 2)
-                  } catch (e) { }
+                  } catch { }
                 }
-              } catch (e) {
+              } catch{
                 /* ignore update errors */
               }
             }
@@ -645,7 +637,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
               try {
                 map.current.off("move", (map.current as any)._pointLayerHandlers[layerConfig.id])
                 map.current.off("zoom", (map.current as any)._pointLayerHandlers[layerConfig.id])
-              } catch (e) { }
+              } catch { }
             }
 
             map.current.on("move", updateFn)
@@ -727,12 +719,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
             // Try to move both to the top of the stack to ensure visibility above rasters
             try {
               map.current!.moveLayer(outlineLayerId)
-            } catch (e) {
-              /* ignore */
-            }
-            try {
-              map.current!.moveLayer(fillLayerId)
-            } catch (e) {
+            } catch {
               /* ignore */
             }
 
@@ -742,7 +729,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
               map.current!.setPaintProperty(fillLayerId, "fill-color", fillLayer.paint["fill-color"])
               map.current!.setPaintProperty(outlineLayerId, "line-color", outlineLayer.paint["line-color"])
               map.current!.setPaintProperty(outlineLayerId, "line-width", outlineLayer.paint["line-width"])
-            } catch (e) {
+            } catch {
               /* ignore paint failures */
             }
           } catch (error) {
@@ -767,7 +754,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
               map.current!.on("mouseleave", outlineLayerId, () => {
                 map.current!.getCanvas().style.cursor = ""
               })
-            } catch (e) {
+            } catch {
               /* ignore */
             }
           } else {
@@ -802,7 +789,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
             }
             try {
               map.current!.moveLayer(layerConfig.id)
-            } catch (e) { }
+            } catch { }
           } catch (error) {
             console.error("Error adding default layer", layerConfig.id, ":", error)
           }
@@ -872,23 +859,21 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
             const existingDom = markersRef.current.find((m) => (m as any)._markerId === "last-click")
             if (existingDom) {
               console.log("Removing legacy DOM last-click marker to use layer instead")
-              try { existingDom.remove() } catch (e) { }
+              try { existingDom.remove() } catch { }
               markersRef.current = markersRef.current.filter((m) => (m as any)._markerId !== "last-click")
             }
-          } catch (e) { }
+          } catch { }
 
           // Add or update source
           const srcId = "source-last-click"
-          const layerId = "layer-last-click-circle"
-          const popupLayerHandlerKey = "layer-last-click-popup-handler"
 
           if (!map.current.getSource(srcId)) {
             map.current.addSource(srcId, { type: "geojson", data: pointFeature as any })
           } else {
             try {
               ; (map.current.getSource(srcId) as GeoJSONSource).setData(pointFeature as any)
-            } catch (e) {
-              console.warn("Failed to setData for last-click source", e)
+            } catch  {
+              console.warn("Failed to setData for last-click source")
             }
           }
 
@@ -930,7 +915,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
                   try {
                     if (!map.current) return
                     if (!map.current.getImage(iconImageName)) {
-                      // @ts-ignore
+                      // ts-expect-error
                       map.current.addImage(iconImageName, img)
                     }
                     if (!map.current) return
@@ -994,7 +979,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
           // Keep the source data up-to-date
           try {
             ; (map.current.getSource(srcId) as GeoJSONSource).setData(pointFeature as any)
-          } catch (e) { }
+          } catch  { }
         } else {
           // No lastClick => remove any existing last-click layers/sources/images.
           // Remove layers first to ensure the source can be removed without MapLibre errors.
@@ -1009,33 +994,33 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
             // into `off` in the typed API, so we avoid calling `off` here.
             try {
               if (map.current.getLayer && map.current.getLayer(symbolLayerId)) {
-                try { map.current.removeLayer(symbolLayerId) } catch (e) { }
+                try { map.current.removeLayer(symbolLayerId) } catch { }
               }
-            } catch (e) { }
+            } catch { }
 
             // Remove circle layer if present (older variant)
             try {
               if (map.current.getLayer && map.current.getLayer(circleLayerId)) {
-                try { map.current.removeLayer(circleLayerId) } catch (e) { }
+                try { map.current.removeLayer(circleLayerId) } catch { }
               }
-            } catch (e) { }
+            } catch { }
 
             // Now remove the source
             try {
               if (map.current.getSource && map.current.getSource(srcId)) {
-                try { map.current.removeSource(srcId) } catch (e) { }
+                try { map.current.removeSource(srcId) } catch { }
               }
-            } catch (e) { }
+            } catch  { }
 
             // Optionally remove the in-memory icon image if present
             try {
               // some maplibre builds expose hasImage/getImage/removeImage differently
               const hasImg = (map.current as any).hasImage ? (map.current as any).hasImage(iconImageName) : !!(map.current as any).getImage?.(iconImageName)
               if (hasImg) {
-                try { (map.current as any).removeImage?.(iconImageName) } catch (e) { }
+                try { (map.current as any).removeImage?.(iconImageName) } catch { }
               }
-            } catch (e) { }
-          } catch (e) {
+            } catch { }
+          } catch {
             /* ignore cleanup errors */
           }
         }
@@ -1259,9 +1244,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
 
     // Zoom/move based dynamic sizing: compute pixel diameter for the desired
     // real-world max diameter (50 km default) so DOM markers match vector layer.
-    const metersPerPixelAt = (lat: number, zoomLevel: number) => {
-      return (156543.03392 * Math.cos((lat * Math.PI) / 180)) / Math.pow(2, zoomLevel)
-    }
+    
 
     const updateMarkerSizes = () => {
       if (!map.current) return
@@ -1281,11 +1264,11 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
               svgEl.setAttribute("width", String(base))
               svgEl.setAttribute("height", String(base))
             }
-          } catch (e) {
+          } catch  {
             /* per-marker error */
           }
         })
-      } catch (e) { }
+      } catch { }
     }
 
     if (map.current) {

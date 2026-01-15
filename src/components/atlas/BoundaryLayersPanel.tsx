@@ -25,9 +25,6 @@ export function BoundaryLayersPanel({
   setPendingShowDistrictBoundary,
   pendingShowTehsilBoundary,
   setPendingShowTehsilBoundary,
-  showStateBoundary,
-  showDistrictBoundary,
-  showTehsilBoundary,
   onApplyBoundaries,
   onCancelBoundaries
 }: BoundaryLayersPanelProps) {

@@ -1,9 +1,4 @@
 import React from "react";
-import VillageClaimsPanel from "@/components/VillageClaimsPanel";
-import GlassCard from "@/components/ui/GlassCard";
-import { Plus, Filter, Layers } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
-import LayerManager from "@/components/LayerManager";
 
 interface AtlasSidebarProps {
   isLight: boolean;
@@ -62,7 +57,7 @@ interface AtlasSidebarProps {
   claimTypeColors: Record<string, string>;
 }
 
-const AtlasSidebar: React.FC<AtlasSidebarProps> = (props) => {
+const AtlasSidebar: React.FC<AtlasSidebarProps> = () => {
   // ...for brevity, actual implementation would mirror the sidebar/aside logic from the main page
   return <div>{/* AtlasSidebar implementation here */}</div>;
 };

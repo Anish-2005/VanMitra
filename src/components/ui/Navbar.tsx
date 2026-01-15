@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Leaf, Menu, X, Map, FileText, BarChart3, Globe, LayoutDashboard, Mail } from "lucide-react";
@@ -446,7 +447,7 @@ const Navbar: React.FC = () => {
                     className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-green-400 to-emerald-600 mb-4"
                     whileHover={{ scale: 1.05, rotate: 5 }}
                   >
-                    <img src="/vanmitra.svg" alt="VanMitra" className="h-10 w-10 object-contain" />
+                    <Image src="/vanmitra.svg" alt="VanMitra" className="h-10 w-10 object-contain" />
                   </motion.div>
                   <h3 className={`text-2xl font-bold mb-2 ${isLight ? 'text-green-900' : 'text-white'}`}>Welcome Back</h3>
                   <p className={isLight ? 'text-green-700' : 'text-green-300'}>Sign in to access VanMitra</p>

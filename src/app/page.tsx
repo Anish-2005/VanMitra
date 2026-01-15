@@ -9,9 +9,6 @@ import { useRouter } from 'next/navigation';
 import Navbar from "@/components/ui/Navbar";
 import Footer from "@/components/ui/Footer";
 import GlassCard from "@/components/ui/GlassCard";
-import MagneticButton from "@/components/ui/MagneticButton";
-import Tooltip from "@/components/ui/Tooltip";
-import AnimatedCounter from "@/components/ui/AnimatedCounter";
 import Hero from "@/components/home/Hero";
 import StatsGrid from "@/components/home/StatsGrid";
 import RightSidebar from "@/components/home/RightSidebar";
@@ -40,7 +37,6 @@ export default function Home() {
     return () => clearTimeout(id);
   }, []);
   const isLight = mounted && theme === 'light';
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -79,8 +75,6 @@ export default function Home() {
   }, []);
 
   const { scrollYProgress } = useScroll();
-  const scaleProgress = useTransform(scrollYProgress, [0, 1], [1, 1.2]);
-  const opacityProgress = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
   const handleLogin = async () => {
     try {
@@ -91,10 +85,6 @@ export default function Home() {
     } catch {
       setError("Invalid credentials");
     }
-  };
-
-  const handleLogout = async () => {
-    setUser(null);
   };
 
   // Container variants for stagger animation

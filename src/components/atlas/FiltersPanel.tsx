@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { Filter } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import GlassCard from '../ui/GlassCard'
@@ -35,9 +34,7 @@ export function FiltersPanel({
   filtersExpanded,
   setFiltersExpanded,
   pendingStateFilter,
-  setPendingStateFilter,
   pendingDistrictFilter,
-  setPendingDistrictFilter,
   pendingStatusFilter,
   setPendingStatusFilter,
   pendingVillageFilter,

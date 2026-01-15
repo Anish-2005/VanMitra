@@ -25,7 +25,6 @@ export default function Contact() {
     return () => clearTimeout(id);
   }, []);
   const isLight = mounted && theme === 'light';
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -39,8 +38,6 @@ export default function Contact() {
   });
 
   const { scrollYProgress } = useScroll();
-  const scaleProgress = useTransform(scrollYProgress, [0, 1], [1, 1.2]);
-  const opacityProgress = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
   const handleLogin = async () => {
     try {
@@ -53,9 +50,6 @@ export default function Contact() {
     }
   };
 
-  const handleLogout = async () => {
-    setUser(null);
-  };
 
   const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();

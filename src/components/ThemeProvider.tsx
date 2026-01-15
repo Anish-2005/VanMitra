@@ -25,7 +25,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         // respect system preference if not set
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) return "light";
       }
-    } catch (e) {}
+    } catch {}
     // default to dark to preserve current app look
     return "dark";
   });
@@ -113,7 +113,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     try {
       localStorage.setItem("theme", theme);
-    } catch (e) {}
+    } catch {}
   }, [theme]);
 
   const setTheme = (t: Theme) => setThemeState(t);

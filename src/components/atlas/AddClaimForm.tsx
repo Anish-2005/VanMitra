@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import GlassCard from '../ui/GlassCard'

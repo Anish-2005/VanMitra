@@ -4,8 +4,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import GlassCard from "@/components/ui/GlassCard";
 import AnimatedCounter from "@/components/ui/AnimatedCounter";
-import MagneticButton from "@/components/ui/MagneticButton";
-import { Shield, Satellite, Server } from "lucide-react";
+import {  Satellite, Server } from "lucide-react";
 
 type Props = {
   isLight: boolean;

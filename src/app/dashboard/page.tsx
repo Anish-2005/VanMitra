@@ -3,19 +3,16 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import { useTheme } from "@/components/ThemeProvider";
 import { STATES, DEFAULT_STATE, DEFAULT_DISTRICT } from '../../lib/regions';
-import { motion, HTMLMotionProps } from "framer-motion";
+import { motion } from "framer-motion";
 import { Database, Target, Satellite, FileText } from "lucide-react";
 import dynamic from 'next/dynamic';
 import DecorativeElements from "@/components/ui/DecorativeElements";
 import Navbar from "@/components/ui/Navbar";
 import Footer from "@/components/ui/Footer";
-import Link from "next/link";
-import GlassCard from "@/components/ui/GlassCard";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuth } from "@/components/AuthProvider";
 // Lazy-load firebase auth to avoid bundling it in initial client JS
 import { GISLayer, GISMarker, WebGISRef } from "../../components/WebGIS";
-import { createGeoJSONPoint, exportToGeoJSON } from "../../lib/gis-utils";
 import KPISection from "../../components/dashboard/KPISection";
 import QuickActionsSection from "../../components/dashboard/QuickActionsSection";
 import RecentActivitySection from "../../components/dashboard/RecentActivitySection";
@@ -33,33 +30,8 @@ const ThreeBackground = dynamic(() => import('@/components/ui/ThreeBackground'),
   ssr: false,
   loading: () => null
 });
-const WebGIS = dynamic(() => import("../../components/WebGIS"), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-96 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
-      <div className="text-gray-500 dark:text-gray-400">Loading map...</div>
-    </div>
-  )
-});
-const LayerManager = dynamic(() => import("../../components/LayerManager"), { ssr: false });
 
-function Sparkline({ data, width = 160, height = 40 }: { data: number[]; width?: number; height?: number }) {
-  const max = Math.max(...data, 1);
-  const min = Math.min(...data, 0);
-  const points = data
-    .map((d, i) => {
-      const x = (i / (data.length - 1)) * width;
-      const y = height - ((d - min) / (max - min || 1)) * height;
-      return `${x},${y}`;
-    })
-    .join(" ");
 
-  return (
-    <svg width={width} height={height} aria-hidden>
-      <polyline fill="none" stroke="#16a34a" strokeWidth={2} points={points} strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
 export default function Dashboard() {
   const { theme } = useTheme();
@@ -71,7 +43,6 @@ export default function Dashboard() {
   const isLight = mounted && theme === 'light';
 
   const { user } = useAuth();
-  const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState<{
     kpis: any | null;
@@ -128,18 +99,6 @@ export default function Dashboard() {
     fetchDashboardData();
   }, []);
 
-  const handleLogout = async () => {
-    try {
-      const [{ signOut }, { auth }] = await Promise.all([
-        import('firebase/auth'),
-        import('@/lib/firebase')
-      ]);
-      await signOut(auth);
-    } catch (err) {
-      console.error('Logout failed', err);
-    }
-  };
-
   const filtered = useMemo(() => {
     return dashboardData.recommendations.filter((r: any) => r.state === stateFilter && r.district === districtFilter && r.village.toLowerCase().includes(villageQuery.toLowerCase()));
   }, [dashboardData.recommendations, stateFilter, districtFilter, villageQuery]);
@@ -195,7 +154,7 @@ export default function Dashboard() {
 
 
   const defaultCenter = STATES.find(s => s.name === DEFAULT_STATE)?.center ?? [78.9629, 22.9734];
-  const [markers, setMarkers] = useState<GISMarker[]>([
+  const [markers] = useState<GISMarker[]>([
     { id: 'marker-1', lng: defaultCenter[0] - 0.5, lat: defaultCenter[1] - 0.4, label: 'A', color: '#dc2626', popup: '<b>High Priority Village</b><br>Population: 1,200<br>FRA Claims: 45' },
     { id: 'marker-2', lng: defaultCenter[0] - 0.2, lat: defaultCenter[1] + 0.1, label: 'B', color: '#f59e0b', popup: '<b>Medium Priority Village</b><br>Population: 800<br>FRA Claims: 23' },
     { id: 'marker-3', lng: defaultCenter[0] + 0.3, lat: defaultCenter[1] - 0.1, label: 'C', color: '#16a34a', popup: '<b>Low Priority Village</b><br>Population: 600<br>FRA Claims: 12' }
@@ -204,20 +163,6 @@ export default function Dashboard() {
   const handleLayerToggle = (layerId: string) => {
     setLayers(prev => prev.map(layer =>
       layer.id === layerId ? { ...layer, visible: !layer.visible } : layer
-    ));
-  };
-
-  const handleLayerAdd = (layer: GISLayer) => {
-    setLayers(prev => [...prev, layer]);
-  };
-
-  const handleLayerRemove = (layerId: string) => {
-    setLayers(prev => prev.filter(layer => layer.id !== layerId));
-  };
-
-  const handleLayerUpdate = (layerId: string, updates: Partial<GISLayer>) => {
-    setLayers(prev => prev.map(layer =>
-      layer.id === layerId ? { ...layer, ...updates } : layer
     ));
   };
 
@@ -236,7 +181,7 @@ export default function Dashboard() {
     } catch (error) {
       try {
         console.error('Export failed:', error instanceof Error ? error.message : String(error));
-      } catch (logError) {
+      } catch  {
         console.error('Export failed (could not log error details)');
       }
       alert('Export failed. Please try refreshing the page or taking a manual screenshot.');
@@ -250,21 +195,6 @@ export default function Dashboard() {
   const [selected, setSelected] = useState<any | null>(null);
   const webGISRef = useRef<WebGISRef>(null);
   const stateCenter = STATES.find(s => s.name === stateFilter)?.center ?? STATES.find(s => s.name === DEFAULT_STATE)?.center ?? [78.9629, 22.9734];
-
-  function downloadCSV(rows: any[]) {
-    if (!rows || rows.length === 0) return;
-    const keys = Object.keys(rows[0]);
-    const csv = [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'recommendations.csv';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }
 
   // dynamic claims stats (same pattern as /public page)
   const [claimsData, setClaimsData] = useState<any | null>(null);
@@ -394,7 +324,6 @@ export default function Dashboard() {
     ];
   }, [dashboardData.kpis, dashboardData.assetsData, filtered, totalClaims, grantedCount, timeSeries]);
 
-  const [loginOpen, setLoginOpen] = useState(false);
 
 
   return (

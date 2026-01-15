@@ -50,7 +50,7 @@ const OCRUploadSection: React.FC<OCRUploadSectionProps> = ({
               transition={{ duration: 0.5 }}
             >
               <img
-                src={preview}
+                src={preview || undefined}
                 alt="Preview"
                 className="max-w-full max-h-32 sm:max-h-40 md:max-h-48 object-contain rounded-lg mb-4"
               />

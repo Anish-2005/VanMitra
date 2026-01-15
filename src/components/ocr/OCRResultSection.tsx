@@ -1,7 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import GlassCard from "@/components/ui/GlassCard";
-import { FileText, MapPin, CheckCircle, Eye, Info, FileImage, Loader2, XCircle } from "lucide-react";
+import { FileText, MapPin, CheckCircle, Eye, Info, FileImage, Loader2 } from "lucide-react";
 
 interface OCRResultSectionProps {
   isLight: boolean;

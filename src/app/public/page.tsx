@@ -34,7 +34,7 @@ export default function PublicPage() {
         if (!res.ok) return;
         const json = await res.json();
         if (mounted) setClaimsData(json);
-      } catch (err) {
+      } catch  {
         // fail silently for public page
       }
     };
