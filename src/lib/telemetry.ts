@@ -14,12 +14,12 @@ export function collectNavTiming(): Record<string, number | string> {
       load: nav.loadEventEnd - nav.fetchStart,
       timestamp: Date.now()
     };
-  } catch (err) {
+  } catch {
     return { error: 'nav_timing_unavailable' };
   }
 }
 
-export function sendTelemetry(payload: any) {
+export function sendTelemetry(payload: unknown) {
   try {
     const url = '/api/telemetry';
     const body = JSON.stringify({ payload, environment: process.env.NODE_ENV || 'unknown' });
@@ -28,7 +28,7 @@ export function sendTelemetry(payload: any) {
     } else {
       void fetch(url, { method: 'POST', body, headers: { 'Content-Type': 'application/json' } });
     }
-  } catch (err) {
+  } catch {
     // swallow errors
   }
 }

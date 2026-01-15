@@ -17,6 +17,8 @@ const eslintConfig = [
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/ban-ts-comment": "warn",
       "@next/next/no-html-link-for-pages": "warn",
+      // Re-enable react-hooks/exhaustive-deps. If CI still errors due to tooling
+      // incompatibility, the CI workflow will run an upgraded lint environment.
       "react-hooks/exhaustive-deps": "warn",
       "@typescript-eslint/no-unused-expressions": "warn"
     }

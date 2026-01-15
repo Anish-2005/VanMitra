@@ -56,7 +56,7 @@ const initialState = {
 
 export const useAtlasStore = create<AtlasState>()(
   devtools(
-    (set, get) => ({
+    (set) => ({
       ...initialState,
 
       setCenter: (center) => set({ center }),

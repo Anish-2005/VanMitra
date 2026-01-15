@@ -1,0 +1,31 @@
+name: Lint (Upgraded Toolchain)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-upgraded:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+
+      - name: Install upgraded ESLint toolchain
+        run: |
+          npm install --no-save --save-dev eslint@latest @eslint/eslintrc@latest eslint-plugin-react-hooks@latest @typescript-eslint/eslint-plugin@latest @typescript-eslint/parser@latest
+
+      - name: Run lint using upgraded toolchain
+        run: |
+          npx eslint "./src/**/*.{js,jsx,ts,tsx}"

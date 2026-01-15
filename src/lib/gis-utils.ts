@@ -209,7 +209,7 @@ export const decimalToDMS = (decimal: number, isLatitude: boolean): { degrees: n
 // Export utilities
 export const exportToGeoJSON = (features: GeoFeature[], filename: string = 'export.geojson') => {
   // Accept either an array of features or a FeatureCollection-like input
-  const geojson: any = Array.isArray(features) ? { type: 'FeatureCollection', features } : features;
+  const geojson: GeoJSON.FeatureCollection = Array.isArray(features) ? { type: 'FeatureCollection', features } : features;
 
   try {
     const dataStr = JSON.stringify(geojson, null, 2);

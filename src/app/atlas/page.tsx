@@ -1,6 +1,6 @@
 "use client"
 
-/* eslint-disable react-hooks/exhaustive-deps */
+// Note: we prefer fixing exhaustive-deps; keep inline disables only where necessary.
 
 export const dynamic = 'force-dynamic'
 

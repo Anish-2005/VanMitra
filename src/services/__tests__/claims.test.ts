@@ -1,5 +1,4 @@
 // src/services/__tests__/claims.test.ts
-import { ClaimsService } from '../claims';
 import { ClaimsResponseSchema } from '@/types/api';
 
 // Mock Firebase completely
@@ -9,7 +8,7 @@ jest.mock('@/lib/firebase', () => ({
 
 // Mock Turf
 jest.mock('@turf/turf', () => ({
-  circle: jest.fn((center, radius) => ({
+  circle: jest.fn((center ) => ({
     type: 'Feature',
     geometry: {
       type: 'Polygon',

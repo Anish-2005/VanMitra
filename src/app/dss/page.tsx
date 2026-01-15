@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useTheme } from "@/components/ThemeProvider";
-import { BookOpen, MapPin, Loader2, AlertCircle, ArrowRight } from "lucide-react";
+import { BookOpen, MapPin, Loader2, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import dynamic from 'next/dynamic';
 import Navbar from "@/components/ui/Navbar";
@@ -90,7 +90,7 @@ export default function DSSPage() {
         });
         // scroll to results on success
         setTimeout(() => {
-          try { resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {}
+          try { resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch {}
         }, 120);
       } else if (res.status === 422) {
         const errorData = await res.json();
@@ -106,7 +106,7 @@ export default function DSSPage() {
           error: `Server error (${res.status}): ${errorText || 'Unknown server error'}`
         });
       }
-    } catch (error) {
+    } catch{
       setResponse({
         success: false,
         error: "Network error occurred. Please try again."
@@ -136,7 +136,7 @@ export default function DSSPage() {
     if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
-    } catch (e) {
+    } catch {
       // ignore
     }
   };
