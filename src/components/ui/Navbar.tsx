@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from 'next/link';
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Leaf, Menu, X, Map, FileText, BarChart3, Globe, LayoutDashboard, Mail } from "lucide-react";

@@ -2,9 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Leaf } from "lucide-react";
 import { useTheme } from "../ThemeProvider";
-import Logo from "./Logo";
 import FooterBrand from './FooterBrand';
 import FooterLinks from './FooterLinks';
 

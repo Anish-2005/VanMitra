@@ -47,9 +47,12 @@ export default function LayerManager({
 
   /** Sync staged visibility when layers change */
   useEffect(() => {
-    setStagedVisibility(
-      Object.fromEntries(layers.map(l => [l.id, !!l.visible]))
-    );
+    const id = setTimeout(() => {
+      setStagedVisibility(
+        Object.fromEntries(layers.map(l => [l.id, !!l.visible]))
+      );
+    }, 0);
+    return () => clearTimeout(id);
   }, [layers]);
 
   const handleStyleChange = (

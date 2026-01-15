@@ -4,7 +4,6 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import MagneticButton from './MagneticButton';
 import ThemeToggle from './ThemeToggle';
-import Link from 'next/link';
 
 type NavItem = { name: string; icon: any; route: string };
 

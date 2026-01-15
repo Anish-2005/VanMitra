@@ -1291,10 +1291,10 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
     if (map.current) {
       try {
         ; (map.current as any)._markerZoomHandler && map.current.off("move", (map.current as any)._markerZoomHandler)
-      } catch (e) { }
+      } catch { }
       try {
         ; (map.current as any)._markerZoomHandler && map.current.off("zoom", (map.current as any)._markerZoomHandler)
-      } catch (e) { }
+      } catch { }
       map.current.on("move", updateMarkerSizes)
       map.current.on("zoom", updateMarkerSizes)
         ; (map.current as any)._markerZoomHandler = updateMarkerSizes
@@ -1308,7 +1308,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
           map.current.off("zoom", (map.current as any)._markerZoomHandler)
           delete (map.current as any)._markerZoomHandler
         }
-      } catch (e) { }
+      } catch { }
     }
   }, [markers, mapLoaded])
   const startMeasurement = useCallback(() => {
@@ -1975,10 +1975,10 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
           if (!map.current) return
           const targetZoom = typeof zoom === "number" ? zoom : Math.max(10, map.current.getZoom())
           map.current.flyTo({ center: [lng, lat], zoom: targetZoom, essential: true })
-        } catch (e) {
+        } catch {
           try {
             map.current && map.current.setCenter && map.current.setCenter([lng, lat])
-          } catch (err) { }
+          } catch{ }
         }
       },
     }),

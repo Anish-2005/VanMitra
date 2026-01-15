@@ -8,16 +8,10 @@ type Props = {
   className?: string;
 };
 
-export default function Logo({ size = 40, className = "" }: Props) {
+export default function Logo(){
   const { theme } = useTheme();
   const isLight = typeof window !== 'undefined' ? (document.documentElement.getAttribute('data-theme') === 'light' || theme === 'light') : (theme === 'light');
 
-  // theme-aware colors
-  const primaryA = isLight ? '#10B981' : '#059669';
-  const primaryB = isLight ? '#059669' : '#0EA5A4';
-  const waterA = isLight ? '#60A5FA' : '#38BDF8';
-  const bgFill = isLight ? '#FFFFFF' : 'rgba(255,255,255,0.02)';
-  const frameStroke = isLight ? 'rgba(5,150,105,0.08)' : 'rgba(255,255,255,0.06)';
 
   return (
     <svg

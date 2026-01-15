@@ -10,7 +10,8 @@ const MagneticButton = ({ children, className = "", variant = "primary", ...prop
   const isLight = theme === 'light';
 
   useEffect(() => {
-    setMounted(true);
+    const id = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(id);
   }, []);
 
   const handleMouseMove = (e) => {

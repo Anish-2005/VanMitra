@@ -9,7 +9,6 @@ const AnimatedCounter = ({ value, duration = 2000 }: { value: number; duration?:
 
   useEffect(() => {
     if (isInView) {
-      const start = 0;
       const end = value;
       const incrementTime = duration / end;
 
