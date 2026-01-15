@@ -39,8 +39,7 @@ export default function MapPreview({
   const mapRef = useRef<any | null>(null);
   const createdMarkers = useRef<any[]>([]);
   // Precompute stable keys for complex dependencies
-  const centerKey = JSON.stringify(center);
-  const markersKey = JSON.stringify(markers.map((m: any) => [m.lng, m.lat]));
+  const layersKey = JSON.stringify(layers);
   const createdSources = useRef<Record<string, boolean>>({});
   const createdLayers = useRef<Record<string, boolean>>({});
   const pointerMarkerRef = useRef<any | null>(null);
@@ -48,7 +47,7 @@ export default function MapPreview({
   const prevLayers = useRef<any>({ ...layers });
 
   // initialize map and load maplibre once
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  
   useEffect(() => {
     const cssId = "maplibre-css";
     if (!document.getElementById(cssId)) {
@@ -554,12 +553,11 @@ export default function MapPreview({
       } catch {}
       if (appended && script && script.parentNode) script.parentNode.removeChild(script);
     };
-  }, [centerKey, zoom, markersKey, showCenterMarker, layersKey, onFeatureClick]);
+  }, [center, zoom, markers, showCenterMarker, layers.fra, layers.boundaries, layers.assets, onFeatureClick]);
 
   // dynamic layer diff
-  const layersKey = JSON.stringify(layers);
+  // (already declared above)
   // Intentionally run this effect when `layersKey` changes; internals manage map mutations.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -691,14 +689,14 @@ export default function MapPreview({
     if (prev.assets !== want.assets) { if (want.assets) ensureAdded('assets', '/api/atlas/assets', 'circle'); else removeLayer('assets'); }
 
     prevLayers.current = { ...want };
-  }, [layersKey]);
+  }, [layersKey, layers]);
 
   // center/zoom/markers reactive
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     try { map.setCenter(center); } catch {}
-    try { map.setZoom && map.setZoom(zoom as any); } catch {}
+    try { if (typeof map.setZoom === 'function') map.setZoom(zoom as any); } catch {}
     try {
       createdMarkers.current.forEach((m) => m.remove && m.remove());
       createdMarkers.current = [];
@@ -722,7 +720,7 @@ export default function MapPreview({
           } catch  {}
       });
     } catch {}
-  }, [centerKey, zoom, markersKey, showCenterMarker]);
+  }, [center, zoom, markers, showCenterMarker]);
 
   return <div ref={ref} className="w-full h-full rounded-3xl overflow-hidden bg-emerald-900/95 border border-emerald-700/50 backdrop-blur-sm shadow-2xl" />;
 }

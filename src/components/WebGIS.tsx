@@ -117,7 +117,6 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
   const [, setIsDragging] = useState(false)
 
   // Initialize map
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!mapContainer.current) return
 
@@ -238,7 +237,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
         map.current.remove()
       }
     }
-  }, [baseRasterTiles, baseRasterAttribution, JSON.stringify(center), onMapClick, zoom])
+  }, [baseRasterTiles, baseRasterAttribution, center, onMapClick, zoom])
 
   // Update map center and zoom
   useEffect(() => {
@@ -304,6 +303,251 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
       setIsLoadingData(false)
     })
   }, [layers, state, district])
+
+  // ---
+  // Helper: Add a layer from a source (must be above effects that use it)
+  const addLayerFromSource = useCallback((layer: GISLayer, sourceId: string, layerId: string) => {
+    if (!map.current) return
+
+    const layerConfig: { id: string; source: string; type: string; paint?: Record<string, unknown> } = {
+      id: layerId,
+      source: sourceId,
+      type: "circle", // Default type
+    }
+
+    switch (layer.type) {
+      case "geojson":
+        // Determine geometry type from data
+        const features = layer.data?.features || []
+        const geometryType = features.length > 0 ? features[0]?.geometry?.type : null
+
+        console.log("Layer", layer.id, "has", features.length, "features, geometry type:", geometryType)
+
+        if (geometryType === "Point" || geometryType === "MultiPoint") {
+          // Use circle layer for point features
+          layerConfig.type = "circle"
+          layerConfig.paint = {
+            'circle-radius': 8,
+            'circle-color': layer.style.fillColor || '#ff4444',
+            'circle-opacity': layer.style.opacity || 1.0,
+            'circle-stroke-color': layer.style.strokeColor || '#ffffff',
+            'circle-stroke-width': layer.style.strokeWidth || 2,
+          }
+          try {
+            if (!map.current.getLayer(layerConfig.id)) {
+              map.current.addLayer(layerConfig as any)
+            }
+            try {
+              map.current.moveLayer(layerConfig.id)
+            } catch  { }
+          } catch (error) {
+            console.error("Error adding circle layer", layerConfig.id, ":", error)
+          }
+
+          // click handlers (skip for boundary layer to make boundaries non-clickable)
+          if (layer.id !== "boundaries") {
+            map.current!.on("click", layerConfig.id, (e) => {
+              if (e.features && e.features.length > 0 && onFeatureClick) {
+                onFeatureClick({ layer, feature: e.features[0], lngLat: e.lngLat })
+              }
+            })
+            map.current!.on("mouseenter", layerConfig.id, () => {
+              map.current!.getCanvas().style.cursor = "pointer"
+            })
+            map.current!.on("mouseleave", layerConfig.id, () => {
+              map.current!.getCanvas().style.cursor = ""
+            })
+          }
+
+          try {
+            // initialize handlers storage on the map instance
+            if (!(map.current as any)._pointLayerHandlers) (map.current as any)._pointLayerHandlers = {}
+
+           
+            
+
+            const updateFn = () => {
+              try {
+                if (!map.current) return
+                // Keep point layers at fixed size regardless of zoom level
+                if (map.current.getLayer(layerConfig.id)) {
+                  try {
+                    // Use fixed radius instead of dynamic calculation
+                    map.current.setPaintProperty(layerConfig.id, "circle-radius", 8)
+                    map.current.setPaintProperty(layerConfig.id, "circle-stroke-width", 2)
+                  } catch { }
+                }
+              } catch{
+                /* ignore update errors */
+              }
+            }
+
+            // remove previous handler for this layer if present
+            if ((map.current as any)._pointLayerHandlers[layerConfig.id]) {
+              try {
+                map.current.off("move", (map.current as any)._pointLayerHandlers[layerConfig.id])
+                map.current.off("zoom", (map.current as any)._pointLayerHandlers[layerConfig.id])
+              } catch { }
+            }
+
+            map.current.on("move", updateFn)
+            map.current.on("zoom", updateFn)
+              ; (map.current as any)._pointLayerHandlers[layerConfig.id] = updateFn
+
+            // initialize immediately
+            updateFn()
+          } catch (e) {
+            console.warn("Failed to register point layer size updater for", layerConfig.id, e)
+          }
+        } else if (geometryType === "LineString" || geometryType === "MultiLineString") {
+          layerConfig.type = "line"
+          layerConfig.paint = {
+            "line-color": layer.style.strokeColor || "#16a34a",
+            "line-width": layer.style.strokeWidth || 2,
+            "line-opacity": layer.style.opacity || 0.9,
+          }
+          try {
+            if (!map.current.getLayer(layerConfig.id)) {
+              map.current!.addLayer(layerConfig as any)
+            }
+            try {
+              map.current!.moveLayer(layerConfig.id)
+            } catch { }
+          } catch (error) {
+            console.error("Error adding line layer", layerConfig.id, ":", error)
+          }
+
+          if (layer.id !== "boundaries") {
+            map.current!.on("click", layerConfig.id, (e) => {
+              if (e.features && e.features.length > 0 && onFeatureClick) {
+                onFeatureClick({ layer, feature: e.features[0], lngLat: e.lngLat })
+              }
+            })
+            map.current!.on("mouseenter", layerConfig.id, () => {
+              map.current!.getCanvas().style.cursor = "pointer"
+            })
+            map.current!.on("mouseleave", layerConfig.id, () => {
+              map.current!.getCanvas().style.cursor = ""
+            })
+          }
+        } else if (geometryType === "Polygon" || geometryType === "MultiPolygon") {
+          // For polygons, add a fill layer and a separate outline (line) layer to ensure visibility
+          const fillLayerId = `${layerId}-fill`
+          const outlineLayerId = `${layerId}-outline`
+
+          const fillLayer: { id: string; source: string; type: "fill"; paint: Record<string, unknown> } = {
+            id: fillLayerId,
+            source: sourceId,
+            type: "fill",
+            paint: {
+              "fill-color": layer.style.fillColor || "#bbf7d0",
+              "fill-opacity": typeof layer.style.opacity === "number" ? layer.style.opacity : 0.45,
+              "fill-antialias": true,
+            },
+          }
+           const outlineLayer: { id: string; source: string; type: "line"; paint: Record<string, unknown> } = {
+            id: outlineLayerId,
+            source: sourceId,
+            type: "line",
+            paint: {
+              "line-color": layer.style.strokeColor || (layer.style.fillColor ? layer.style.fillColor : "#16a34a"),
+              "line-width": layer.style.strokeWidth ?? 2,
+              "line-opacity": Math.max(0.8, layer.style.opacity ?? 0.9),
+            },
+          }
+
+          try {
+            // Add fill first, then outline so outline naturally sits above fill
+            if (!map.current.getLayer(fillLayerId)) {
+              map.current!.addLayer(fillLayer as any)
+            }
+            if (!map.current.getLayer(outlineLayerId)) {
+              map.current!.addLayer(outlineLayer as any)
+            }
+
+            // Try to move both to the top of the stack to ensure visibility above rasters
+            try {
+              map.current!.moveLayer(outlineLayerId)
+            } catch {
+              /* ignore */
+            }
+
+            // As extra precaution, update paint properties to ensure strong contrast
+            try {
+              map.current!.setPaintProperty(fillLayerId, "fill-opacity", fillLayer.paint["fill-opacity"])
+              map.current!.setPaintProperty(fillLayerId, "fill-color", fillLayer.paint["fill-color"])
+              map.current!.setPaintProperty(outlineLayerId, "line-color", outlineLayer.paint["line-color"])
+              map.current!.setPaintProperty(outlineLayerId, "line-width", outlineLayer.paint["line-width"])
+            } catch {
+              /* ignore paint failures */
+            }
+          } catch (error) {
+            console.error("Error adding polygon layers", fillLayerId, outlineLayerId, ":", error)
+            return
+          }
+          // Click handlers for both fill and outline
+          // Register handlers: for boundaries register only on the outline layer so
+          // clicking the lines triggers boundary behavior, but clicking inside the
+          // polygon fill will fall through to layers above (like claims).
+          if (layer.id === "boundaries") {
+            // outline clickable
+            try {
+              map.current!.on("click", outlineLayerId, (e) => {
+                if (e.features && e.features.length > 0 && onFeatureClick) {
+                  onFeatureClick({ layer, feature: e.features[0], lngLat: e.lngLat })
+                }
+              })
+              map.current!.on("mouseenter", outlineLayerId, () => {
+                map.current!.getCanvas().style.cursor = "pointer"
+              })
+              map.current!.on("mouseleave", outlineLayerId, () => {
+                map.current!.getCanvas().style.cursor = ""
+              })
+            } catch {
+              /* ignore */
+            }
+          } else {
+            ;[fillLayerId, outlineLayerId].forEach((lid) => {
+              map.current!.on("click", lid, (e) => {
+                if (e.features && e.features.length > 0 && onFeatureClick) {
+                  onFeatureClick({ layer, feature: e.features[0], lngLat: e.lngLat })
+                }
+              })
+              map.current!.on("mouseenter", lid, () => {
+                map.current!.getCanvas().style.cursor = "pointer"
+              })
+              map.current!.on("mouseleave", lid, () => {
+                map.current!.getCanvas().style.cursor = ""
+              })
+            })
+          }
+        } else {
+          // Default to circle for unknown or empty geometry types
+          console.log("Unknown geometry type for layer", layer.id, ", using default circle type")
+          layerConfig.type = "circle"
+          layerConfig.paint = {
+            "circle-radius": 6,
+            "circle-color": layer.style.fillColor || "#3b82f6",
+            "circle-opacity": layer.style.opacity || 0.8,
+            "circle-stroke-color": layer.style.strokeColor || "#ffffff",
+            "circle-stroke-width": layer.style.strokeWidth || 2,
+          }
+          try {
+            if (!map.current.getLayer(layerConfig.id)) {
+              map.current!.addLayer(layerConfig as any)
+            }
+            try {
+              map.current!.moveLayer(layerConfig.id)
+            } catch { }
+          } catch (error) {
+            console.error("Error adding default layer", layerConfig.id, ":", error)
+          }
+        }
+        break
+    }
+  }, [onFeatureClick])
+
+
 
   // Handle layers
   useEffect(() => {
@@ -438,7 +682,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
         }
       }
     })
-  }, [currentLayers, mapLoaded, layers])
+  }, [currentLayers, mapLoaded, layers, addLayerFromSource])
 
   // Ensure boundaries are always rendered on top and have prominent styling.
   useEffect(() => {
@@ -544,248 +788,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
     }
   }, [currentLayers, mapLoaded, addLayerFromSource])
 
-  const addLayerFromSource = (layer: GISLayer, sourceId: string, layerId: string) => {
-    if (!map.current) return
-
-    const layerConfig: { id: string; source: string; type: string; paint?: Record<string, unknown> } = {
-      id: layerId,
-      source: sourceId,
-      type: "circle", // Default type
-    }
-
-    switch (layer.type) {
-      case "geojson":
-        // Determine geometry type from data
-        const features = layer.data?.features || []
-        const geometryType = features.length > 0 ? features[0]?.geometry?.type : null
-
-        console.log("Layer", layer.id, "has", features.length, "features, geometry type:", geometryType)
-
-        if (geometryType === "Point" || geometryType === "MultiPoint") {
-          // Use circle layer for point features
-          layerConfig.type = "circle"
-          layerConfig.paint = {
-            'circle-radius': 8,
-            'circle-color': layer.style.fillColor || '#ff4444',
-            'circle-opacity': layer.style.opacity || 1.0,
-            'circle-stroke-color': layer.style.strokeColor || '#ffffff',
-            'circle-stroke-width': layer.style.strokeWidth || 2,
-          }
-          try {
-            if (!map.current.getLayer(layerConfig.id)) {
-              map.current.addLayer(layerConfig as any)
-            }
-            try {
-              map.current.moveLayer(layerConfig.id)
-            } catch { }
-          } catch (error) {
-            console.error("Error adding circle layer", layerConfig.id, ":", error)
-          }
-
-          // click handlers (skip for boundary layer to make boundaries non-clickable)
-          if (layer.id !== "boundaries") {
-            map.current!.on("click", layerConfig.id, (e) => {
-              if (e.features && e.features.length > 0 && onFeatureClick) {
-                onFeatureClick({ layer, feature: e.features[0], lngLat: e.lngLat })
-              }
-            })
-            map.current!.on("mouseenter", layerConfig.id, () => {
-              map.current!.getCanvas().style.cursor = "pointer"
-            })
-            map.current!.on("mouseleave", layerConfig.id, () => {
-              map.current!.getCanvas().style.cursor = ""
-            })
-          }
-
-          try {
-            // initialize handlers storage on the map instance
-            if (!(map.current as any)._pointLayerHandlers) (map.current as any)._pointLayerHandlers = {}
-
-           
-            
-
-            const updateFn = () => {
-              try {
-                if (!map.current) return
-                // Keep point layers at fixed size regardless of zoom level
-                if (map.current.getLayer(layerConfig.id)) {
-                  try {
-                    // Use fixed radius instead of dynamic calculation
-                    map.current.setPaintProperty(layerConfig.id, "circle-radius", 8)
-                    map.current.setPaintProperty(layerConfig.id, "circle-stroke-width", 2)
-                  } catch { }
-                }
-              } catch{
-                /* ignore update errors */
-              }
-            }
-
-            // remove previous handler for this layer if present
-            if ((map.current as any)._pointLayerHandlers[layerConfig.id]) {
-              try {
-                map.current.off("move", (map.current as any)._pointLayerHandlers[layerConfig.id])
-                map.current.off("zoom", (map.current as any)._pointLayerHandlers[layerConfig.id])
-              } catch { }
-            }
-
-            map.current.on("move", updateFn)
-            map.current.on("zoom", updateFn)
-            (map.current as any)._pointLayerHandlers[layerConfig.id] = updateFn;
-
-            // initialize immediately
-            updateFn()
-          } catch (e) {
-            console.warn("Failed to register point layer size updater for", layerConfig.id, e)
-          }
-        } else if (geometryType === "LineString" || geometryType === "MultiLineString") {
-          layerConfig.type = "line"
-          layerConfig.paint = {
-            "line-color": layer.style.strokeColor || "#16a34a",
-            "line-width": layer.style.strokeWidth || 2,
-            "line-opacity": layer.style.opacity || 0.9,
-          }
-          try {
-            if (!map.current.getLayer(layerConfig.id)) {
-              map.current!.addLayer(layerConfig as any)
-            }
-            try {
-              map.current.moveLayer(layerConfig.id)
-            } catch { }
-          } catch (error) {
-            console.error("Error adding line layer", layerConfig.id, ":", error)
-          }
-
-          if (layer.id !== "boundaries") {
-            map.current!.on("click", layerConfig.id, (e) => {
-              if (e.features && e.features.length > 0 && onFeatureClick) {
-                onFeatureClick({ layer, feature: e.features[0], lngLat: e.lngLat })
-              }
-            })
-            map.current!.on("mouseenter", layerConfig.id, () => {
-              map.current!.getCanvas().style.cursor = "pointer"
-            })
-            map.current!.on("mouseleave", layerConfig.id, () => {
-              map.current!.getCanvas().style.cursor = ""
-            })
-          }
-        } else if (geometryType === "Polygon" || geometryType === "MultiPolygon") {
-          // For polygons, add a fill layer and a separate outline (line) layer to ensure visibility
-          const fillLayerId = `${layerId}-fill`
-          const outlineLayerId = `${layerId}-outline`
-
-          const fillLayer: { id: string; source: string; type: "fill"; paint: Record<string, unknown> } = {
-            id: fillLayerId,
-            source: sourceId,
-            type: "fill",
-            paint: {
-              "fill-color": layer.style.fillColor || "#bbf7d0",
-              "fill-opacity": typeof layer.style.opacity === "number" ? layer.style.opacity : 0.45,
-              "fill-antialias": true,
-            },
-          }
-
-          const outlineLayer: { id: string; source: string; type: "line"; paint: Record<string, unknown> } = {
-            id: outlineLayerId,
-            source: sourceId,
-            type: "line",
-            paint: {
-              "line-color": layer.style.strokeColor || (layer.style.fillColor ? layer.style.fillColor : "#16a34a"),
-              "line-width": layer.style.strokeWidth ?? 2,
-              "line-opacity": Math.max(0.8, layer.style.opacity ?? 0.9),
-            },
-          }
-
-          try {
-            // Add fill first, then outline so outline naturally sits above fill
-            if (!map.current.getLayer(fillLayerId)) {
-              map.current!.addLayer(fillLayer as any)
-            }
-            if (!map.current.getLayer(outlineLayerId)) {
-              map.current!.addLayer(outlineLayer as any)
-            }
-
-            // Try to move both to the top of the stack to ensure visibility above rasters
-            try {
-              map.current!.moveLayer(outlineLayerId)
-            } catch {
-              /* ignore */
-            }
-
-            // As extra precaution, update paint properties to ensure strong contrast
-            try {
-              map.current!.setPaintProperty(fillLayerId, "fill-opacity", fillLayer.paint["fill-opacity"])
-              map.current!.setPaintProperty(fillLayerId, "fill-color", fillLayer.paint["fill-color"])
-              map.current!.setPaintProperty(outlineLayerId, "line-color", outlineLayer.paint["line-color"])
-              map.current!.setPaintProperty(outlineLayerId, "line-width", outlineLayer.paint["line-width"])
-            } catch {
-              /* ignore paint failures */
-            }
-          } catch (error) {
-            console.error("Error adding polygon layers", fillLayerId, outlineLayerId, ":", error)
-            return
-          }
-          // Click handlers for both fill and outline
-          // Register handlers: for boundaries register only on the outline layer so
-          // clicking the lines triggers boundary behavior, but clicking inside the
-          // polygon fill will fall through to layers above (like claims).
-          if (layer.id === "boundaries") {
-            // outline clickable
-            try {
-              map.current!.on("click", outlineLayerId, (e) => {
-                if (e.features && e.features.length > 0 && onFeatureClick) {
-                  onFeatureClick({ layer, feature: e.features[0], lngLat: e.lngLat })
-                }
-              })
-              map.current!.on("mouseenter", outlineLayerId, () => {
-                map.current!.getCanvas().style.cursor = "pointer"
-              })
-              map.current!.on("mouseleave", outlineLayerId, () => {
-                map.current!.getCanvas().style.cursor = ""
-              })
-            } catch {
-              /* ignore */
-            }
-          } else {
-            ;[fillLayerId, outlineLayerId].forEach((lid) => {
-              map.current!.on("click", lid, (e) => {
-                if (e.features && e.features.length > 0 && onFeatureClick) {
-                  onFeatureClick({ layer, feature: e.features[0], lngLat: e.lngLat })
-                }
-              })
-              map.current!.on("mouseenter", lid, () => {
-                map.current!.getCanvas().style.cursor = "pointer"
-              })
-              map.current!.on("mouseleave", lid, () => {
-                map.current!.getCanvas().style.cursor = ""
-              })
-            })
-          }
-        } else {
-          // Default to circle for unknown or empty geometry types
-          console.log("Unknown geometry type for layer", layer.id, ", using default circle type")
-          layerConfig.type = "circle"
-          layerConfig.paint = {
-            "circle-radius": 6,
-            "circle-color": layer.style.fillColor || "#3b82f6",
-            "circle-opacity": layer.style.opacity || 0.8,
-            "circle-stroke-color": layer.style.strokeColor || "#ffffff",
-            "circle-stroke-width": layer.style.strokeWidth || 2,
-          }
-          try {
-            if (!map.current.getLayer(layerConfig.id)) {
-              map.current!.addLayer(layerConfig as any)
-            }
-            try {
-              map.current!.moveLayer(layerConfig.id)
-            } catch { }
-          } catch (error) {
-            console.error("Error adding default layer", layerConfig.id, ":", error)
-          }
-        }
-        break
-    }
-  }
-
+ 
   // Handle markers
   useEffect(() => {
     if (!map.current || !mapLoaded) return
@@ -931,10 +934,14 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
                         }
                       })
                       map.current.on("mouseenter", symbolLayerId, () => {
-                        map.current && map.current.getCanvas && (map.current.getCanvas().style.cursor = "pointer")
+                        if (map.current && map.current.getCanvas) {
+                          map.current.getCanvas().style.cursor = "pointer"
+                        }
                       })
                       map.current.on("mouseleave", symbolLayerId, () => {
-                        map.current && map.current.getCanvas && (map.current.getCanvas().style.cursor = "")
+                        if (map.current && map.current.getCanvas) {
+                          map.current.getCanvas().style.cursor = ""
+                        }
                       })
                     }
                   } catch (err) {
@@ -1260,15 +1267,16 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
     }
 
     if (map.current) {
+      const m = map.current as Map;
       try {
-        if ((map.current as any)._markerZoomHandler) map.current.off("move", (map.current as any)._markerZoomHandler)
+        if ((m as any)._markerZoomHandler) m.off("move", (m as any)._markerZoomHandler)
       } catch { }
       try {
-        if ((map.current as any)._markerZoomHandler) map.current.off("zoom", (map.current as any)._markerZoomHandler)
+        if ((m as any)._markerZoomHandler) m.off("zoom", (m as any)._markerZoomHandler)
       } catch { }
-      map.current.on("move", updateMarkerSizes)
-      map.current.on("zoom", updateMarkerSizes)
-      (map.current as any)._markerZoomHandler = updateMarkerSizes
+      m.on("move", updateMarkerSizes)
+      m.on("zoom", updateMarkerSizes);
+      (m as any)._markerZoomHandler = updateMarkerSizes
       updateMarkerSizes()
     }
 
@@ -1948,7 +1956,9 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
           map.current.flyTo({ center: [lng, lat], zoom: targetZoom, essential: true })
         } catch {
           try {
-            map.current && map.current.setCenter && map.current.setCenter([lng, lat])
+            if (map.current && map.current.setCenter) {
+              map.current.setCenter([lng, lat])
+            }
           } catch{ }
         }
       },
