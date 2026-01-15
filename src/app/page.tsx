@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useTheme } from "@/components/ThemeProvider";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll } from "framer-motion";
 import { Shield} from "lucide-react";
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';

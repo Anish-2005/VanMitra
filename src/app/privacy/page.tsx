@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
-import { motion, AnimatePresence, useScroll, useTransform, useSpring, useInView } from "framer-motion";
-import * as THREE from 'three';
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence, useScroll } from "framer-motion";
 import {
   Database, Users,
   Shield, Target,

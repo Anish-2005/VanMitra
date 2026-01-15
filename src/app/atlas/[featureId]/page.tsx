@@ -100,7 +100,7 @@ export default function FeaturePage({
   const [markers, setMarkers] = useState<GISMarker[]>([]);
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null);
   const [mapZoom, setMapZoom] = useState<number>(12);
-  const [isFetchingBoundaries, setIsFetchingBoundaries] = useState(false);
+  const [, setIsFetchingBoundaries] = useState(false);
   const [toasts, setToasts] = useState<{ id: number; message: string; type?: 'info' | 'error' }[]>([]);
 
   const pushToast = (message: string, type: 'info' | 'error' = 'info') => {
@@ -289,7 +289,7 @@ export default function FeaturePage({
   const derivedDistrict = feature?.properties?.district || "Bhopal";
   const derivedCenter = STATES.find(s => s.name === derivedState)?.center ?? STATES.find(s => s.name === DEFAULT_STATE)?.center ?? [78.9629, 22.9734];
 
-  const [mapLayers, setMapLayers] = useState([
+  const [, setMapLayers] = useState([
     { id: "roads", name: "Roads", visible: true },
     { id: "buildings", name: "Buildings", visible: false },
     { id: "satellite", name: "Satellite Imagery", visible: true },

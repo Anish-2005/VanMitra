@@ -692,7 +692,6 @@ export default function MapPreview({
     try {
       createdMarkers.current.forEach((m) => m.remove && m.remove());
       createdMarkers.current = [];
-      // @ts-ignore
       const maplibregl = (window as any).maplibregl;
       const allMarkers = [...markers];
       if (showCenterMarker) {

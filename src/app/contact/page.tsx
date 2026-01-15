@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
+import { motion, AnimatePresence, useScroll} from "framer-motion";
 import {
    Mail, Phone, MapPin as MapPinIcon,
   Send, MessageSquare, Clock as ClockIcon
@@ -29,7 +29,7 @@ export default function Contact() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [user, setUser] = useState<{ email: string } | null>(null);
+  const [, setUser] = useState<{ email: string } | null>(null);
   const [contactForm, setContactForm] = useState({
     name: "",
     email: "",

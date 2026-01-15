@@ -4,7 +4,6 @@
 import type React from "react"
 import { useRef, useEffect, useState, useCallback, forwardRef, useImperativeHandle } from "react"
 import maplibregl, { type Map, type Marker, type Popup, type GeoJSONSource } from "maplibre-gl"
-import type MaplibreGeocoder from "@maplibre/maplibre-gl-geocoder"
 import * as turf from "@turf/turf"
 import LoadingOverlay from "./map/LoadingOverlay"
 import MapErrorOverlay from "./map/MapErrorOverlay"
@@ -221,7 +220,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
           console.warn("🗺️ Tile error for source:", evt.sourceId, e)
           setMapError(`Tile load error for source ${evt.sourceId}`)
         }
-      } catch (err) {
+      } catch  {
         // ignore
       }
     })
@@ -477,11 +476,9 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
           // Place fill and main sub-layer BEFORE the anchor so they're underneath app layers
           if (map.current.getLayer(subFill)) {
             if (anchor && anchor.id) {
-              // @ts-ignore
               map.current.moveLayer(subFill, anchor.id)
             } else {
               // fallback: move to bottom
-              // @ts-ignore
               map.current.moveLayer(subFill)
             }
           }
