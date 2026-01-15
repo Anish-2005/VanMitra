@@ -39,6 +39,14 @@ const ThreeBackground = dynamicImport(() => import("@/components/ui/ThreeBackgro
 // Client-only components to prevent hydration mismatches
 const DecorativeElements = dynamicImport(() => import('@/components/ui/DecorativeElements'), { ssr: false })
 
+// Import extracted components
+import { AddClaimForm } from '@/components/atlas/AddClaimForm'
+import { SearchByVillageUID } from '@/components/atlas/SearchByVillageUID'
+import { FiltersPanel } from '@/components/atlas/FiltersPanel'
+import { BoundaryLayersPanel } from '@/components/atlas/BoundaryLayersPanel'
+import AtlasLegend from '@/components/atlas/AtlasLegend'
+import { MapToolsSection } from '@/components/atlas/MapToolsSection'
+
 export default function AtlasPage() {
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -672,18 +680,6 @@ export default function AtlasPage() {
     loadBoundaryLayers()
     // applyCounter allows manual re-run when user clicks Apply
   }, [showStateBoundary, showDistrictBoundary, showTehsilBoundary, applyCounter])
-
-  const handleStateChange = (newState: string) => {
-    setPendingStateFilter(newState)
-    const stateData = STATES.find((s) => s.name === newState)
-    if (stateData && stateData.districts.length > 0) {
-      setPendingDistrictFilter(stateData.districts[0])
-    }
-  }
-
-  const handleDistrictChange = (newDistrict: string) => {
-    setPendingDistrictFilter(newDistrict)
-  }
 
   const handleApplyFilters = () => {
     setIsApplyingFilters(true)
@@ -1397,6 +1393,28 @@ export default function AtlasPage() {
     console.log("Map clicked at:", lngLat)
   }
 
+  const handleClaimAreaChange = (area: number) => {
+    // Calculate radius from area (assuming circular area)
+    // Area = πr², so r = sqrt(area/π)
+    // Convert hectares to square meters: area_m2 = area * 10000
+    // r = sqrt(area_m2 / π)
+    if (area > 0) {
+      const areaM2 = area * 10000
+      const radiusM = Math.sqrt(areaM2 / Math.PI)
+      setClaimAreaRadius(radiusM)
+      setAreaEntered(true)
+      if (markerPlaced) {
+        setClaimAreaVisible(true)
+      }
+    } else {
+      // Clear claim area when area is 0 or empty
+      setClaimAreaVisible(false)
+      setClaimAreaRadius(0)
+      setAreaEntered(false)
+      setMarkerPlaced(false)
+    }
+  }
+
   const handleExportMap = async () => {
     console.log("Starting map export...")
     try {
@@ -1714,6 +1732,39 @@ export default function AtlasPage() {
     exportToGeoJSON(allFeatures, filename)
   }
 
+  // Handler functions for FiltersPanel
+  const handleStateChange = (state: string) => {
+    setPendingStateFilter(state)
+  }
+
+  const handleDistrictChange = (district: string) => {
+    setPendingDistrictFilter(district)
+  }
+
+  // Handler functions for BoundaryLayersPanel
+  const handleApplyBoundaries = () => {
+    // Commit pending selections
+    setShowStateBoundary(pendingShowStateBoundary)
+    setShowDistrictBoundary(pendingShowDistrictBoundary)
+    setShowTehsilBoundary(pendingShowTehsilBoundary)
+    // trigger reload effect
+    setApplyCounter((c) => c + 1)
+    // Force WebGIS re-render/refresh so the map re-loads layers and paints
+    setMapKey((k) => k + 1)
+    // Recenter map to state center and reset zoom to a sensible default
+    try {
+      setMapCenter(stateCenter as [number, number])
+    } catch (e) { }
+    setMapZoom(7.5)
+  }
+
+  const handleCancelBoundaries = () => {
+    // Revert pending to committed values
+    setPendingShowStateBoundary(showStateBoundary)
+    setPendingShowDistrictBoundary(showDistrictBoundary)
+    setPendingShowTehsilBoundary(showTehsilBoundary)
+  }
+
   return (
     <ProtectedRoute>
       <div className={
@@ -1847,504 +1898,62 @@ export default function AtlasPage() {
                     } catch (e) { }
                   }}
                 />
-                <GlassCard className={`mb-4 overflow-hidden ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
-                  <div
-                    className={`flex items-center justify-between p-3 cursor-pointer ${isLight ? 'bg-emerald-100 hover:bg-emerald-200' : 'bg-slate-800/50'}`}
-                    onClick={() => setAddClaimOpen((prev) => !prev)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Plus size={16} className={isLight ? 'text-emerald-700' : 'text-emerald-400'} />
-                      <span className={`font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>Add Claim</span>
-                      <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>(manual entry)</span>
-                    </div>
-                    <div className={`transform transition-transform ${addClaimOpen ? "rotate-180" : ""} ${isLight ? 'text-slate-700' : 'text-white'}`}>▼</div>
-                  </div>
-
-                  <AnimatePresence>
-                    {addClaimOpen && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{
-                          duration: 0.4,
-                          ease: [0.4, 0.0, 0.2, 1],
-                          opacity: { duration: 0.2 }
-                        }}
-                        className="overflow-hidden"
-                      >
-                        <div className="p-4 space-y-3">
-                          <div className="grid grid-cols-1 gap-3">
-                            <div>
-                              <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>State</label>
-                              <select
-                                value={newClaim.state_name}
-                                onChange={(e) => {
-                                  const stateName = e.target.value
-                                  setNewClaim((s) => ({ ...s, state_name: stateName, district_name: "", village_name: "" }))
-                                  // Reset district and village when state changes
-                                  setPendingDistrictFilter("")
-                                  setPendingVillageFilter("")
-                                }}
-                                className={`mt-1 w-full rounded-md border p-2 ${isLight
-                                  ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
-                                  : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
-                              >
-                                <option value="">Select State</option>
-                                {(stateOptions.length ? stateOptions : STATES.map((s) => s.name)).map((s) => (
-                                  <option key={s} value={s}>
-                                    {s}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-
-                            <div>
-                              <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>District</label>
-                              <input
-                                type="text"
-                                value={newClaim.district_name}
-                                onChange={(e) => {
-                                  const districtName = e.target.value
-                                  setNewClaim((s) => ({ ...s, district_name: districtName, village_name: "" }))
-                                  // Reset village when district changes
-                                  setPendingVillageFilter("")
-                                }}
-                                className={`mt-1 w-full rounded-md border p-2 ${isLight
-                                  ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
-                                  : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
-                                placeholder="Enter district name"
-                              />
-                            </div>
-
-                            <div>
-                              <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>Village</label>
-                              <div className="flex gap-2">
-                                <input
-                                  type="text"
-                                  value={newClaim.village_name}
-                                  onChange={(e) => setNewClaim((s) => ({ ...s, village_name: e.target.value }))}
-                                  className={`mt-1 flex-1 rounded-md border p-2 ${isLight
-                                    ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
-                                    : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
-                                  placeholder="Enter village name"
-                                />
-                                <button
-                                  onClick={goToVillageArea}
-                                  disabled={!newClaim.village_name || !newClaim.state_name}
-                                  className={`mt-1 px-3 py-2 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isLight
-                                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                                    : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
-                                  type="button"
-                                >
-                                  Go to Area
-                                </button>
-                              </div>
-                            </div>
-
-                            <div>
-                              <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>Claim type</label>
-                              <select
-                                value={newClaim.claim_type}
-                                onChange={(e) => setNewClaim((s) => ({ ...s, claim_type: e.target.value }))}
-                                className={`mt-1 w-full rounded-md border p-2 ${isLight
-                                  ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
-                                  : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
-                              >
-                                <option value="">Select Claim Type</option>
-                                {claimTypeOptions.length ? (
-                                  claimTypeOptions.map((ct) => (
-                                    <option key={ct} value={ct}>
-                                      {ct}
-                                    </option>
-                                  ))
-                                ) : (
-                                  <>
-                                    <option value="IFR">IFR</option>
-                                    <option value="CR">CR</option>
-                                    <option value="CFR">CFR</option>
-                                  </>
-                                )}
-                              </select>
-                            </div>
-
-                            <div>
-                              <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>Claimed area (ha)</label>
-                              <input
-                                type="number"
-                                value={newClaim.claimed_area}
-                                onChange={(e) => {
-                                  const area = Number(e.target.value)
-                                  setNewClaim((s) => ({ ...s, claimed_area: area }))
-
-                                  // Calculate radius from area (assuming circular area)
-                                  // Area = πr², so r = sqrt(area/π)
-                                  // Convert hectares to square meters: area_m2 = area * 10000
-                                  // r = sqrt(area_m2 / π)
-                                  if (area > 0) {
-                                    const areaM2 = area * 10000
-                                    const radiusM = Math.sqrt(areaM2 / Math.PI)
-                                    setClaimAreaRadius(radiusM)
-                                    setAreaEntered(true)
-                                    if (markerPlaced) {
-                                      setClaimAreaVisible(true)
-                                    }
-                                  } else {
-                                    // Clear claim area when area is 0 or empty
-                                    setClaimAreaVisible(false)
-                                    setClaimAreaRadius(0)
-                                    setAreaEntered(false)
-                                    setMarkerPlaced(false)
-                                  }
-                                }}
-                                className={`mt-1 w-full rounded-md border p-2 ${isLight
-                                  ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
-                                  : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
-                                placeholder="Enter area in hectares"
-                              />
-
-                            </div>
-
-                            {lastClickedCoords && addClaimOpen && (
-                              <div>
-                                <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>Last Clicked Coordinates</label>
-                                <div className={`mt-1 p-3 rounded-md ${isLight ? 'bg-slate-100 border border-slate-300' : 'bg-slate-700/50 border border-slate-600'}`}>
-                                  <div className={`text-sm font-mono ${isLight ? 'text-slate-800' : 'text-green-100'}`}>
-                                    <div><strong>Longitude:</strong> {lastClickedCoords[0].toFixed(6)}</div>
-                                    <div><strong>Latitude:</strong> {lastClickedCoords[1].toFixed(6)}</div>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            {markerPlaced && claimAreaCenter && (
-                              <div>
-                                <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>Claim Center Coordinates</label>
-                                <div className={`mt-1 p-3 rounded-md ${isLight ? 'bg-blue-100 border border-blue-300' : 'bg-blue-500/20 border border-blue-400/30'}`}>
-                                  <div className={`text-sm font-mono ${isLight ? 'text-blue-800' : 'text-blue-100'}`}>
-                                    <div><strong>Longitude:</strong> {claimAreaCenter[0].toFixed(6)}</div>
-                                    <div><strong>Latitude:</strong> {claimAreaCenter[1].toFixed(6)}</div>
-                                  </div>
-                                  <div className={`text-xs mt-1 ${isLight ? 'text-blue-600' : 'text-blue-300'}`}>
-                                    Drag the red marker on the map to change these coordinates
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            <div>
-                              <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>Claimant name</label>
-                              <input
-                                value={newClaim.claimant_name}
-                                onChange={(e) => setNewClaim((s) => ({ ...s, claimant_name: e.target.value }))}
-                                className={`mt-1 w-full rounded-md border p-2 ${isLight
-                                  ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
-                                  : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
-                                placeholder="Enter claimant name"
-                              />
-                            </div>
-
-                            <div>
-                              <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>Community name</label>
-                              <input
-                                value={newClaim.community_name}
-                                onChange={(e) => setNewClaim((s) => ({ ...s, community_name: e.target.value }))}
-                                className={`mt-1 w-full rounded-md border p-2 ${isLight
-                                  ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
-                                  : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
-                                placeholder="Enter community name"
-                              />
-                            </div>
-                          </div>
-
-                          {addClaimOpen && (
-                            <div className={`rounded-md p-3 ${isLight ? 'bg-yellow-100 border border-yellow-300' : 'bg-yellow-500/20 border border-yellow-400/30'}`}>
-                              <p className={`text-sm ${isLight ? 'text-yellow-800' : 'text-yellow-200'}`}>
-                                {!markerPlaced
-                                  ? "Click on the map to select a location for your claim."
-                                  : !areaEntered
-                                    ? "Location selected. Enter the claimed area to see the claim boundary."
-                                    : "Claim area is now visible on the map with a red marker. You can drag it to adjust the location."
-                                }
-                              </p>
-                            </div>
-                          )}
-
-                          <div className="flex items-center gap-2 pt-3">
-                            <button
-                              disabled={submittingClaim || !newClaim.state_name || !newClaim.district_name || !newClaim.village_name || !newClaim.claim_type || !newClaim.claimed_area}
-                              onClick={submitNewClaim}
-                              className={`px-4 py-2 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isLight
-                                ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                                : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}
-                            >
-                              {submittingClaim ? 'Submitting...' : 'Submit Claim'}
-                            </button>
-                            <button
-                              onClick={() => {
-                                setAddClaimOpen(false)
-                                setClaimAreaVisible(false)
-                                setClaimAreaCenter(null)
-                                setClaimAreaRadius(0)
-                                setAreaEntered(false)
-                                setMarkerPlaced(false)
-                                setLastClickedCoords(null)
-                                setNewClaim({ state_name: "", district_name: "", village_name: "", claim_type: "", claimant_name: "", community_name: "", claimed_area: 0 })
-                                // Remove claim area marker
-                                setMarkers((prev) => {
-                                  const filtered = prev.filter(m => m.id !== "claim-area-center")
-                                  console.log("Cancel button: Removed claim marker, remaining markers:", filtered.length)
-                                  console.log("Cancel button: Removed marker IDs:", prev.filter(m => m.id === "claim-area-center").map(m => m.id))
-                                  return filtered
-                                })
-                              }}
-                              className={`px-4 py-2 rounded-md transition-colors ${isLight
-                                ? 'border border-slate-300 text-slate-700 hover:bg-slate-100'
-                                : 'border border-green-400/30 text-green-300 hover:bg-green-500/20'}`}
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </GlassCard>
-                <GlassCard className={`my-4 overflow-hidden ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
-                  <div
-                    className={`flex items-center justify-between p-3 cursor-pointer ${isLight ? 'bg-emerald-100 hover:bg-emerald-200' : 'bg-slate-800/50'}`}
-                    onClick={() => setSearchByUidExpanded((s) => !s)}
-                  >
-                    <div>
-                      <h4 className={`text-sm font-semibold ${isLight ? 'text-slate-900' : 'text-white'} mb-0`}>Search by Village UID</h4>
-                      <p className={`text-xs ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>Lookup claims by village identifier</p>
-                    </div>
-                    <div className={`transform transition-transform ${searchByUidExpanded ? "rotate-180" : ""} ${isLight ? 'text-slate-700' : 'text-white'}`}>▼</div>
-                  </div>
-                  <AnimatePresence>
-                    {searchByUidExpanded && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{
-                          duration: 0.4,
-                          ease: [0.4, 0.0, 0.2, 1],
-                          opacity: { duration: 0.2 }
-                        }}
-                        className="overflow-hidden"
-                      >
-                        <div className="p-4 grid grid-cols-1 gap-2">
-                          <input value={(searchVillageUid ?? '') as any} onChange={(e) => setSearchVillageUid(e.target.value)} placeholder="Village UID (integer)" className={`w-full rounded-md border p-2 ${isLight
-                            ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
-                            : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`} />
-                          <input value={searchStatus ?? ''} onChange={(e) => setSearchStatus(e.target.value)} placeholder="Status (optional)" className={`w-full rounded-md border p-2 ${isLight
-                            ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
-                            : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`} />
-                          <input value={searchClaimType ?? ''} onChange={(e) => setSearchClaimType(e.target.value)} placeholder="Claim type (optional)" className={`w-full rounded-md border p-2 ${isLight
-                            ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
-                            : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`} />
-                          <div className="flex items-center gap-2">
-                            <button disabled={searchLoading} onClick={() => runSearchByVillageUid()} className={`px-3 py-1 rounded-md ${searchLoading
-                              ? (isLight ? 'bg-gray-300 text-gray-700 cursor-not-allowed' : 'bg-gray-300 text-gray-700 cursor-not-allowed')
-                              : (isLight ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white')}`}>
-                              {searchLoading ? 'Searching...' : 'Search'}
-                            </button>
-                            <button onClick={() => { setSearchVillageUid(''); setSearchStatus('all'); setSearchClaimType(''); setSearchResultsLayer(null); setVillagePanelOpen(false); setSearchLoading(false); }} className={`px-3 py-1 rounded-md ${isLight
-                              ? 'border border-slate-300 text-slate-700 hover:bg-slate-100'
-                              : 'border border-green-400/30 text-green-300 hover:bg-green-500/20'}`}>Clear</button>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </GlassCard>
+                <AddClaimForm
+                  newClaim={newClaim}
+                  setNewClaim={setNewClaim}
+                  addClaimOpen={addClaimOpen}
+                  setAddClaimOpen={setAddClaimOpen}
+                  submittingClaim={submittingClaim}
+                  submitNewClaim={submitNewClaim}
+                  goToVillageArea={goToVillageArea}
+                  lastClickedCoords={lastClickedCoords}
+                  claimAreaCenter={claimAreaCenter}
+                  markerPlaced={markerPlaced}
+                  areaEntered={areaEntered}
+                  stateOptions={stateOptions}
+                  claimTypeOptions={claimTypeOptions}
+                  onAreaChange={handleClaimAreaChange}
+                />
+                <SearchByVillageUID
+                  searchVillageUid={searchVillageUid}
+                  setSearchVillageUid={setSearchVillageUid}
+                  searchStatus={searchStatus}
+                  setSearchStatus={setSearchStatus}
+                  searchClaimType={searchClaimType}
+                  setSearchClaimType={setSearchClaimType}
+                  searchByUidExpanded={searchByUidExpanded}
+                  setSearchByUidExpanded={setSearchByUidExpanded}
+                  searchLoading={searchLoading}
+                  runSearchByVillageUid={runSearchByVillageUid}
+                />
 
 
               </div>
 
-              <GlassCard className={`overflow-hidden mb-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
-                <div
-                  className={`flex items-center justify-between p-3 cursor-pointer ${isLight ? 'bg-emerald-100 hover:bg-emerald-200' : 'bg-slate-800/50'}`}
-                  onClick={() => setFiltersExpanded((prev) => !prev)}
-                >
-                  <div className="flex items-center gap-2">
-                    <Filter size={16} className={isLight ? 'text-emerald-700' : 'text-emerald-400'} />
-                    <span className={`font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>Filters</span>
-                    <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>(controls)</span>
-                  </div>
-                  <div className={`transform transition-transform ${filtersExpanded ? "rotate-180" : ""} ${isLight ? 'text-slate-700' : 'text-white'}`}>▼</div>
-                </div>
-
-                <AnimatePresence>
-                  {filtersExpanded && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{
-                        duration: 0.4,
-                        ease: [0.4, 0.0, 0.2, 1],
-                        opacity: { duration: 0.2 }
-                      }}
-                      className="overflow-hidden"
-                    >
-                      <div className="p-4 space-y-3">
-                        <div>
-                          <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>State</label>
-                          <select
-                            value={pendingStateFilter}
-                            onChange={(e) => handleStateChange(e.target.value)}
-                            className={`mt-1 w-full rounded-md border p-2 ${isLight
-                              ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
-                              : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
-                          >
-                            <option value="all">All</option>
-                            {(stateOptions.length ? stateOptions : STATES.map((s) => s.name)).map((s) => (
-                              <option key={s} value={s}>
-                                {s}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>District</label>
-                          <select
-                            value={pendingDistrictFilter}
-                            onChange={(e) => handleDistrictChange(e.target.value)}
-                            className={`mt-1 w-full rounded-md border p-2 ${isLight
-                              ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
-                              : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
-                          >
-                            <option value="all">All</option>
-                            {pendingStateFilter !== "all"
-                              ? districtOptionsByState[pendingStateFilter] &&
-                                districtOptionsByState[pendingStateFilter].length
-                                ? districtOptionsByState[pendingStateFilter].map((d) => (
-                                  <option key={d} value={d}>
-                                    {d}
-                                  </option>
-                                ))
-                                : (STATES.find((s) => s.name === pendingStateFilter)?.districts || []).map((d) => (
-                                  <option key={d} value={d}>
-                                    {d}
-                                  </option>
-                                ))
-                              : null}
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>Status</label>
-                          <select
-                            value={pendingStatusFilter}
-                            onChange={(e) => setPendingStatusFilter(e.target.value)}
-                            className={`mt-1 w-full rounded-md border p-2 ${isLight
-                              ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
-                              : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
-                          >
-                            <option value="all">All</option>
-                            {statusOptions.length ? (
-                              statusOptions.map((s) => (
-                                <option key={s} value={s}>
-                                  {String(s).charAt(0).toUpperCase() + String(s).slice(1)}
-                                </option>
-                              ))
-                            ) : (
-                              <>
-                                <option value="approved">Approved</option>
-                                <option value="pending">Pending</option>
-                                <option value="rejected">Rejected</option>
-                              </>
-                            )}
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>Village</label>
-                          <select
-                            value={pendingVillageFilter}
-                            onChange={(e) => setPendingVillageFilter(e.target.value)}
-                            className={`mt-1 w-full rounded-md border p-2 ${isLight
-                              ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
-                              : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
-                          >
-                            <option value="all">All</option>
-                            {pendingDistrictFilter && pendingDistrictFilter !== "all"
-                              ? // Prefer district-scoped villages when district is selected
-                              (villageOptionsByStateAndDistrict[pendingStateFilter] && villageOptionsByStateAndDistrict[pendingStateFilter][pendingDistrictFilter]
-                                ? villageOptionsByStateAndDistrict[pendingStateFilter][pendingDistrictFilter].map((v) => (
-                                  <option key={v} value={v}>
-                                    {v}
-                                  </option>
-                                ))
-                                : // fallback to state-wide villages for the selected state
-                                (villageOptionsByState[pendingStateFilter] || []).map((v) => (
-                                  <option key={v} value={v}>
-                                    {v}
-                                  </option>
-                                )))
-                              : // no district selected: show state-wide list if available otherwise global list
-                              (pendingStateFilter !== "all"
-                                ? (villageOptionsByState[pendingStateFilter] || []).map((v) => (
-                                  <option key={v} value={v}>
-                                    {v}
-                                  </option>
-                                ))
-                                : villageOptions.map((v) => (
-                                  <option key={v} value={v}>
-                                    {v}
-                                  </option>
-                                )))}
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>Claim type</label>
-                          <select
-                            value={pendingClaimTypeFilter ?? ""}
-                            onChange={(e) => setPendingClaimTypeFilter(e.target.value || null)}
-                            className={`mt-1 w-full rounded-md border p-2 ${isLight
-                              ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
-                              : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
-                          >
-                            <option value="">any</option>
-                            {claimTypeOptions.length ? (
-                              claimTypeOptions.map((ct) => (
-                                <option key={ct} value={ct}>
-                                  {ct}
-                                </option>
-                              ))
-                            ) : (
-                              <option value="">(any)</option>
-                            )}
-                          </select>
-                        </div>
-
-                        <div>
-                          <button
-                            onClick={handleApplyFilters}
-                            disabled={isApplyingFilters}
-                            className={`w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isLight
-                              ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                              : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}
-                          >
-                            {isApplyingFilters ? (
-                              <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                Applying...
-                              </>
-                            ) : (
-                              "Apply Filters"
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </GlassCard>
+              <FiltersPanel
+                filtersExpanded={filtersExpanded}
+                setFiltersExpanded={setFiltersExpanded}
+                pendingStateFilter={pendingStateFilter}
+                setPendingStateFilter={setPendingStateFilter}
+                pendingDistrictFilter={pendingDistrictFilter}
+                setPendingDistrictFilter={setPendingDistrictFilter}
+                pendingStatusFilter={pendingStatusFilter}
+                setPendingStatusFilter={setPendingStatusFilter}
+                pendingVillageFilter={pendingVillageFilter}
+                setPendingVillageFilter={setPendingVillageFilter}
+                pendingClaimTypeFilter={pendingClaimTypeFilter}
+                setPendingClaimTypeFilter={setPendingClaimTypeFilter}
+                handleStateChange={handleStateChange}
+                handleDistrictChange={handleDistrictChange}
+                handleApplyFilters={handleApplyFilters}
+                isApplyingFilters={isApplyingFilters}
+                stateOptions={stateOptions}
+                districtOptionsByState={districtOptionsByState}
+                statusOptions={statusOptions}
+                villageOptions={villageOptions}
+                villageOptionsByState={villageOptionsByState}
+                villageOptionsByStateAndDistrict={villageOptionsByStateAndDistrict}
+              />
               <LayerManager
                 layers={[...layers, ...boundaryLayers]}
                 markers={markers}
@@ -2359,99 +1968,19 @@ export default function AtlasPage() {
                 }}
                 initiallyCollapsed={true}
               />
-              <GlassCard className={`overflow-hidden mb-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
-                <div className={`flex items-center justify-between p-3 ${isLight ? 'bg-emerald-100' : 'bg-slate-800/50'}`}>
-                  <div className="flex items-center gap-2">
-                    <Layers size={16} className={isLight ? 'text-emerald-700' : 'text-emerald-400'} />
-                    <span className={`font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>Boundary Layers</span>
-                    <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>(Madhya Pradesh)</span>
-                  </div>
-                </div>
-
-                <div className="p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-red-500 bg-transparent"></div>
-                      <span className={`text-sm font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>State Boundary</span>
-                    </div>
-                    <label className="inline-flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={pendingShowStateBoundary}
-                        onChange={(e) => setPendingShowStateBoundary(e.target.checked)}
-                        className={`rounded ${isLight ? 'border-slate-300 bg-white' : 'border-green-400/30 bg-slate-800/50'}`}
-                      />
-                    </label>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-blue-500 bg-transparent"></div>
-                      <span className={`text-sm font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>District Boundaries</span>
-                    </div>
-                    <label className="inline-flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={pendingShowDistrictBoundary}
-                        onChange={(e) => setPendingShowDistrictBoundary(e.target.checked)}
-                        className={`rounded ${isLight ? 'border-slate-300 bg-white' : 'border-green-400/30 bg-slate-800/50'}`}
-                      />
-                    </label>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-green-500 bg-transparent"></div>
-                      <span className={`text-sm font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>Tehsil Boundaries</span>
-                    </div>
-                    <label className="inline-flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={pendingShowTehsilBoundary}
-                        onChange={(e) => setPendingShowTehsilBoundary(e.target.checked)}
-                        className={`rounded ${isLight ? 'border-slate-300 bg-white' : 'border-green-400/30 bg-slate-800/50'}`}
-                      />
-                    </label>
-                  </div>
-                </div>
-                <div className={`p-3 border-t rounded-b-2xl ${isLight ? 'border-slate-200 bg-slate-100' : 'border-emerald-700/50 bg-emerald-800/30'} flex items-center gap-2`}>
-                  <button
-                    onClick={() => {
-                      // Commit pending selections
-                      setShowStateBoundary(pendingShowStateBoundary)
-                      setShowDistrictBoundary(pendingShowDistrictBoundary)
-                      setShowTehsilBoundary(pendingShowTehsilBoundary)
-                      // trigger reload effect
-                      setApplyCounter((c) => c + 1)
-                      // Force WebGIS re-render/refresh so the map re-loads layers and paints
-                      setMapKey((k) => k + 1)
-                      // Recenter map to state center and reset zoom to a sensible default
-                      try {
-                        setMapCenter(stateCenter as [number, number])
-                      } catch (e) { }
-                      setMapZoom(7.5)
-                    }}
-                    className={`px-3 py-1 rounded-md text-sm transition-colors ${isLight
-                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                      : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}
-                  >
-                    Apply
-                  </button>
-                  <button
-                    onClick={() => {
-                      // Revert pending to committed values
-                      setPendingShowStateBoundary(showStateBoundary)
-                      setPendingShowDistrictBoundary(showDistrictBoundary)
-                      setPendingShowTehsilBoundary(showTehsilBoundary)
-                    }}
-                    className={`px-3 py-1 rounded-md text-sm transition-colors ${isLight
-                      ? 'border border-slate-300 text-slate-700 hover:bg-slate-200'
-                      : 'border border-green-400/30 text-green-300 hover:bg-green-500/20'}`}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </GlassCard>
+              <BoundaryLayersPanel
+                pendingShowStateBoundary={pendingShowStateBoundary}
+                setPendingShowStateBoundary={setPendingShowStateBoundary}
+                pendingShowDistrictBoundary={pendingShowDistrictBoundary}
+                setPendingShowDistrictBoundary={setPendingShowDistrictBoundary}
+                pendingShowTehsilBoundary={pendingShowTehsilBoundary}
+                setPendingShowTehsilBoundary={setPendingShowTehsilBoundary}
+                showStateBoundary={showStateBoundary}
+                showDistrictBoundary={showDistrictBoundary}
+                showTehsilBoundary={showTehsilBoundary}
+                onApplyBoundaries={handleApplyBoundaries}
+                onCancelBoundaries={handleCancelBoundaries}
+              />
 
               <GlassCard className={`mt-4 p-4 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
                 <h5 className={`text-sm font-medium ${isLight ? 'text-slate-900' : 'text-white'} mb-3`}>Legend</h5>

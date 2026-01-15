@@ -15,7 +15,7 @@ interface MapSectionProps {
   villageQuery: string;
   setVillageQuery: (v: string) => void;
   STATES: any[];
-  webGISRef: React.RefObject<WebGISRef>;
+  webGISRef: React.RefObject<WebGISRef | null>;
   stateCenter: number[];
   layers: GISLayer[];
   markers: GISMarker[];
