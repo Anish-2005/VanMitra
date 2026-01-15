@@ -2,14 +2,9 @@
 
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import { useTheme } from "@/components/ThemeProvider";
-import AnimatedCounter from "@/components/ui/AnimatedCounter";
 import { STATES, DEFAULT_STATE, DEFAULT_DISTRICT } from '../../lib/regions';
-import { BarChart, Menu, Shield, X } from "lucide-react";
-import { motion, AnimatePresence, HTMLMotionProps } from "framer-motion";
-const MDiv: React.FC<HTMLMotionProps<"div">> = motion.div;
-const MBackdrop: React.FC<HTMLMotionProps<"div">> = motion.div;
-const MAside: React.FC<HTMLMotionProps<"aside">> = motion.aside;
-import { Leaf, MapPin, Database, Target, Satellite, ArrowRight, TrendingUp, Users, FileText, BarChart3, Download, Filter, Layers, BookOpen, Upload, Eye, Globe } from "lucide-react";
+import { motion, HTMLMotionProps } from "framer-motion";
+import { Database, Target, Satellite, FileText } from "lucide-react";
 import dynamic from 'next/dynamic';
 import DecorativeElements from "@/components/ui/DecorativeElements";
 import Navbar from "@/components/ui/Navbar";

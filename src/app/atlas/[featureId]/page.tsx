@@ -5,7 +5,6 @@ import { useTheme } from "@/components/ThemeProvider";
 import * as turf from '@turf/turf';
 import { Ruler, Download, Layers, ArrowLeft, ChevronDown } from 'lucide-react';
 import Link from "next/link";
-import DecorativeBackground from "@/components/ui/DecorativeBackground";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { exportToGeoJSON } from '@/lib/gis-utils';
 import { STATES, DEFAULT_STATE } from '@/lib/regions';
@@ -13,8 +12,6 @@ import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "@/components/ui/Navbar";
 import GlassCard from "@/components/ui/GlassCard";
-import MagneticButton from "@/components/ui/MagneticButton";
-import AnimatedCounter from "@/components/ui/AnimatedCounter";
 import type { WebGISRef, GISLayer, GISMarker } from "@/components/WebGIS";
 import LoadingState from "@/components/atlas/LoadingState";
 import ErrorState from "@/components/atlas/ErrorState";
@@ -274,10 +271,10 @@ export default function FeaturePage({
               setMapZoom(12);
             }
           }
-        } catch (e) {
+        } catch  {
           // fallback: do nothing
         }
-      } catch (err) {
+      } catch(err) {
         console.error('Failed to fetch claim', err);
         setError('Failed to load feature');
       } finally {

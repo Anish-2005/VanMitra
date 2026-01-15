@@ -171,7 +171,7 @@ export default function AtlasPage() {
     const readParams = () => {
       try {
         setSearchParams(new URLSearchParams(window.location.search))
-      } catch (e) {
+      } catch {
         setSearchParams(null)
       }
     }
@@ -205,7 +205,7 @@ export default function AtlasPage() {
       setVillageFilter(v)
       setStatusFilter(st)
       setClaimTypeFilter(ct ?? null)
-    } catch (e) {
+    } catch {
       // noop
     }
     // Intentionally depend on searchParams so updates to the URL reflect in UI
@@ -226,7 +226,7 @@ export default function AtlasPage() {
                 if (v) params.set(k, v)
               }
             }
-          } catch (ee) {
+          } catch {
             // fallback: ignore
           }
           if (!params.has("limit")) params.set("limit", "1000")
@@ -319,7 +319,6 @@ export default function AtlasPage() {
     }
   }, [searchParams])
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const controller = new AbortController()
     const fetchClaims = async () => {
@@ -380,7 +379,7 @@ export default function AtlasPage() {
                     if (!areaVal || areaVal === 0) {
                       try {
                         areaVal = turf.area(f) / 10000
-                      } catch (ee) {
+                      } catch {
                         areaVal = 0
                       }
                     }
@@ -410,7 +409,7 @@ export default function AtlasPage() {
                     })
                   }
                 }
-              } catch (e) {
+              } catch {
                 // fallback to safe centroid calculation
                 try {
                   const coords =
@@ -436,7 +435,7 @@ export default function AtlasPage() {
                       raw: f.properties,
                     })
                   }
-                } catch (ee) {
+                } catch {
                   // ignore centroid errors
                 }
               }
@@ -572,7 +571,7 @@ export default function AtlasPage() {
             else z = 6
             setMapZoom(z)
           }
-        } catch (e) {
+        } catch {
           // ignore centering errors
         }
       } catch (err) {
@@ -695,7 +694,7 @@ export default function AtlasPage() {
       if (pendingClaimTypeFilter) params.set("claim_type", pendingClaimTypeFilter)
       const qs = params.toString() ? `?${params.toString()}` : ""
       router.push(`/atlas${qs}`)
-    } catch (e) {
+    } catch {
       // ignore navigation errors
     }
 
@@ -776,7 +775,7 @@ export default function AtlasPage() {
     const options: Intl.NumberFormatOptions = Math.abs(n) < 1 ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { maximumFractionDigits: 2 }
     try {
       return new Intl.NumberFormat(undefined, options).format(n)
-    } catch (e) {
+    } catch {
       return n.toFixed(2)
     }
   }
@@ -961,7 +960,7 @@ export default function AtlasPage() {
           `UID ${vid} → ${villageLabel ?? 'unknown'} (claims: ${ids || 'none'}) via ${usedUrl || 'unknown'} — sample: ${JSON.stringify(rawSamples)}`,
           "info",
         )
-      } catch (e) {
+      } catch {
         // ignore toast errors
       }
 
@@ -984,7 +983,7 @@ export default function AtlasPage() {
           const [lng, lat] = cent.geometry.coordinates
           webGISRef.current?.flyTo?.(lng, lat, 12)
         }
-      } catch (e) {
+      } catch {
         // ignore
       }
 
@@ -1046,7 +1045,7 @@ export default function AtlasPage() {
         const geom = feature.geometry ?? feature
         const areaSqM = turf.area(geom)
         areaHa = areaSqM / 10000
-      } catch (e) {
+      } catch {
         areaHa = null
       }
 
@@ -1159,7 +1158,7 @@ export default function AtlasPage() {
         setVillageClaims(Array.from(byId.values()))
         return
       }
-    } catch (err) {
+    } catch {
       // ignore and fallback to in-memory
     }
 
@@ -1244,7 +1243,7 @@ export default function AtlasPage() {
         setVillageClaims(Array.from(byId.values()))
         return
       }
-    } catch (err) {
+    } catch {
       // ignore and fallback
     }
 
@@ -1309,7 +1308,7 @@ export default function AtlasPage() {
         setVillageClaims(Array.from(byId.values()))
         return
       }
-    } catch (err) {
+    } catch {
       // fallback to in-memory
     }
 
@@ -1423,7 +1422,7 @@ export default function AtlasPage() {
     } catch (error) {
       try {
         console.error("Export failed:", error instanceof Error ? error.message : String(error))
-      } catch (logError) {
+      } catch {
         console.error("Export failed (could not log error details)")
       }
       alert("Export failed. Please try refreshing the page or taking a manual screenshot.")
@@ -1696,20 +1695,10 @@ export default function AtlasPage() {
           pushToast("Could not find village location", "error")
         }
       }
-    } catch (err) {
-      console.error("Error fetching village coordinates:", err)
+    } catch {
+      console.error("Error fetching village coordinates")
       pushToast("Failed to find village location", "error")
     }
-  }
-
-  const handleStartMeasurement = () => {
-    setIsMeasuring(true)
-    setMeasurementDistance(null)
-  }
-
-  const handleClearMeasurement = () => {
-    setIsMeasuring(false)
-    setMeasurementDistance(null)
   }
 
   const handleExportGeoJSON = () => {
@@ -2111,7 +2100,7 @@ export default function AtlasPage() {
                           try {
                             const data = selectedFeature.feature?.type === 'Feature' ? selectedFeature.feature : { type: 'Feature', properties: selectedFeature.properties, geometry: selectedFeature.feature }
                             exportToGeoJSON([data], `${(selectedFeature.properties?._label || 'boundary').replace(/\s+/g, '_')}.geojson`)
-                          } catch (e) {
+                          } catch {
                             pushToast('Export failed', 'error')
                           }
                         }}

@@ -1,14 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
-import { motion, AnimatePresence, useScroll, useTransform, useSpring, useInView } from "framer-motion";
-import * as THREE from 'three';
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import {
-  ArrowRight, Leaf, MapPin, Server, Database, Layers,
-  Cloud, Cpu, BookOpen, Clock, Check, Users,
-  Shield, BarChart3, Target, Satellite, Map, Sparkles, Zap, Globe,
-  Info, ChevronDown, ChevronUp, Search, Filter, FileText,
-  Sprout, Droplets, Trees, Mountain, Sun, Mail, Phone, MapPin as MapPinIcon,
+   Mail, Phone, MapPin as MapPinIcon,
   Send, MessageSquare, Clock as ClockIcon
 } from "lucide-react";
 import dynamic from 'next/dynamic';
