@@ -37,14 +37,16 @@ const AtlasLegend: React.FC<AtlasLegendProps> = ({
                   <span style={{ width: 16, height: 12, background: color, display: "inline-block", borderRadius: 3, border: "1px solid rgba(255,255,255,0.1)" }} />
                   <span className={`text-sm ${isLight ? 'text-slate-900' : 'text-white'}`}>{ct} Areas</span>
                 </div>
-                <label className="inline-flex items-center gap-2">
+                <label className="inline-flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={visible}
                     onChange={() => handleLayerToggle(layerId)}
-                    className={`rounded ${isLight ? 'border-slate-300 bg-white' : 'border-green-400/30 bg-slate-800/50'}`}
+                    className={`w-4 h-4 rounded border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${isLight
+                      ? 'border-slate-300 bg-white focus:ring-emerald-500 focus:border-emerald-500 checked:bg-emerald-600 checked:border-emerald-600'
+                      : 'border-green-400/30 bg-slate-800/50 focus:ring-emerald-400 focus:border-emerald-400 checked:bg-emerald-500 checked:border-emerald-500'}`}
                   />
-                  <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>{visible ? "Visible" : "Hidden"}</span>
+                  <span className={`text-sm font-medium ${isLight ? 'text-slate-700' : 'text-green-300'}`}>{visible ? "Visible" : "Hidden"}</span>
                 </label>
               </div>
             </div>
@@ -53,15 +55,18 @@ const AtlasLegend: React.FC<AtlasLegendProps> = ({
       ) : (
         <div className={`text-xs ${isLight ? 'text-emerald-600' : 'text-green-400'}`}>No claim types available</div>
       )}
-      <div className="pt-2 border-t border-emerald-700/50">
-        <div className={`text-xs ${isLight ? 'text-emerald-600' : 'text-green-400'}`}>
-          <div className={`font-medium mb-1 ${isLight ? 'text-slate-900' : 'text-white'}`}>Note:</div>
-          <div>Symbols for claim centroids have been removed for a cleaner overview.</div>
-          <div>Use the area layers and zoom controls to inspect claims.</div>
+      <div className={`pt-3 mt-3 border-t ${isLight ? 'border-slate-200' : 'border-emerald-700/50'}`}>
+        <div className={`text-xs ${isLight ? 'text-slate-600' : 'text-green-400'}`}>
+          <div className={`font-medium mb-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>Note:</div>
+          <div className="space-y-1">
+            <div>Symbols for claim centroids have been removed for a cleaner overview.</div>
+            <div>Use the area layers and zoom controls to inspect claims.</div>
+          </div>
         </div>
       </div>
     </div>
   </GlassCard>
 );
+};
 
 export default AtlasLegend;

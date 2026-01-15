@@ -1,10 +1,10 @@
 import React from "react";
-import WebGIS, { type WebGISRef as WebGISRefType } from "@/components/WebGIS";
-import GlassCard from "@/components/ui/GlassCard";
+import WebGIS, { type WebGISRef as WebGISRefType } from "../WebGIS";
+import GlassCard from "../ui/GlassCard";
 import { motion } from "framer-motion";
+import { useTheme } from "../ThemeProvider";
 
 interface AtlasMapSectionProps {
-  isLight: boolean;
   mapKey: number;
   mapCenter: [number, number] | null;
   stateCenter: [number, number];
@@ -22,7 +22,6 @@ interface AtlasMapSectionProps {
 }
 
 const AtlasMapSection: React.FC<AtlasMapSectionProps> = ({
-  isLight,
   mapKey,
   mapCenter,
   stateCenter,
@@ -37,7 +36,11 @@ const AtlasMapSection: React.FC<AtlasMapSectionProps> = ({
   stateFilter,
   districtFilter,
   handleLayerToggle,
-}) => (
+}) => {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
+
+  return (
   <motion.div initial={{ y: 8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
     <GlassCard className={`p-0 overflow-hidden ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
       <div className="w-full h-[560px] relative rounded-2xl">
@@ -70,5 +73,5 @@ const AtlasMapSection: React.FC<AtlasMapSectionProps> = ({
     </GlassCard>
   </motion.div>
 );
-
+};
 export default AtlasMapSection;
