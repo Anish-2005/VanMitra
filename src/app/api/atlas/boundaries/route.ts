@@ -36,7 +36,13 @@ export async function GET(request: NextRequest) {
           if (res.ok) {
             const data = await res.json()
             if (data && data.type === 'FeatureCollection') {
-              return NextResponse.json(data)
+              return NextResponse.json(data, {
+                headers: {
+                  'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+                  'CDN-Cache-Control': 'max-age=3600',
+                  'Vercel-CDN-Cache-Control': 'max-age=3600'
+                }
+              })
             }
             console.log('datta07 Madhya Pradesh file fetched but not a FeatureCollection, falling back')
           } else {
@@ -57,7 +63,13 @@ export async function GET(request: NextRequest) {
         if (fs.existsSync(filePath)) {
           const content = fs.readFileSync(filePath, 'utf8')
           const geojson = JSON.parse(content)
-          return NextResponse.json(geojson)
+          return NextResponse.json(geojson, {
+            headers: {
+              'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+              'CDN-Cache-Control': 'max-age=3600',
+              'Vercel-CDN-Cache-Control': 'max-age=3600'
+            }
+          })
         } else {
           console.log('Local state GeoJSON not found, falling back to combined sources')
           // fallthrough to combined behavior
@@ -82,7 +94,13 @@ export async function GET(request: NextRequest) {
           const data = await res.json()
           if (data && data.features && data.features.length > 0) {
             console.log(`✅ Retrieved ${data.features.length} district features from datta07`)
-            return NextResponse.json(data)
+            return NextResponse.json(data, {
+              headers: {
+                'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+                'CDN-Cache-Control': 'max-age=3600',
+                'Vercel-CDN-Cache-Control': 'max-age=3600'
+              }
+            })
           }
           console.log('datta07 districts file returned no features, falling back to combined sources')
         } else {
@@ -107,7 +125,13 @@ export async function GET(request: NextRequest) {
           const data = await res.json()
           if (data && data.features && data.features.length > 0) {
             console.log(`✅ Retrieved ${data.features.length} tehsil/subdistrict features from datta07`)
-            return NextResponse.json(data)
+            return NextResponse.json(data, {
+              headers: {
+                'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+                'CDN-Cache-Control': 'max-age=3600',
+                'Vercel-CDN-Cache-Control': 'max-age=3600'
+              }
+            })
           }
           console.log('datta07 subdistricts file returned no features, falling back to combined sources')
         } else {
@@ -216,7 +240,13 @@ export async function GET(request: NextRequest) {
       finalFeatures.push(f)
     }
 
-    return NextResponse.json({ type: 'FeatureCollection', features: finalFeatures })
+    return NextResponse.json({ type: 'FeatureCollection', features: finalFeatures }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+        'CDN-Cache-Control': 'max-age=3600',
+        'Vercel-CDN-Cache-Control': 'max-age=3600'
+      }
+    })
 
   } catch (error) {
     console.error("Error fetching boundary data:", error)
@@ -1051,7 +1081,13 @@ async function getFallbackBoundaryData(level: string, state: string) {
           }
         }]
       }
-      return NextResponse.json(mpBoundary)
+      return NextResponse.json(mpBoundary, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+          'CDN-Cache-Control': 'max-age=3600',
+          'Vercel-CDN-Cache-Control': 'max-age=3600'
+        }
+      })
     }
 
     if (level === "district" && state === "Madhya Pradesh") {
@@ -1213,7 +1249,13 @@ async function getFallbackBoundaryData(level: string, state: string) {
           }
         ]
       }
-      return NextResponse.json(districtBoundaries)
+      return NextResponse.json(districtBoundaries, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+          'CDN-Cache-Control': 'max-age=3600',
+          'Vercel-CDN-Cache-Control': 'max-age=3600'
+        }
+      })
     }
 
     if (level === "tehsil" && state === "Madhya Pradesh") {
@@ -1375,7 +1417,13 @@ async function getFallbackBoundaryData(level: string, state: string) {
           }
         ]
       }
-      return NextResponse.json(tehsilBoundaries)
+      return NextResponse.json(tehsilBoundaries, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+          'CDN-Cache-Control': 'max-age=3600',
+          'Vercel-CDN-Cache-Control': 'max-age=3600'
+        }
+      })
     }
 
     // Default empty response

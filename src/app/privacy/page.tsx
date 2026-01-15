@@ -10,13 +10,16 @@ import {
   Info, ChevronDown, ChevronUp, Search, Filter, FileText,
   Sprout, Droplets, Trees, Mountain, Sun, ShieldCheck, Eye, Lock
 } from "lucide-react";
+import dynamic from 'next/dynamic';
 import Navbar from "@/components/ui/Navbar";
-import Footer from "@/components/ui/Footer";
-import ThreeBackground from "@/components/ui/ThreeBackground";
-import DecorativeElements from "@/components/ui/DecorativeElements";
 import GlassCard from "@/components/ui/GlassCard";
 import MagneticButton from "@/components/ui/MagneticButton";
 import { useTheme } from "@/components/ThemeProvider";
+
+// Dynamically import heavy components to reduce initial bundle size
+const Footer = dynamic(() => import('@/components/ui/Footer'), { ssr: false });
+const ThreeBackground = dynamic(() => import('@/components/ui/ThreeBackground'), { ssr: false });
+const DecorativeElements = dynamic(() => import('@/components/ui/DecorativeElements'), { ssr: false });
 
 export default function Privacy() {
   const { theme } = useTheme();

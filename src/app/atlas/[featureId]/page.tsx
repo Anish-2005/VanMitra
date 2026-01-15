@@ -7,17 +7,27 @@ import { Ruler, Download, Layers, ArrowLeft, ChevronDown } from 'lucide-react';
 import Link from "next/link";
 import DecorativeBackground from "@/components/ui/DecorativeBackground";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import WebGIS, { GISLayer, GISMarker, WebGISRef } from "@/components/WebGIS";
 import { exportToGeoJSON } from '@/lib/gis-utils';
 import { STATES, DEFAULT_STATE } from '@/lib/regions';
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "@/components/ui/Navbar";
-import Footer from "@/components/ui/Footer";
-import ThreeBackground from "@/components/ui/ThreeBackground";
 import GlassCard from "@/components/ui/GlassCard";
 import MagneticButton from "@/components/ui/MagneticButton";
 import AnimatedCounter from "@/components/ui/AnimatedCounter";
+import type { WebGISRef, GISLayer, GISMarker } from "@/components/WebGIS";
+
+// Dynamically import heavy components to reduce initial bundle size
+const WebGIS = dynamic(() => import("@/components/WebGIS"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-96 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+      <div className="text-gray-500 dark:text-gray-400">Loading GIS interface...</div>
+    </div>
+  )
+});
+const Footer = dynamic(() => import('@/components/ui/Footer'), { ssr: false });
+const ThreeBackground = dynamic(() => import('@/components/ui/ThreeBackground'), { ssr: false });
 
 // Client-only components to prevent hydration mismatches
 const DecorativeElements = dynamic(() => import('@/components/ui/DecorativeElements'), { ssr: false });

@@ -487,6 +487,12 @@ export async function GET(request: Request) {
       }
     };
 
-    return NextResponse.json(geojson);
+    return NextResponse.json(geojson, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+        'CDN-Cache-Control': 'max-age=3600',
+        'Vercel-CDN-Cache-Control': 'max-age=3600'
+      }
+    });
   }
 }
