@@ -6,7 +6,6 @@ import { useRef, useEffect, useState, useCallback, forwardRef, useImperativeHand
 import maplibregl, { type Map, type Marker, type Popup, type GeoJSONSource } from "maplibre-gl"
 import type MaplibreGeocoder from "@maplibre/maplibre-gl-geocoder"
 import * as turf from "@turf/turf"
-import { Layers, Ruler, MapPin } from "lucide-react"
 import LoadingOverlay from "./map/LoadingOverlay"
 import MapErrorOverlay from "./map/MapErrorOverlay"
 import WebGISControls from "./map/WebGISControls"
@@ -83,13 +82,11 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
     markers = [],
     onFeatureClick,
     onMapClick,
-    enableGeocoder = true,
     enableMeasurement = true,
     className = "w-full h-full",
     showControls = true,
     showLayerControls = true,
     showMeasurementControls = true,
-    showExportControls = true,
     onLayerToggle: externalLayerToggle,
     onStartMeasurement: externalStartMeasurement,
     onClearMeasurement: externalClearMeasurement,
@@ -105,7 +102,6 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
   const map = useRef<Map | null>(null)
   const markersRef = useRef<Marker[]>([])
   const popupsRef = useRef<Popup[]>([])
-  const geocoderRef = useRef<MaplibreGeocoder | null>(null)
   const measurementPoints = useRef<maplibregl.LngLat[]>([])
   const measurementLine = useRef<string | null>(null)
 
@@ -327,14 +323,14 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
         if (map.current!.getLayer(fillId)) {
           try {
             map.current!.removeLayer(fillId)
-          } catch (e) {
+          } catch  {
             /* ignore */
           }
         }
         if (map.current!.getLayer(outlineId)) {
           try {
             map.current!.removeLayer(outlineId)
-          } catch (e) {
+          } catch  {
             /* ignore */
           }
         }
@@ -369,7 +365,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
           if (map.current!.getLayer(id)) {
             try {
               map.current!.removeLayer(id)
-            } catch (e) {
+            } catch  {
               /* ignore */
             }
           }
@@ -386,13 +382,13 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
             const h = (map.current as any)._pointLayerHandlers[pointHandlerKey]
             try {
               if (map.current) map.current.off("move", h)
-            } catch (e) { }
+            } catch  { }
             try {
               if (map.current) map.current.off("zoom", h)
-            } catch (e) { }
+            } catch  { }
             delete (map.current as any)._pointLayerHandlers[pointHandlerKey]
           }
-        } catch (e) { }
+        } catch  { }
 
         // Special-case: if this is the boundaries layer, we previously created
         // district/state sub-sources and sub-layers. Remove those explicitly.
@@ -417,14 +413,14 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
                 if (map.current!.getSource(subSource)) {
                   try {
                     map.current!.removeSource(subSource)
-                  } catch (e) {
+                  } catch  {
                     /* ignore */
                   }
                 }
-              } catch (e) { }
+              } catch  { }
             }
           }
-        } catch (e) {
+        } catch  {
           /* ignore */
         }
 
@@ -433,11 +429,11 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
           if (map.current!.getSource(sourceId)) {
             try {
               map.current!.removeSource(sourceId)
-            } catch (e) {
+            } catch  {
               // Some sources may be shared; ignore removal errors
             }
           }
-        } catch (e) {
+        } catch  {
           /* ignore */
         }
       }
@@ -515,12 +511,12 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
                 // @ts-ignore
                 if (nextLayer) map.current.moveLayer(subOutline, nextLayer)
                 else map.current.moveLayer(subOutline)
-              } catch (err) {
+              } catch  {
                 // fallback to moving to top
                 try {
                   // @ts-ignore
                   map.current.moveLayer(subOutline)
-                } catch (e) { }
+                } catch  { }
               }
             } else {
               // fallback: move outline to top
@@ -528,7 +524,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
               map.current.moveLayer(subOutline)
             }
           }
-        } catch (e) { }
+        } catch  { }
       }
 
       console.log('Placed boundaries sub-layers beneath application layers to keep claims clickable')
@@ -551,7 +547,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
           }
         }
       }
-    } catch (e) {
+    } catch {
       /* ignore */
     }
   }, [currentLayers, mapLoaded])

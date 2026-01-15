@@ -10,7 +10,6 @@ type Layers = { fra?: boolean; boundaries?: boolean | string | string[]; assets?
 const createMarkerElement = (m: any) => {
   const el = document.createElement("div");
   const size = m.size ?? 24; // default larger for SVG
-  const color = (m as any).color || "#16a34a";
   const outline = (m as any).outline || '#ecfccb';
   
   el.style.transform = 'translate(-50%, -100%)'; // pin should point to location
@@ -69,7 +68,6 @@ export default function MapPreview({
     }
 
     const init = () => {
-      // @ts-ignore
       const maplibregl = (window as any).maplibregl;
       if (!maplibregl || !ref.current) return;
 
@@ -109,10 +107,10 @@ export default function MapPreview({
           const el = createMarkerElement(m);
           const marker = new maplibregl.Marker({ element: el }).setLngLat([m.lng, m.lat]).addTo(map);
           // attach marker metadata
-          try { (marker as any).__markerData = { maxDiameterMeters: (m as any).maxDiameterMeters || 50000 }; } catch (e) {}
+          try { (marker as any).__markerData = { maxDiameterMeters: (m as any).maxDiameterMeters || 50000 }; } catch {}
           createdMarkers.current.push(marker);
         });
-      } catch (e) {
+      } catch {
         // ignore marker errors
       }      // zoom-based dynamic sizing for preview markers
       const metersPerPixelAt = (lat: number, zoomLevel: number) => {
@@ -138,9 +136,9 @@ export default function MapPreview({
                 svg.setAttribute('width', clampedSize.toString());
                 svg.setAttribute('height', clampedSize.toString());
               }
-            } catch (err) {}
+            } catch {}
           });
-        } catch (err) {}
+        } catch {}
       };
 
       map.on('zoom', updatePreviewMarkerSizes);
@@ -261,8 +259,8 @@ export default function MapPreview({
                   try {
                     const hlSource = 'src-highlight';
                     const hlLayer = 'layer-highlight';
-                    try { if (map.getLayer(hlLayer)) map.removeLayer(hlLayer); } catch (er) {}
-                    try { if (map.getSource(hlSource)) map.removeSource(hlSource); } catch (er) {}
+                    try { if (map.getLayer(hlLayer)) map.removeLayer(hlLayer); } catch {}
+                    try { if (map.getSource(hlSource)) map.removeSource(hlSource); } catch {}
                     const geom = feat.geometry && Object.keys(feat.geometry).length ? feat.geometry : { type: 'Point', coordinates: [e.lngLat.lng, e.lngLat.lat] };
                     const highlightGeojson: any = { type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: geom }] };
                     map.addSource(hlSource, { type: 'geojson', data: highlightGeojson });
@@ -274,10 +272,10 @@ export default function MapPreview({
                     if (hlType === 'line') hlLayerDef.paint = { 'line-color': '#f97316', 'line-width': 3 };
                     map.addLayer(hlLayerDef);
                     createdLayers.current[hlLayer] = true;
-                  } catch (err) {}
+                  } catch {}
 
                   // fly to feature
-                  try { if (e.lngLat && map.flyTo) map.flyTo({ center: e.lngLat, zoom: Math.max(map.getZoom ? map.getZoom() : 12, 12), essential: true }); } catch (err) {}
+                  try { if (e.lngLat && map.flyTo) map.flyTo({ center: e.lngLat, zoom: Math.max(map.getZoom ? map.getZoom() : 12, 12), essential: true }); } catch {}
 
                   // If this is a tehsil (or tehsil sub-layer), show a popup with name, claim count and sample claims.
                   try {
@@ -305,12 +303,12 @@ export default function MapPreview({
                     const isTehsil = level.includes('tehsil') || String(lid).toLowerCase().includes('tehsil') || String(p?.TEHSIL || p?.tehsil).toLowerCase().includes('tehsil');
 
                     // remove existing pointer marker/popup
-                    try { if (pointerMarkerRef.current) { pointerMarkerRef.current.remove(); pointerMarkerRef.current = null; } } catch (e) {}
-                    try { if (pointerPopupRef.current) { pointerPopupRef.current.remove(); pointerPopupRef.current = null; } } catch (e) {}
+                    try { if (pointerMarkerRef.current) { pointerMarkerRef.current.remove(); pointerMarkerRef.current = null; } } catch  {}
+                    try { if (pointerPopupRef.current) { pointerPopupRef.current.remove(); pointerPopupRef.current = null; } } catch  {}
 
                     // compute centroid for pointer (fallback to click location)
                     let centroid: any = null;
-                    try { centroid = turf.centroid(feat); } catch (e) {}
+                    try { centroid = turf.centroid(feat); } catch  {}
                     const cenCoords = centroid && centroid.geometry && centroid.geometry.coordinates ? centroid.geometry.coordinates : [e.lngLat.lng, e.lngLat.lat];
 
                     // create a small pointer SVG (we will embed it into popup HTML so it's always visible)
@@ -322,9 +320,9 @@ export default function MapPreview({
                       el.style.transform = 'translate(-50%, -100%)';
                       el.style.pointerEvents = 'none';
                       el.style.zIndex = '99999';
-                      try { if (pointerMarkerRef.current) { pointerMarkerRef.current.remove(); pointerMarkerRef.current = null; } } catch (e) {}
+                      try { if (pointerMarkerRef.current) { pointerMarkerRef.current.remove(); pointerMarkerRef.current = null; } } catch  {}
                       pointerMarkerRef.current = new (window as any).maplibregl.Marker({ element: el, interactive: false }).setLngLat(cenCoords).addTo(map);
-                    } catch (err) {}
+                    } catch  {}
 
                     // create popup at click location with counting placeholder and embedded pin so pointer is visible inside popup
                     const popupHtmlId = `claims-count-${Date.now()}`;
@@ -349,7 +347,7 @@ export default function MapPreview({
                           if (data && data.type === 'FeatureCollection' && Array.isArray(data.features)) {
                             feats = data.features
                           } else if (Array.isArray(data)) {
-                            feats = data.map((item: any, idx: number) => {
+                            feats = data.map((item: any,) => {
                               // If it's already a Feature
                               if (item && item.type === 'Feature' && item.geometry) return item
                               // If it has geometry
@@ -407,21 +405,21 @@ export default function MapPreview({
                                             try {
                                               if (!bf || !bf.geometry) return false;
                                               return turf.booleanPointInPolygon(centroidTest, bf);
-                                            } catch (err) { return false; }
+                                            } catch { return false; }
                                           });
                                           if (foundBySpatial) polyFeature = foundBySpatial;
-                                        } catch (err) {
+                                        } catch {
                                           // ignore spatial errors
                                         }
                                       }
                                 }
-                              } catch (e) {
+                              } catch {
                                 // ignore fetch errors, fallback below
                               }
                               // fallback: use clicked geometry as feature (may be a LineString) — boolean checks will likely return false but avoid throwing
                               if (!polyFeature) polyFeature = feat.type === 'Feature' ? feat : { type: 'Feature', properties: feat.properties || {}, geometry: feat.geometry || { type: 'Point', coordinates: [e.lngLat.lng, e.lngLat.lat] } };
                             }
-                          } catch (ee) {
+                          } catch {
                             polyFeature = feat.type === 'Feature' ? feat : { type: 'Feature', properties: feat.properties || {}, geometry: feat.geometry || { type: 'Point', coordinates: [e.lngLat.lng, e.lngLat.lat] } };
                           }
 
@@ -442,11 +440,11 @@ export default function MapPreview({
                                     try {
                                       const buf = turf.buffer(polyFeature as any, 0.001, { units: 'kilometers' });
                                       if (buf && turf.booleanPointInPolygon(pt, buf as any)) matches.push(f);
-                                    } catch (e) {
+                                    } catch  {
                                       // buffer failed -> skip
                                     }
                                   }
-                                } catch (inner) {}
+                                } catch {}
                               } else {
                                 const featB = f.type === 'Feature' ? f : { type: 'Feature', properties: f.properties || {}, geometry: f.geometry };
                                 try {
@@ -456,13 +454,13 @@ export default function MapPreview({
                                       try {
                                         const buf = turf.buffer(polyFeature as any, 0.001, { units: 'kilometers' });
                                         if (buf && turf.booleanIntersects(featB, buf as any)) matches.push(f);
-                                      } catch (e) {
+                                      } catch  {
                                         // buffer failed -> skip
                                       }
                                     }
-                                } catch (inner) {}
+                                } catch {}
                               }
-                            } catch (e) {}
+                            } catch {}
                           }
 
                           // build html list (limit to 10)
@@ -486,23 +484,23 @@ export default function MapPreview({
                                 const el = document.getElementById(popupHtmlId);
                                 if (el) el.outerHTML = html;
                               }
-                            } catch (e) {}
-                          } catch (e) {}
-                        } catch (err) {
-                          try { if (pointerPopupRef.current) pointerPopupRef.current.setHTML(`<div style="min-width:200px;font-size:13px"><strong>${label}</strong><div style='margin-top:8px;font-size:12px;color:#6b7280'>Failed to load claims</div></div>`); } catch (ee) {}
+                            } catch {}
+                          } catch {}
+                        } catch {
+                          try { if (pointerPopupRef.current) pointerPopupRef.current.setHTML(`<div style="min-width:200px;font-size:13px"><strong>${label}</strong><div style='margin-top:8px;font-size:12px;color:#6b7280'>Failed to load claims</div></div>`); } catch {}
                         }
                       })();
                     }
-                  } catch (err) {
+                  } catch  {
                     /* ignore popup errors */
                   }
                 });
                 map.on('mouseenter', lid, () => { map.getCanvas().style.cursor = 'pointer'; });
                 map.on('mouseleave', lid, () => { map.getCanvas().style.cursor = ''; });
-              } catch (err) {}
+              } catch  {}
             });
-          } catch (err) {}
-        } catch (e) {
+          } catch  {}
+        } catch  {
           // ignore
         }
       };
@@ -538,14 +536,14 @@ export default function MapPreview({
         const map = mapRef.current;
         if (map) {
           Object.keys(createdLayers.current).forEach((id) => {
-            try { if (map.getLayer(id)) map.removeLayer(id); } catch (e) {}
+            try { if (map.getLayer(id)) map.removeLayer(id); } catch {}
           });
           Object.keys(createdSources.current).forEach((id) => {
-            try { if (map.getSource(id)) map.removeSource(id); } catch (e) {}
+            try { if (map.getSource(id)) map.removeSource(id); } catch {}
           });
-          try { if (map.remove) map.remove(); } catch (e) {}
+          try { if (map.remove) map.remove(); } catch {}
         }
-      } catch (e) {}
+      } catch {}
       if (appended && script && script.parentNode) script.parentNode.removeChild(script);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -628,7 +626,7 @@ export default function MapPreview({
                 createdLayers.current[layerId] = true;
               }
             }
-          } catch (err) {}
+          } catch {}
         }).catch(() => {});
       }
     };
@@ -636,19 +634,19 @@ export default function MapPreview({
     const removeLayer = (name: string) => {
       const sourceId = `src-${name}`;
       const layerId = `layer-${name}`;
-  try { if (map.getLayer(layerId)) map.removeLayer(layerId); } catch (e) {}
-  try { if (map.getSource(sourceId)) map.removeSource(sourceId); } catch (e) {}
+  try { if (map.getLayer(layerId)) map.removeLayer(layerId); } catch {}
+  try { if (map.getSource(sourceId)) map.removeSource(sourceId); } catch {}
   // Also remove tehsil/district/state sub-layers/sources for boundaries
-  try { if (map.getLayer(`${layerId}-tehsil`)) map.removeLayer(`${layerId}-tehsil`); } catch (e) {}
-  try { if (map.getLayer(`${layerId}-district`)) map.removeLayer(`${layerId}-district`); } catch (e) {}
-  try { if (map.getLayer(`${layerId}-state`)) map.removeLayer(`${layerId}-state`); } catch (e) {}
-  try { if (map.getSource(`${sourceId}-tehsil`)) map.removeSource(`${sourceId}-tehsil`); } catch (e) {}
-  try { if (map.getSource(`${sourceId}-district`)) map.removeSource(`${sourceId}-district`); } catch (e) {}
-  try { if (map.getSource(`${sourceId}-state`)) map.removeSource(`${sourceId}-state`); } catch (e) {}
+  try { if (map.getLayer(`${layerId}-tehsil`)) map.removeLayer(`${layerId}-tehsil`); } catch {}
+  try { if (map.getLayer(`${layerId}-district`)) map.removeLayer(`${layerId}-district`); } catch {}
+  try { if (map.getLayer(`${layerId}-state`)) map.removeLayer(`${layerId}-state`); } catch {}
+  try { if (map.getSource(`${sourceId}-tehsil`)) map.removeSource(`${sourceId}-tehsil`); } catch {}
+  try { if (map.getSource(`${sourceId}-district`)) map.removeSource(`${sourceId}-district`); } catch {}
+  try { if (map.getSource(`${sourceId}-state`)) map.removeSource(`${sourceId}-state`); } catch {}
       delete createdLayers.current[layerId];
       delete createdSources.current[sourceId];
-      try { if (map.getLayer('layer-highlight')) map.removeLayer('layer-highlight'); } catch (e) {}
-      try { if (map.getSource('src-highlight')) map.removeSource('src-highlight'); } catch (e) {}
+      try { if (map.getLayer('layer-highlight')) map.removeLayer('layer-highlight'); } catch {}
+      try { if (map.getSource('src-highlight')) map.removeSource('src-highlight'); } catch {}
       delete createdLayers.current['layer-highlight'];
       delete createdSources.current['src-highlight'];
     };
@@ -689,8 +687,8 @@ export default function MapPreview({
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    try { map.setCenter(center); } catch (e) {}
-    try { map.setZoom && map.setZoom(zoom as any); } catch (e) {}
+    try { map.setCenter(center); } catch {}
+    try { map.setZoom && map.setZoom(zoom as any); } catch {}
     try {
       createdMarkers.current.forEach((m) => m.remove && m.remove());
       createdMarkers.current = [];
@@ -712,9 +710,9 @@ export default function MapPreview({
             const el = createMarkerElement(m);
             const marker = new maplibregl.Marker({ element: el }).setLngLat([m.lng, m.lat]).addTo(map);
             createdMarkers.current.push(marker);
-          } catch (err) {}
+          } catch  {}
       });
-    } catch (e) {}
+    } catch {}
   }, [JSON.stringify(center), zoom, JSON.stringify(markers.map((m: any) => [m.lng, m.lat])), showCenterMarker]);
 
   return <div ref={ref} className="w-full h-full rounded-3xl overflow-hidden bg-emerald-900/95 border border-emerald-700/50 backdrop-blur-sm shadow-2xl" />;

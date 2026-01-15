@@ -70,7 +70,6 @@ export function MapControls({ onLayerToggle, onMeasurementToggle }: MapControlsP
   const {
     zoom,
     setZoom,
-    center,
     setCenter,
     measurementMode,
     setMeasurementMode,

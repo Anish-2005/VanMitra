@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import GlassCard from "@/components/ui/GlassCard";
 import MagneticButton from "@/components/ui/MagneticButton";
 import { Upload, FileImage, Loader2, XCircle } from "lucide-react";
+import Image from "next/image";
 
 interface OCRUploadSectionProps {
   isLight: boolean;
@@ -49,10 +50,12 @@ const OCRUploadSection: React.FC<OCRUploadSectionProps> = ({
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5 }}
             >
-              <img
-                src={preview || undefined}
+              <Image
                 alt="Preview"
                 className="max-w-full max-h-32 sm:max-h-40 md:max-h-48 object-contain rounded-lg mb-4"
+                src={preview}
+                width={192}
+                height={192}
               />
             </motion.div>
           ) : (

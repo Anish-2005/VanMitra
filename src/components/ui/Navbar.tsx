@@ -12,12 +12,11 @@ import MagneticButton from "./MagneticButton";
 import GlassCard from "./GlassCard";
 import { useTheme } from "../ThemeProvider";
 import ThemeToggle from "./ThemeToggle";
-import Logo from "./Logo";
 import NavBrand from './NavBrand';
 
 const Navbar: React.FC = () => {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
   React.useEffect(() => setMounted(true), []);
@@ -304,7 +303,7 @@ const Navbar: React.FC = () => {
                   <ThemeToggle />
                 </div>
               </motion.div>
-                {navigationItems.map((item, index) => (
+                {navigationItems.map((item) => (
                   <motion.button
                     key={item.name}
                     onClick={() => {

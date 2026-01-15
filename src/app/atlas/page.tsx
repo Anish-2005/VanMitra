@@ -36,6 +36,13 @@ const ThreeBackground = dynamicImport(() => import("@/components/ui/ThreeBackgro
 // Client-only components to prevent hydration mismatches
 const DecorativeElements = dynamicImport(() => import('@/components/ui/DecorativeElements'), { ssr: false })
 
+// Stable claim type color map (module scope so effects need not include it)
+const claimTypeColors: Record<string, string> = {
+  IFR: "#16a34a",
+  CR: "#3b82f6",
+  CFR: "#f59e0b",
+}
+
 // Import extracted components
 import { AddClaimForm } from '@/components/atlas/AddClaimForm'
 import { SearchByVillageUID } from '@/components/atlas/SearchByVillageUID'
@@ -90,7 +97,7 @@ export default function AtlasPage() {
   const [claimTypeFilter, setClaimTypeFilter] = useState<string | null>(null)
   const [pendingStatusFilter, setPendingStatusFilter] = useState("all")
   const [pendingClaimTypeFilter, setPendingClaimTypeFilter] = useState<string | null>(null)
-  const [loadingClaims, setLoadingClaims] = useState(false)
+  const [, setLoadingClaims] = useState(false)
   const [statusOptions, setStatusOptions] = useState<string[]>([])
   const [claimTypeOptions, setClaimTypeOptions] = useState<string[]>([])
   const [stateOptions, setStateOptions] = useState<string[]>([])
@@ -99,14 +106,17 @@ export default function AtlasPage() {
   const [villageOptionsByState, setVillageOptionsByState] = useState<Record<string, string[]>>({})
   const [villageOptionsByStateAndDistrict, setVillageOptionsByStateAndDistrict] = useState<Record<string, Record<string, string[]>>>({})
 
-  const claimTypeColors: Record<string, string> = {
-    IFR: "#16a34a",
-    CR: "#3b82f6",
-    CFR: "#f59e0b",
-  }
+  
 
-  // Toasts disabled — replace with no-op to avoid UI notifications during tests
-  const pushToast = (_message: string, _type: "info" | "error" = "info") => { }
+  // Toasts disabled — log instead so the parameter is used and lint is satisfied
+  const pushToast = (message: string, type: "info" | "error" = "info") => {
+    try {
+      if (type === "error") console.error("[Toast]", message)
+      else console.info("[Toast]", message)
+    } catch {
+      // swallow logging errors in constrained environments
+    }
+  }
   const [mapKey, setMapKey] = useState(0) // Key to force WebGIS re-render
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null)
   const [mapZoom, setMapZoom] = useState<number>(7.5)
@@ -711,8 +721,8 @@ export default function AtlasPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const router = useRouter()
 
-  const [isMeasuring, setIsMeasuring] = useState(false)
-  const [measurementDistance, setMeasurementDistance] = useState<number | null>(null)
+  const [isMeasuring ] = useState(false)
+  const [measurementDistance] = useState<number | null>(null)
 
   const webGISRef = useRef<WebGISRef>(null)
 
@@ -1486,7 +1496,7 @@ export default function AtlasPage() {
       console.log("🗺️ [Atlas] Removing last-click marker")
       setMarkers((prev) => prev.filter(m => m.id !== "last-click"))
     }
-  }, [lastClickedCoords])
+  }, [lastClickedCoords, addClaimOpen, claimTypeFilter, pendingClaimTypeFilter, newClaim?.claim_type])
 
   // Update claim area and marker
   useEffect(() => {
@@ -1497,7 +1507,7 @@ export default function AtlasPage() {
     console.log("area:", newClaim.claimed_area)
     console.log("markerPlaced:", markerPlaced)
     console.log("Current map center:", mapCenter)
-    console.log("🗺️ [Atlas] Current markers count:", markers.length)
+    console.debug("🗺️ [Atlas] claim area effect triggered")
 
     // Handle circle layer
     if (claimAreaVisible && claimAreaCenter && claimAreaRadius > 0) {
@@ -1739,7 +1749,7 @@ export default function AtlasPage() {
     // Recenter map to state center and reset zoom to a sensible default
     try {
       setMapCenter(stateCenter as [number, number])
-    } catch (e) { }
+    } catch { }
     setMapZoom(7.5)
   }
 
@@ -1880,7 +1890,7 @@ export default function AtlasPage() {
                   onGoto={(lng, lat) => {
                     try {
                       webGISRef.current?.flyTo?.(lng, lat, 15)
-                    } catch (e) { }
+                    } catch { }
                   }}
                 />
                 <AddClaimForm
@@ -1949,7 +1959,7 @@ export default function AtlasPage() {
                 onMarkerGoto={(lng, lat) => {
                   try {
                     webGISRef.current?.flyTo?.(lng, lat, 12)
-                  } catch (e) { }
+                  } catch { }
                 }}
                 initiallyCollapsed={true}
               />
@@ -2067,7 +2077,7 @@ export default function AtlasPage() {
                             const centerLng = (bbox[0] + bbox[2]) / 2
                             const centerLat = (bbox[1] + bbox[3]) / 2
                             webGISRef.current?.flyTo?.(centerLng, centerLat, 12)
-                          } catch (e) {
+                          } catch {
                             // ignore
                           }
                         }}
@@ -2084,7 +2094,7 @@ export default function AtlasPage() {
                             const props = { ...selectedFeature.properties }
                             navigator.clipboard?.writeText(JSON.stringify(props, null, 2))
                             pushToast('Boundary properties copied to clipboard', 'info')
-                          } catch (e) {
+                          } catch{
                             pushToast('Copy failed', 'error')
                           }
                         }}

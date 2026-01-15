@@ -222,7 +222,7 @@ const ThreeBackground: React.FC<ThreeBackgroundProps> = ({ className = "" }) => 
       console.warn('Three.js initialization failed:', error);
       return () => { };
     }
-  }, [isClient, theme, mounted]);
+  }, [isLight,isClient, theme, mounted]);
 
   // Update particle colors when theme changes
   useEffect(() => {
