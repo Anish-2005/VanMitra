@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/components/ThemeProvider';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import dynamic from 'next/dynamic';
-import GlassCard from '@/components/ui/GlassCard';
 import { DEFAULT_STATE, DEFAULT_DISTRICT } from '@/lib/regions';
 
 // Dynamically import heavy admin components to reduce initial bundle size
@@ -25,7 +24,10 @@ const UserManagement = dynamic(() => import('@/components/admin/UserManagement')
 export default function AdminPage() {
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    const id = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(id);
+  }, []);
   const isLight = mounted && theme === 'light';
   // sample metrics (will be replaced by live API data in future iterations)
   const [loading, setLoading] = useState(true);

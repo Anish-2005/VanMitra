@@ -98,14 +98,14 @@ export async function POST(req: NextRequest) {
                 continue;
               }
             }
-          } catch (e) {
+          } catch  {
             // fall through to intersects check
           }
         }
 
         // Fallback: generic intersects check
   if (turf.booleanIntersects(feat as any, polyFeature as any)) count++;
-      } catch (e) {
+      } catch {
         // ignore per-feature errors
       }
     }

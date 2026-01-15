@@ -3,6 +3,7 @@ import { collection, getDocs, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { ClaimsResponse, Claim, ClaimsResponseSchema } from '@/types/api';
 import * as turf from '@turf/turf';
+import { GeoFeature } from '@/lib/gis-utils';
 
 export class ClaimsService {
   static async getAllClaims(status?: string): Promise<ClaimsResponse> {
@@ -62,8 +63,22 @@ export class ClaimsService {
           district: district,
           village: village,
           status: data.status || 'pending',
-          created_at: data.created_at ? new Date(data.created_at as any) : null,
-          updated_at: data.updated_at ? new Date(data.updated_at as any) : null,
+          created_at: data.created_at
+            ? new Date(
+                typeof data.created_at === 'string' ||
+                typeof data.created_at === 'number' ||
+                data.created_at instanceof Date
+                  ? data.created_at
+                  : ''
+              )
+            : null,
+          updated_at: data.updated_at
+            ? new Date(
+                typeof data.updated_at === 'string' || typeof data.updated_at === 'number' || data.updated_at instanceof Date
+                  ? data.updated_at
+                  : ''
+              )
+            : null,
           source: "firebase",
           radius: Math.sqrt(landArea) * 200,
         },
@@ -90,7 +105,7 @@ export class ClaimsService {
       const data = await response.json();
 
       // Transform external data to match our schema
-      return (data.features || []).map((feature: any) => ({
+      return (data.features || []).map((feature: GeoFeature) => ({
         ...feature,
         properties: {
           ...feature.properties,

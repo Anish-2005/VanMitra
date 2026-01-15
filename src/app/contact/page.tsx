@@ -25,7 +25,10 @@ const DecorativeElements = dynamic(() => import('@/components/ui/DecorativeEleme
 export default function Contact() {
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    const id = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(id);
+  }, []);
   const isLight = mounted && theme === 'light';
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
@@ -233,10 +236,10 @@ export default function Contact() {
           >
             <motion.div variants={itemVariants}>
               <GlassCard className="p-8 mb-8">
-                <h2 className={`text-2xl font-bold mb-6 ${isLight ? 'text-slate-800' : 'text-white'}`}>Let's Connect</h2>
+                <h2 className={`text-2xl font-bold mb-6 ${isLight ? 'text-slate-800' : 'text-white'}`}>Let&apos;s Connect</h2>
                 <p className={`leading-relaxed mb-8 ${isLight ? 'text-slate-700' : 'text-green-100'}`}>
                   Have questions about VanMitra? Need technical support? Want to explore partnership opportunities?
-                  We're here to help you navigate the world of forest rights and geospatial technology.
+                  We&apos;re here to help you navigate the world of forest rights and geospatial technology.
                 </p>
 
                 <div className="space-y-6">

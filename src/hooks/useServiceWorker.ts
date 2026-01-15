@@ -15,10 +15,10 @@ export default function useServiceWorker() {
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
 
-    let registration: ServiceWorkerRegistration | null = null;
+    let registration: ServiceWorkerRegistration | undefined;
 
     navigator.serviceWorker.getRegistration().then((reg) => {
-      registration = reg;
+      registration = reg; // reg is ServiceWorkerRegistration | undefined
       if (!registration) return;
 
       if (registration.waiting) {

@@ -18,7 +18,7 @@ export async function GET(req: Request) {
       if (!res || res.status !== 200) return null;
       try {
         return await res.json();
-      } catch (e) {
+      } catch {
         return null;
       }
     }
@@ -53,7 +53,7 @@ export async function GET(req: Request) {
         }
         const keys = Object.keys(buckets).sort();
         timeSeries = keys.map(k => buckets[k]);
-      } catch (e) {
+      } catch {
         timeSeries = undefined;
       }
     }

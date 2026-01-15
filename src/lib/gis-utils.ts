@@ -141,7 +141,7 @@ export const categorizeAssets = (assets: GeoFeature[]): Record<string, GeoFeatur
 
 // Map styling utilities
 export const getAssetStyle = (assetType: string) => {
-  const styles: Record<string, any> = {
+  const styles: Record<string, { fillColor?: string; strokeColor: string; strokeWidth: number; opacity: number }> = {
     'water-body': {
       fillColor: '#3b82f6',
       strokeColor: '#1e40af',

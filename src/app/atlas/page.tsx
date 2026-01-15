@@ -8,21 +8,16 @@ import { useState, useRef, useEffect } from "react"
 import { useTheme } from "@/components/ThemeProvider"
 import * as turf from "@turf/turf"
 import { STATES, DEFAULT_STATE } from "../../lib/regions"
-import { motion, AnimatePresence } from "framer-motion"
-import { Layers, Ruler, Download, MapPin, Copy, ZoomIn, FileDown, Plus, Filter } from "lucide-react"
+import { motion} from "framer-motion"
+import {  Ruler, Download,  Copy, ZoomIn, FileDown, } from "lucide-react"
 import dynamicImport from "next/dynamic"
-import DecorativeBackground from "@/components/ui/DecorativeBackground"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ProtectedRoute } from "@/components/ProtectedRoute"
 import type { GISLayer, GISMarker, WebGISRef } from "../../components/WebGIS"
 import { exportToGeoJSON } from "../../lib/gis-utils"
-import type { GeoJSON } from "geojson"
 import Navbar from "@/components/ui/Navbar"
 import Footer from "@/components/ui/Footer"
 import GlassCard from "@/components/ui/GlassCard"
-import MagneticButton from "@/components/ui/MagneticButton"
-import AnimatedCounter from "@/components/ui/AnimatedCounter"
 
 // Dynamically import heavy components to reduce initial bundle size
 const WebGIS = dynamicImport(() => import("../../components/WebGIS"), {
@@ -52,7 +47,10 @@ import { MapToolsSection } from '@/components/atlas/MapToolsSection'
 export default function AtlasPage() {
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    const id = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(id);
+  }, []);
   const isLight = mounted && theme === 'light';
 
   const [layers, setLayers] = useState<GISLayer[]>([

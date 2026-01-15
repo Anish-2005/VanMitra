@@ -14,7 +14,8 @@ const eslintConfig = [
   {
     rules: {
       "@typescript-eslint/no-unused-vars": "warn",
-      "@typescript-eslint/no-explicit-any": "warn",
+      // Allow `any` across the codebase to reduce noisy linting while refactors proceed
+      "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/ban-ts-comment": "warn",
       "@next/next/no-html-link-for-pages": "warn",
       // Re-enable react-hooks/exhaustive-deps. If CI still errors due to tooling

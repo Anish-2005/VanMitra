@@ -4,15 +4,12 @@ import { unionFeatures } from "../../../../lib/gis-utils"
 // Multiple data sources for Indian administrative boundaries
 const BHARAT_MAP_SERVICE = "https://mapservice.gov.in/gismapservice/rest/services/BharatMapService"
 const OVERPASS_API = "https://overpass-api.de/api/interpreter"
-const SOI_BASE_URL = "https://onlinemaps.surveyofindia.gov.in"
 
 // Open and Community Data Sources - Primary: datta07/INDIAN-SHAPEFILES
 const GITHUB_INDIAN_SHAPEFILES = "https://raw.githubusercontent.com/datta07/INDIAN-SHAPEFILES/main"
 const GITHUB_INDIA_ADMIN_MAPS = "https://raw.githubusercontent.com/srisbalyan/India-Administrative-Maps/main"
 const GEOBOUNDARIES_API = "https://www.geoboundaries.org/api/current/gbOpen"
 const GADM_API = "https://gadm.org/api"
-const KAGGLE_DATASETS = "https://www.kaggle.com/datasets"
-const DATA_GOV_IN = "https://data.gov.in"
 
 export async function GET(request: NextRequest) {
   try {

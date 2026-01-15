@@ -573,7 +573,7 @@ const Navbar: React.FC = () => {
 
                 <div className="mt-6 text-center">
                   <p className={isLight ? 'text-green-700 text-sm' : 'text-green-300 text-sm'}>
-                    Don't have an account?{" "}
+                    Don&apos;t have an account?{" "}
                     <button
                       className={`underline font-medium transition-colors ${isLight ?
                         'text-green-600 hover:text-green-800' :

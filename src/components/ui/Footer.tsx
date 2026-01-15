@@ -11,7 +11,10 @@ import FooterLinks from './FooterLinks';
 const Footer: React.FC = () => {
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    const id = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(id);
+  }, []);
   const isLight = mounted && theme === 'light';
 
   return (

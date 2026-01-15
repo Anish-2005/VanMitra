@@ -15,7 +15,8 @@ const DecorativeElements = () => {
   const floatIcons = [Leaf, Sprout, Droplets, Trees];
 
   useEffect(() => {
-    setIsClient(true);
+    const id = setTimeout(() => setIsClient(true), 0);
+    return () => clearTimeout(id);
   }, []);
 
   // Don't render on server to prevent hydration mismatch

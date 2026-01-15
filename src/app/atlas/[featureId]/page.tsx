@@ -87,7 +87,10 @@ export default function FeaturePage({
 }) {
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    const id = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(id);
+  }, []);
   const isLight = mounted && theme === 'light';
 
   const [featureId, setFeatureId] = useState<string>("");

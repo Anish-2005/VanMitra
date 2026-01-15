@@ -2,9 +2,9 @@ import React from 'react';
 import { useTheme } from '@/components/ThemeProvider';
 
 export default function Modal({ open, onClose, title, children }: { open: boolean; onClose: () => void; title?: string; children?: React.ReactNode }) {
-  if (!open) return null;
   const { theme } = useTheme();
   const isLight = theme === 'light';
+  if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">

@@ -1,6 +1,5 @@
 // src/lib/auth-middleware.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from './firebase';
 import { DecodedIdToken } from 'firebase-admin/auth';
 
 export interface AuthenticatedRequest extends NextRequest {
@@ -9,10 +8,10 @@ export interface AuthenticatedRequest extends NextRequest {
 
 export async function withAuth(
   handler: (req: AuthenticatedRequest) => Promise<NextResponse> | NextResponse,
-  options: { requireAuth?: boolean; requireAdmin?: boolean } = {}
+  options: { requireAuth?: boolean;  } = {}
 ) {
   return async (req: NextRequest): Promise<NextResponse> => {
-    const { requireAuth = true, requireAdmin = false } = options;
+    const { requireAuth = true } = options;
 
     try {
       const authHeader = req.headers.get('authorization');
@@ -28,7 +27,6 @@ export async function withAuth(
         return handler(req);
       }
 
-      const token = authHeader.substring(7); // Remove 'Bearer '
 
       // Verify Firebase token
       // const decodedToken = await auth.verifyIdToken(token);

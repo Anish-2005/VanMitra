@@ -209,7 +209,7 @@ const OCRResultSection: React.FC<OCRResultSectionProps> = ({ isLight, isProcessi
           <FileImage className={`w-20 h-20 mb-4 ${isLight ? 'text-green-600' : 'text-green-400'}`} />
         </motion.div>
         <h3 className={`text-xl font-medium mb-2 ${isLight ? 'text-slate-800' : 'text-white'}`}>No Results Yet</h3>
-        <p className={isLight ? 'text-green-700' : 'text-green-300'}>Upload an image and click "Process Image" to see OCR results</p>
+        <p className={isLight ? 'text-green-700' : 'text-green-300'}>Upload an image and click &quot;Process Image&quot; to see OCR results</p>
       </motion.div>
     )}
   </GlassCard>

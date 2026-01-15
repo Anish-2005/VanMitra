@@ -11,7 +11,7 @@ export default function OfflinePage() {
       <div className="text-center px-6">
         <div className="mb-6">
           <h1 className="text-6xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">Offline</h1>
-          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-lg mx-auto">It looks like you're offline — some features might be unavailable. Cached content may still be accessible.</p>
+          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-lg mx-auto">It looks like you&apos;re offline — some features might be unavailable. Cached content may still be accessible.</p>
         </div>
 
         <div className="flex gap-4 justify-center mt-6">

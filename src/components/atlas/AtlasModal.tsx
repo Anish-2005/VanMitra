@@ -21,7 +21,7 @@ interface AtlasModalProps {
 
 const AtlasModal: React.FC<AtlasModalProps> = (props) => {
   // ...for brevity, actual implementation would mirror the Modal logic from the main page
-  return <div>/* AtlasModal implementation here */</div>;
+  return <div>{/* AtlasModal implementation here */}</div>;
 };
 
 export default AtlasModal;

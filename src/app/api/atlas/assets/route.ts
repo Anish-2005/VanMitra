@@ -105,7 +105,7 @@ async function fetchOSMDataQuick(bbox: string, featureType: string): Promise<OSM
   osmCache.set(cacheKey, { data, timestamp: now });
 
   return data;
-  } catch (error) {
+  } catch {
     // Return null on any error for fast fallback
     return null;
   }

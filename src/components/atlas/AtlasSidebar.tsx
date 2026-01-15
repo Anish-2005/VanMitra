@@ -64,7 +64,7 @@ interface AtlasSidebarProps {
 
 const AtlasSidebar: React.FC<AtlasSidebarProps> = (props) => {
   // ...for brevity, actual implementation would mirror the sidebar/aside logic from the main page
-  return <div>/* AtlasSidebar implementation here */</div>;
+  return <div>{/* AtlasSidebar implementation here */}</div>;
 };
 
 export default AtlasSidebar;

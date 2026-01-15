@@ -902,7 +902,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
 <svg xmlns='http://www.w3.org/2000/svg' width='${sizePx}' height='${sizePx}' viewBox='0 0 24 24' preserveAspectRatio='xMidYMid meet'>
   <defs>
     <filter id='pin-shadow' x='-50%' y='-50%' width='200%' height='200%'>
-      <!-- Subtle drop shadow -->
+      
       <feDropShadow dx='0' dy='1.2' stdDeviation='1' flood-color='black' flood-opacity='0.3'/>
     </filter>
   </defs>

@@ -24,8 +24,11 @@ const ThreeBackground: React.FC<ThreeBackgroundProps> = ({ className = "" }) => 
     Math.abs(Math.sin(i * 12.9898 + salt * 78.233) * 43758.5453) % 1;
 
   useEffect(() => {
-    setIsClient(true);
-    setMounted(true);
+    const id = setTimeout(() => {
+      setIsClient(true);
+      setMounted(true);
+    }, 0);
+    return () => clearTimeout(id);
   }, []);
 
   const isLight = mounted && theme === 'light';
