@@ -1,8 +1,8 @@
 'use client'
 
 import { Ruler, Download } from 'lucide-react'
-import GlassCard from '@/components/ui/GlassCard'
-import { useTheme } from '@/components/ThemeProvider'
+import GlassCard from '../ui/GlassCard'
+import { useTheme } from '../ThemeProvider'
 
 interface MapToolsSectionProps {
   isMeasuring: boolean
@@ -17,13 +17,14 @@ export function MapToolsSection({
   handleExportGeoJSON,
   handleExportMap
 }: MapToolsSectionProps) {
-  const { isLight } = useTheme()
+  const { theme } = useTheme()
+  const isLight = theme === 'light'
 
   return (
     <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
       <GlassCard className={`mt-4 p-4 pb-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
-        <div className="flex items-center gap-2 mb-3">
-          <Ruler size={16} className={isLight ? 'text-emerald-600' : 'text-emerald-400'} />
+        <div className={`flex items-center gap-2 mb-3 p-3 rounded-lg ${isLight ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100' : 'bg-gradient-to-r from-blue-900/20 to-indigo-900/20 border border-blue-800/30'}`}>
+          <Ruler size={16} className={isLight ? 'text-blue-600' : 'text-blue-400'} />
           <h4 className={`font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>Measurement Tools</h4>
         </div>
         <div className="space-y-3">
@@ -33,7 +34,7 @@ export function MapToolsSection({
                 // This would be passed as a prop from parent
                 console.log("Start measurement clicked")
               }}
-              className={`w-full px-4 py-2 rounded-md transition duration-200 ${isLight ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'}`}
+              className={`w-full px-4 py-2 rounded-lg font-medium transition-all duration-200 shadow-sm ${isLight ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-900/30'}`}
             >
               Start Measurement
             </button>
@@ -52,7 +53,7 @@ export function MapToolsSection({
               // This would be passed as a prop from parent
               console.log("Clear measurement clicked")
             }}
-            className={`w-full px-4 py-2 rounded-md transition duration-200 ${isLight ? 'bg-gray-500 hover:bg-gray-600 text-white' : 'bg-gray-500 hover:bg-gray-600 text-white'}`}
+            className={`w-full px-4 py-2 rounded-lg font-medium transition-all duration-200 ${isLight ? 'bg-white border border-slate-200 text-slate-800 hover:bg-slate-50 shadow-sm' : 'bg-white/5 border border-white/10 text-white hover:bg-white/10'}`}
           >
             Clear Measurement
           </button>
@@ -60,20 +61,20 @@ export function MapToolsSection({
       </GlassCard>
 
       <GlassCard className={`mt-4 p-4 pb-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
-        <div className="flex items-center gap-2 mb-3">
+        <div className={`flex items-center gap-2 mb-3 p-3 rounded-lg ${isLight ? 'bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-100' : 'bg-gradient-to-r from-emerald-900/20 to-green-900/20 border border-emerald-800/30'}`}>
           <Download size={16} className={isLight ? 'text-emerald-600' : 'text-emerald-400'} />
           <h4 className={`font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>Export Tools</h4>
         </div>
         <div className="space-y-3">
           <button
             onClick={handleExportGeoJSON}
-            className={`w-full px-4 py-2 rounded-md transition duration-200 ${isLight ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-emerald-600 hover:bg-emerald-500 text-white'}`}
+            className={`w-full px-4 py-2 rounded-lg font-medium transition-all duration-200 shadow-sm ${isLight ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200' : 'bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white shadow-emerald-900/30'}`}
           >
             Export GeoJSON
           </button>
           <button
             onClick={handleExportMap}
-            className={`w-full px-4 py-2 rounded-md transition duration-200 ${isLight ? 'border border-emerald-300 text-emerald-700 hover:bg-emerald-50' : 'border border-emerald-600/50 text-emerald-300 hover:bg-emerald-500/20'}`}
+            className={`w-full px-4 py-2 rounded-lg font-medium transition-all duration-200 ${isLight ? 'bg-white border border-slate-200 text-slate-800 hover:bg-slate-50 shadow-sm' : 'bg-white/5 border border-white/10 text-white hover:bg-white/10'}`}
           >
             Export Map Image
           </button>

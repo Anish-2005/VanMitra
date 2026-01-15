@@ -1,8 +1,8 @@
 import React from "react";
-import GlassCard from "@/components/ui/GlassCard";
+import GlassCard from "../ui/GlassCard";
+import { useTheme } from "../ThemeProvider";
 
 interface AtlasLegendProps {
-  isLight: boolean;
   claimTypeOptions: string[];
   layers: any[];
   claimTypeColors: Record<string, string>;
@@ -10,14 +10,19 @@ interface AtlasLegendProps {
 }
 
 const AtlasLegend: React.FC<AtlasLegendProps> = ({
-  isLight,
   claimTypeOptions,
   layers,
   claimTypeColors,
   handleLayerToggle,
-}) => (
-  <GlassCard className={`mt-4 p-4 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
-    <h5 className={`text-sm font-medium ${isLight ? 'text-slate-900' : 'text-white'} mb-3`}>Legend</h5>
+}) => {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
+
+  return (
+    <GlassCard className={`mt-4 p-4 pb-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
+      <div className={`flex items-center gap-2 mb-3 p-3 rounded-lg ${isLight ? 'bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-100' : 'bg-gradient-to-r from-emerald-900/20 to-green-900/20 border border-emerald-800/30'}`}>
+        <h5 className={`font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>Legend</h5>
+      </div>
     <div className="space-y-3">
       {claimTypeOptions.length ? (
         claimTypeOptions.map((ct) => {

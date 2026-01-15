@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import GlassCard from '@/components/ui/GlassCard'
-import { useTheme } from '@/components/ThemeProvider'
+import GlassCard from '../ui/GlassCard'
+import { useTheme } from '../ThemeProvider'
 
 interface SearchByVillageUIDProps {
   searchVillageUid: string | number | null
@@ -30,19 +30,22 @@ export function SearchByVillageUID({
   searchLoading,
   runSearchByVillageUid
 }: SearchByVillageUIDProps) {
-  const { isLight } = useTheme()
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
 
   return (
-    <GlassCard className={`my-4 overflow-hidden ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
+    <GlassCard className={`my-4 overflow-hidden ${isLight ? 'bg-white/95 border border-slate-200 shadow-lg' : ''}`}>
       <div
-        className={`flex items-center justify-between p-3 cursor-pointer ${isLight ? 'bg-emerald-100 hover:bg-emerald-200' : 'bg-slate-800/50'}`}
-        onClick={() => setSearchByUidExpanded((s) => !s)}
+        className={`flex items-center justify-between p-4 cursor-pointer ${isLight ? 'bg-gradient-to-r from-emerald-50 to-green-50 border-b border-emerald-100' : 'bg-slate-800/50'}`}
+        onClick={() => setSearchByUidExpanded(!searchByUidExpanded)}
       >
-        <div>
-          <h4 className={`text-sm font-semibold ${isLight ? 'text-slate-900' : 'text-white'} mb-0`}>Search by Village UID</h4>
-          <p className={`text-xs ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>Lookup claims by village identifier</p>
+        <div className="flex items-center gap-3">
+          <div>
+            <span className={`font-semibold text-base ${isLight ? 'text-slate-900' : 'text-white'}`}>Search by Village UID</span>
+            <span className={`block text-xs font-medium ${isLight ? 'text-emerald-600' : 'text-green-300'}`}>Lookup claims by village identifier</span>
+          </div>
         </div>
-        <div className={`transform transition-transform ${searchByUidExpanded ? "rotate-180" : ""} ${isLight ? 'text-slate-700' : 'text-white'}`}>▼</div>
+        <div className={`transform transition-transform duration-200 ${searchByUidExpanded ? "rotate-180" : ""} ${isLight ? 'text-slate-600' : 'text-white'}`}>▼</div>
       </div>
       <AnimatePresence>
         {searchByUidExpanded && (
@@ -57,38 +60,46 @@ export function SearchByVillageUID({
             }}
             className="overflow-hidden"
           >
-            <div className="p-4 grid grid-cols-1 gap-2">
-              <input
-                value={(searchVillageUid ?? '') as any}
-                onChange={(e) => setSearchVillageUid(e.target.value)}
-                placeholder="Village UID (integer)"
-                className={`w-full rounded-md border p-2 ${isLight
-                  ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
-                  : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
-              />
-              <input
-                value={searchStatus ?? ''}
-                onChange={(e) => setSearchStatus(e.target.value)}
-                placeholder="Status (optional)"
-                className={`w-full rounded-md border p-2 ${isLight
-                  ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
-                  : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
-              />
-              <input
-                value={searchClaimType ?? ''}
-                onChange={(e) => setSearchClaimType(e.target.value)}
-                placeholder="Claim type (optional)"
-                className={`w-full rounded-md border p-2 ${isLight
-                  ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
-                  : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
-              />
-              <div className="flex items-center gap-2">
+            <div className={`p-5 space-y-4 ${isLight ? 'bg-white' : ''}`}>
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Village UID</label>
+                <input
+                  value={(searchVillageUid ?? '') as any}
+                  onChange={(e) => setSearchVillageUid(e.target.value)}
+                  placeholder="Village UID (integer)"
+                  className={`w-full rounded-lg px-3 py-2 text-sm transition-colors ${isLight
+                    ? 'border border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
+                    : 'border border-slate-600 bg-slate-800/50 text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'}`}
+                />
+              </div>
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Status (optional)</label>
+                <input
+                  value={searchStatus ?? ''}
+                  onChange={(e) => setSearchStatus(e.target.value)}
+                  placeholder="Status (optional)"
+                  className={`w-full rounded-lg px-3 py-2 text-sm transition-colors ${isLight
+                    ? 'border border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
+                    : 'border border-slate-600 bg-slate-800/50 text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'}`}
+                />
+              </div>
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Claim type (optional)</label>
+                <input
+                  value={searchClaimType ?? ''}
+                  onChange={(e) => setSearchClaimType(e.target.value)}
+                  placeholder="Claim type (optional)"
+                  className={`w-full rounded-lg px-3 py-2 text-sm transition-colors ${isLight
+                    ? 'border border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
+                    : 'border border-slate-600 bg-slate-800/50 text-white placeholder-slate-400 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'}`}
+                />
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
                 <button
                   disabled={searchLoading}
                   onClick={() => runSearchByVillageUid()}
-                  className={`px-3 py-1 rounded-md ${searchLoading
-                    ? (isLight ? 'bg-gray-300 text-gray-700 cursor-not-allowed' : 'bg-gray-300 text-gray-700 cursor-not-allowed')
-                    : (isLight ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white')}`}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${isLight ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200' : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-green-900/30'}`}
                 >
                   {searchLoading ? 'Searching...' : 'Search'}
                 </button>
@@ -98,9 +109,7 @@ export function SearchByVillageUID({
                     setSearchStatus('all')
                     setSearchClaimType('')
                   }}
-                  className={`px-3 py-1 rounded-md ${isLight
-                    ? 'border border-slate-300 text-slate-700 hover:bg-slate-100'
-                    : 'border border-green-400/30 text-green-300 hover:bg-green-500/20'}`}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${isLight ? 'bg-white border border-slate-200 text-slate-800 hover:bg-slate-50 shadow-sm' : 'bg-white/5 border border-white/10 text-white hover:bg-white/10'}`}
                 >
                   Clear
                 </button>

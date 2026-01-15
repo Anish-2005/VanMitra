@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import { Filter } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
-import GlassCard from '@/components/ui/GlassCard'
-import { useTheme } from '@/components/ThemeProvider'
+import GlassCard from '../ui/GlassCard'
+import { useTheme } from '../ThemeProvider'
 
 interface FiltersPanelProps {
   filtersExpanded: boolean
@@ -55,20 +55,23 @@ export function FiltersPanel({
   villageOptionsByState,
   villageOptionsByStateAndDistrict
 }: FiltersPanelProps) {
-  const { isLight } = useTheme()
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
 
   return (
-    <GlassCard className={`overflow-hidden mb-6 ${isLight ? 'bg-white/90 border border-slate-200' : ''}`}>
+    <GlassCard className={`overflow-hidden mb-6 ${isLight ? 'bg-white/95 border border-slate-200 shadow-lg' : ''}`}>
       <div
-        className={`flex items-center justify-between p-3 cursor-pointer ${isLight ? 'bg-emerald-100 hover:bg-emerald-200' : 'bg-slate-800/50'}`}
-        onClick={() => setFiltersExpanded((prev) => !prev)}
+        className={`flex items-center justify-between p-4 cursor-pointer ${isLight ? 'bg-gradient-to-r from-emerald-50 to-green-50 border-b border-emerald-100' : 'bg-slate-800/50'}`}
+        onClick={() => setFiltersExpanded(!filtersExpanded)}
       >
-        <div className="flex items-center gap-2">
-          <Filter size={16} className={isLight ? 'text-emerald-700' : 'text-emerald-400'} />
-          <span className={`font-medium ${isLight ? 'text-slate-900' : 'text-white'}`}>Filters</span>
-          <span className={`text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>(controls)</span>
+        <div className="flex items-center gap-3">
+          <Filter size={18} className={isLight ? 'text-emerald-600' : 'text-emerald-400'} />
+          <div>
+            <span className={`font-semibold text-base ${isLight ? 'text-slate-900' : 'text-white'}`}>Filters</span>
+            <span className={`block text-xs font-medium ${isLight ? 'text-emerald-600' : 'text-green-300'}`}>controls</span>
+          </div>
         </div>
-        <div className={`transform transition-transform ${filtersExpanded ? "rotate-180" : ""} ${isLight ? 'text-slate-700' : 'text-white'}`}>▼</div>
+        <div className={`transform transition-transform duration-200 ${filtersExpanded ? "rotate-180" : ""} ${isLight ? 'text-slate-600' : 'text-white'}`}>▼</div>
       </div>
 
       <AnimatePresence>
@@ -84,16 +87,17 @@ export function FiltersPanel({
             }}
             className="overflow-hidden"
           >
-            <div className="p-4 space-y-3">
+            <div className={`p-5 space-y-4 overflow-y-auto max-h-96 custom-scroll ${isLight ? 'bg-white' : ''}`}>
               <div>
-                <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>State</label>
+                <label className={`block text-sm font-medium mb-1 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>State</label>
                 <select
                   value={pendingStateFilter}
                   onChange={(e) => handleStateChange(e.target.value)}
-                  className={`mt-1 w-full rounded-md border p-2 ${isLight
-                    ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
-                    : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
+                  className={`w-full rounded-lg px-3 py-2 text-sm transition-colors ${isLight
+                    ? 'border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
+                    : 'border border-slate-600 bg-slate-800/50 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'}`}
                 >
+                
                   <option value="all">All</option>
                   {(stateOptions.length ? stateOptions : []).map((s) => (
                     <option key={s} value={s}>
@@ -104,13 +108,13 @@ export function FiltersPanel({
               </div>
 
               <div>
-                <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>District</label>
+                <label className={`block text-sm font-medium mb-1 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>District</label>
                 <select
                   value={pendingDistrictFilter}
                   onChange={(e) => handleDistrictChange(e.target.value)}
-                  className={`mt-1 w-full rounded-md border p-2 ${isLight
-                    ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
-                    : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
+                  className={`w-full rounded-lg px-3 py-2 text-sm transition-colors ${isLight
+                    ? 'border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
+                    : 'border border-slate-600 bg-slate-800/50 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'}`}
                 >
                   <option value="all">All</option>
                   {pendingStateFilter !== "all"
@@ -131,13 +135,13 @@ export function FiltersPanel({
               </div>
 
               <div>
-                <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>Status</label>
+                <label className={`block text-sm font-medium mb-1 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Status</label>
                 <select
                   value={pendingStatusFilter}
                   onChange={(e) => setPendingStatusFilter(e.target.value)}
-                  className={`mt-1 w-full rounded-md border p-2 ${isLight
-                    ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
-                    : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
+                  className={`w-full rounded-lg px-3 py-2 text-sm transition-colors ${isLight
+                    ? 'border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
+                    : 'border border-slate-600 bg-slate-800/50 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'}`}
                 >
                   <option value="all">All</option>
                   {statusOptions.length ? (
@@ -157,13 +161,13 @@ export function FiltersPanel({
               </div>
 
               <div>
-                <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>Village</label>
+                <label className={`block text-sm font-medium mb-1 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Village</label>
                 <select
                   value={pendingVillageFilter}
                   onChange={(e) => setPendingVillageFilter(e.target.value)}
-                  className={`mt-1 w-full rounded-md border p-2 ${isLight
-                    ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
-                    : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
+                  className={`w-full rounded-lg px-3 py-2 text-sm transition-colors ${isLight
+                    ? 'border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
+                    : 'border border-slate-600 bg-slate-800/50 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'}`}
                 >
                   <option value="all">All</option>
                   {pendingDistrictFilter && pendingDistrictFilter !== "all"
@@ -196,13 +200,13 @@ export function FiltersPanel({
               </div>
 
               <div>
-                <label className={`block text-sm ${isLight ? 'text-emerald-700' : 'text-green-300'}`}>Claim type</label>
+                <label className={`block text-sm font-medium mb-1 ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>Claim type</label>
                 <select
                   value={pendingClaimTypeFilter ?? ""}
                   onChange={(e) => setPendingClaimTypeFilter(e.target.value || null)}
-                  className={`mt-1 w-full rounded-md border p-2 ${isLight
-                    ? 'border-slate-300 bg-white text-slate-900 placeholder-slate-500 focus:ring-emerald-500 focus:border-emerald-500'
-                    : 'border-green-400/30 bg-slate-800/50 text-white placeholder-green-400 backdrop-blur-sm'}`}
+                  className={`w-full rounded-lg px-3 py-2 text-sm transition-colors ${isLight
+                    ? 'border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'
+                    : 'border border-slate-600 bg-slate-800/50 text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500'}`}
                 >
                   <option value="">any</option>
                   {statusOptions.length ? (
@@ -217,13 +221,11 @@ export function FiltersPanel({
                 </select>
               </div>
 
-              <div>
+              <div className="pt-2">
                 <button
                   onClick={handleApplyFilters}
                   disabled={isApplyingFilters}
-                  className={`w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isLight
-                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                    : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`}
+                  className={`w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${isLight ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200' : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white shadow-green-900/30'}`}
                 >
                   {isApplyingFilters ? (
                     <>
