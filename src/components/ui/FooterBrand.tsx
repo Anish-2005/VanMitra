@@ -10,7 +10,7 @@ export default function FooterBrand({ isLight }: Props) {
   return (
     <div className="flex items-center gap-3 sm:gap-4">
       <motion.div className={`relative h-14 w-14 rounded-2xl flex items-center justify-center overflow-hidden `}>
-        <Logo size={40} />
+        <Logo />
       </motion.div>
       <div>
         <div className={`text-base sm:text-lg font-semibold ${isLight ? 'text-green-900' : 'text-white'}`}>

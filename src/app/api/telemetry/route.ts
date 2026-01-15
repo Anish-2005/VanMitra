@@ -6,11 +6,9 @@ export async function POST(request: Request) {
     // Simple server-side logging for telemetry. In production, forward to analytics/monitoring.
     // Keep logs minimal to avoid PII.
     // Example: { payload: { type, data }, environment }
-    // eslint-disable-next-line no-console
     console.info('[telemetry]', JSON.stringify({ t: new Date().toISOString(), body }, null, 0));
     return NextResponse.json({ status: 'ok' });
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.warn('Telemetry endpoint error', err);
     return NextResponse.json({ status: 'error' }, { status: 500 });
   }

@@ -720,7 +720,7 @@ async function fetchFromGADM(level: string, state: string) {
   }
 }
 
-async function fetchFromSurveyOfIndia(level: string, state: string) {
+async function fetchFromSurveyOfIndia() {
   try {
     // Note: Survey of India primarily provides downloadable data, not direct API access
     // This function is a placeholder for potential future API integration

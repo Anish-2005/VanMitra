@@ -236,7 +236,7 @@ export default function Terms() {
                 <span className={isLight ? 'text-blue-700 font-medium' : 'text-blue-300 font-medium'}>Last Updated: September 17, 2025</span>
               </div>
               <p className={isLight ? 'text-slate-700' : 'text-green-100'}>
-                These terms and conditions outline the rules and regulations for the use of VanMitra's Forest Rights & Asset Mapping Platform.
+                These terms and conditions outline the rules and regulations for the use of VanMitra&apos;s Forest Rights & Asset Mapping Platform.
               </p>
             </GlassCard>
           </motion.div>

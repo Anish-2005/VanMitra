@@ -15,7 +15,7 @@ export default function NavBrand({ isLight }: Props) {
       transition={{ type: "spring", stiffness: 300 }}
     >
       <motion.div className={`relative h-14 w-14 rounded-2xl flex items-center justify-center overflow-hidden `}>
-        <Logo size={48} />
+        <Logo />
       </motion.div>
       <Link href="/">
         <div>

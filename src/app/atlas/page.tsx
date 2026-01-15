@@ -41,8 +41,6 @@ import { AddClaimForm } from '@/components/atlas/AddClaimForm'
 import { SearchByVillageUID } from '@/components/atlas/SearchByVillageUID'
 import { FiltersPanel } from '@/components/atlas/FiltersPanel'
 import { BoundaryLayersPanel } from '@/components/atlas/BoundaryLayersPanel'
-import AtlasLegend from '@/components/atlas/AtlasLegend'
-import { MapToolsSection } from '@/components/atlas/MapToolsSection'
 
 export default function AtlasPage() {
   const { theme } = useTheme();
@@ -93,8 +91,6 @@ export default function AtlasPage() {
   const [pendingStatusFilter, setPendingStatusFilter] = useState("all")
   const [pendingClaimTypeFilter, setPendingClaimTypeFilter] = useState<string | null>(null)
   const [loadingClaims, setLoadingClaims] = useState(false)
-  const [toasts, setToasts] = useState<{ id: number; message: string; type?: "info" | "error" }[]>([])
-
   const [statusOptions, setStatusOptions] = useState<string[]>([])
   const [claimTypeOptions, setClaimTypeOptions] = useState<string[]>([])
   const [stateOptions, setStateOptions] = useState<string[]>([])

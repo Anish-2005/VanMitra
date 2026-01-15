@@ -20,7 +20,7 @@ export default function Header({ isLight }: Props) {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.5 }}
                     >
-                        <Logo size={48} />
+                        <Logo />
                     </motion.div>
 
                     <Link href="/" className="inline-block">
