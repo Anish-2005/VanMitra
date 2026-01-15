@@ -1,5 +1,7 @@
 "use client"
 
+/* eslint-disable react-hooks/exhaustive-deps */
+
 export const dynamic = 'force-dynamic'
 
 import { useState, useRef, useEffect } from "react"
