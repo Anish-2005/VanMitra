@@ -56,22 +56,27 @@ export const ClaimsResponseSchema = z.object({
     type: z.literal("Feature"),
     geometry: z.object({
       type: z.string(),
-      coordinates: z.union([z.array(z.array(z.array(z.number()))), z.array(z.array(z.number()))]),
+      coordinates: z.union([
+        z.array(z.number()), // Point
+        z.array(z.array(z.number())), // LineString / MultiPoint
+        z.array(z.array(z.array(z.number()))), // Polygon / MultiLineString
+        z.array(z.array(z.array(z.array(z.number())))), // MultiPolygon
+      ]),
     }),
     properties: z.object({
-      claim_id: z.string(),
-      claim_type: z.string(),
-      claimant_name: z.string(),
-      community_name: z.string(),
-      land_area: z.number(),
-      state: z.string(),
-      district: z.string(),
-      village: z.string(),
-      status: z.string(),
+      claim_id: z.coerce.string(),
+      claim_type: z.coerce.string(),
+      claimant_name: z.coerce.string(),
+      community_name: z.coerce.string(),
+      land_area: z.coerce.number(),
+      state: z.coerce.string(),
+      district: z.coerce.string(),
+      village: z.coerce.string(),
+      status: z.coerce.string(),
       created_at: z.date().nullable(),
       updated_at: z.date().nullable(),
-      source: z.string(),
-      radius: z.number(),
+      source: z.coerce.string(),
+      radius: z.coerce.number(),
     }),
   })),
 });

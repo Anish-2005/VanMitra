@@ -120,6 +120,8 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
   useEffect(() => {
     if (!mapContainer.current) return
 
+    setMapLoaded(false)
+
     // Build base raster source from prop or default to OSM
     const tiles = Array.isArray(baseRasterTiles) ? baseRasterTiles : undefined
     // Filter out obviously invalid tiles (e.g., URLs containing 'undefined')
@@ -551,7 +553,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
 
   // Handle layers
   useEffect(() => {
-    if (!map.current || !mapLoaded) return
+    if (!map.current || !mapLoaded || !map.current.isStyleLoaded()) return
 
     console.log("Handling layers, currentLayers:", currentLayers.length)
     currentLayers.forEach((layer) => {
@@ -686,7 +688,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
 
   // Ensure boundaries are always rendered on top and have prominent styling.
   useEffect(() => {
-    if (!map.current || !mapLoaded) return
+    if (!map.current || !mapLoaded || !map.current.isStyleLoaded()) return
 
     try {
       // Find the boundaries layer config
@@ -791,7 +793,7 @@ const WebGIS = forwardRef<WebGISRef, WebGISProps>(function WebGISComponent(
  
   // Handle markers
   useEffect(() => {
-    if (!map.current || !mapLoaded) return
+    if (!map.current || !mapLoaded || !map.current.isStyleLoaded()) return
 
     console.log("🗺️ Processing markers:", markers.length)
     // Filter out pathfinding icons, only keep claim-area-center and last-click markers

@@ -3,118 +3,109 @@ import { collection, getDocs, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { ClaimsResponse, Claim, ClaimsResponseSchema } from '@/types/api';
 import * as turf from '@turf/turf';
-import { GeoFeature } from '@/lib/gis-utils';
 
 export class ClaimsService {
   static async getAllClaims(status?: string): Promise<ClaimsResponse> {
     try {
-      // Get Firebase claims
-      const firebaseClaims = await this.getFirebaseClaims();
-
-      // Get external claims if needed
-      const externalClaims = await this.getExternalClaims(status);
-
-      // Combine and validate
-      const allFeatures = [...firebaseClaims, ...externalClaims];
+      const firebaseClaims = await this.getFirebaseClaims()
+      const externalClaims = await this.getExternalClaims(status)
+      const allFeatures = [...firebaseClaims, ...externalClaims]
       const response = {
         type: "FeatureCollection" as const,
         features: allFeatures,
-      };
+      }
 
-      // Validate response
-      return ClaimsResponseSchema.parse(response);
+      try {
+        return ClaimsResponseSchema.parse(response)
+      } catch (validationError) {
+        if (validationError instanceof Error && validationError.name === "ZodError") {
+          console.error("❌ Claims Validation Error:", JSON.stringify((validationError as any).issues, null, 2))
+        }
+        throw validationError
+      }
     } catch (error) {
-      console.error('Error fetching claims:', error);
-      throw new Error('Failed to fetch claims');
+      console.error("Error fetching claims:", error)
+      throw new Error("Failed to fetch claims")
     }
   }
 
-  private static async getFirebaseClaims(): Promise<ClaimsResponse['features']> {
-    const snap = await getDocs(collection(db, 'claims'));
+  private static async getFirebaseClaims(): Promise<ClaimsResponse["features"]> {
+    try {
+      const snap = await getDocs(collection(db, "claims"))
 
-    return snap.docs.map(doc => {
-      const data = doc.data();
+      return snap.docs.map((doc) => {
+        const data = doc.data()
+        const landArea = Number(data.claimed_area || data.land_area || 1)
+        const radiusKm = Math.sqrt(landArea * 10000 / Math.PI) / 1000
+        const circle = turf.circle([data.longitude || 78.0, data.latitude || 23.0], radiusKm, { steps: 64 })
 
-      // Map Firebase field names to our schema
-      const landArea = data.claimed_area || data.land_area || 1;
-      const state = data.state_name || data.state || '';
-      const district = data.district_name || data.district || '';
-      const village = data.village_name || data.village || '';
-
-      // Calculate radius from claimed area
-      const areaHa = landArea;
-      const areaM2 = areaHa * 10000;
-      const radiusM = Math.sqrt(areaM2 / Math.PI);
-      const radiusKm = radiusM / 1000;
-
-      // Create circle geometry
-      const circle = turf.circle([data.longitude, data.latitude], radiusKm, { steps: 64 });
-
-      return {
-        type: "Feature" as const,
-        geometry: circle.geometry,
-        properties: {
-          claim_id: doc.id,
-          claim_type: data.claim_type || '',
-          claimant_name: data.claimant_name || '',
-          community_name: data.community_name || '',
-          land_area: landArea,
-          state: state,
-          district: district,
-          village: village,
-          status: data.status || 'pending',
-          created_at: data.created_at
-            ? new Date(
-                typeof data.created_at === 'string' ||
-                typeof data.created_at === 'number' ||
-                data.created_at instanceof Date
-                  ? data.created_at
-                  : ''
-              )
-            : null,
-          updated_at: data.updated_at
-            ? new Date(
-                typeof data.updated_at === 'string' || typeof data.updated_at === 'number' || data.updated_at instanceof Date
-                  ? data.updated_at
-                  : ''
-              )
-            : null,
-          source: "firebase",
-          radius: Math.sqrt(landArea) * 200,
-        },
-      };
-    });
+        return {
+          type: "Feature" as const,
+          geometry: circle.geometry as any,
+          properties: {
+            claim_id: String(doc.id),
+            claim_type: String(data.claim_type || "Individual"),
+            claimant_name: String(data.claimant_name || "Unknown"),
+            community_name: String(data.community_name || ""),
+            land_area: landArea,
+            state: String(data.state_name || data.state || "Madhya Pradesh"),
+            district: String(data.district_name || data.district || ""),
+            village: String(data.village_name || data.village || ""),
+            status: String(data.status === "granted" ? "approved" : (data.status || "pending")),
+            created_at: data.created_at ? (isNaN(new Date(data.created_at instanceof Timestamp ? data.created_at.toDate() : data.created_at).getTime()) ? null : new Date(data.created_at instanceof Timestamp ? data.created_at.toDate() : data.created_at)) : null,
+            updated_at: data.updated_at ? (isNaN(new Date(data.updated_at instanceof Timestamp ? data.updated_at.toDate() : data.updated_at).getTime()) ? null : new Date(data.updated_at instanceof Timestamp ? data.updated_at.toDate() : data.updated_at)) : null,
+            source: "firebase",
+            radius: Math.sqrt(landArea) * 200,
+          },
+        }
+      })
+    } catch (error) {
+      console.error("Firebase fetch error:", error)
+      return []
+    }
   }
 
-  private static async getExternalClaims(status?: string): Promise<ClaimsResponse['features']> {
+  private static async getExternalClaims(status?: string): Promise<ClaimsResponse["features"]> {
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_EXTERNAL_API_URL || 'https://vanmitra.onrender.com';
-      const qs = status ? `?status=${status}` : '?status=all';
-      const target = `${baseUrl}/claims${qs}`;
+      const baseUrl = process.env.NEXT_PUBLIC_EXTERNAL_API_URL || "https://vanmitra.onrender.com"
+      const qs = status ? `?status=${status}` : "?status=all"
+      const target = `${baseUrl}/claims${qs}`
 
       const response = await fetch(target, {
-        headers: { Accept: 'application/json' },
-        next: { revalidate: 300 }, // Cache for 5 minutes
-      });
+        headers: { Accept: "application/json" },
+        next: { revalidate: 300 },
+      })
 
-      if (!response.ok) {
-        console.warn('External claims API unavailable, using empty array');
-        return [];
-      }
+      if (!response.ok) return []
+      const data = await response.json()
 
-      const data = await response.json();
+      return (data.features || []).map((feature: any) => {
+        const props = feature.properties || {}
+        const landArea = Number(props.land_area || props.claimed_area || 1)
 
-      // Transform external data to match our schema
-      return (data.features || []).map((feature: GeoFeature) => ({
-        ...feature,
-        properties: {
-          ...feature.properties,
-          source: "external",
-        },
-      }));
+        return {
+          type: "Feature" as const,
+          geometry: feature.geometry,
+          properties: {
+            claim_id: String(props.claim_id || feature.id || Math.random().toString(36).substr(2, 9)),
+            claim_type: String(props.claim_type || "Individual"),
+            claimant_name: String(props.claimant_name || "Unknown"),
+            community_name: String(props.community_name || ""),
+            land_area: landArea,
+            state: String(props.state || props.state_name || "Madhya Pradesh"),
+            district: String(props.district || props.district_name || ""),
+            village: String(props.village || props.village_name || ""),
+            status: String(props.status === "granted" ? "approved" : (props.status || "pending")),
+            created_at: props.created_at ? (isNaN(new Date(props.created_at).getTime()) ? null : new Date(props.created_at)) : null,
+            updated_at: props.updated_at ? (isNaN(new Date(props.updated_at).getTime()) ? null : new Date(props.updated_at)) : null,
+            source: "external",
+            radius: Number(props.radius || (Math.sqrt(landArea) * 200)),
+          },
+        }
+      })
     } catch (error) {
-      console.warn('Failed to fetch external claims:', error);
-      return [];
+      console.warn("External API fetch error:", error)
+      return []
     }
   }
 
